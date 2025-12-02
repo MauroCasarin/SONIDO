@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Distancia de Subgraves</title>
+    <!-- Carga de Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Configuración para usar la fuente Inter -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0d1117;
+        }
+        /* Estilo personalizado para el control deslizante (slider) */
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            border: 1px solid #000;
+            height: 24px;
+            width: 24px;
+            border-radius: 50%;
+            background: #10b981; /* Esmeralda 500 */
+            cursor: pointer;
+            box-shadow: 0 0 5px rgba(16, 185, 129, 0.7);
+        }
+        input[type=range]::-moz-range-thumb {
+            height: 24px;
+            width: 24px;
+            border-radius: 50%;
+            background: #10b981;
+            cursor: pointer;
+            box-shadow: 0 0 5px rgba(16, 185, 129, 0.7);
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8 min-h-screen flex items-center justify-center">
+
+    <div id="calculator-card" class="w-full max-w-xl bg-gray-800 p-6 md:p-8 rounded-xl shadow-2xl border border-gray-700">
+        <h1 class="text-3xl font-extrabold text-white text-center mb-6">Cálculo de Distancia de Subgraves</h1>
+        <p class="text-gray-400 text-center mb-8">Selecciona la frecuencia de corte (Hz) y calcula la distancia ideal para evitar cancelaciones.</p>
+
+        <!-- Sección de Control Deslizante (Slider) -->
+        <div class="mb-6 p-4 bg-gray-700 rounded-lg shadow-inner">
+            <label for="frequency-slider" class="block text-lg font-semibold mb-3 text-white">Frecuencia de Corte (Crossover):</label>
+            <input type="range" id="frequency-slider" min="20" max="200" value="80" step="1"
+                   class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer">
+            <div class="flex justify-between mt-2 text-gray-400 font-mono text-sm">
+                <span>20 Hz</span>
+                <span id="current-frequency" class="text-2xl font-bold text-emerald-400">80 Hz</span>
+                <span>200 Hz</span>
+            </div>
+        </div>
+
+        <!-- Nueva Sección de Rango de Frecuencia -->
+        <div id="frequency-range-info" class="mb-8 p-4 bg-gray-900 rounded-lg border border-gray-700">
+            <h3 class="text-lg font-bold text-center mb-2 text-white"><span id="range-name">Rango: Bajos</span></h3>
+            <p id="range-description" class="text-gray-400 text-sm text-center">Frecuencias del bombo, toms y normalmente es una zona de corte de muchos instrumentos.</p>
+        </div>
+        <!-- Fin de la Nueva Sección -->
+
+        <!-- Sección de Resultados -->
+        <div class="space-y-4">
+            <!-- Longitud de Onda -->
+            <div class="p-4 bg-gray-700 rounded-lg flex items-center justify-between">
+                <span class="text-gray-300 font-medium">Longitud de Onda (<span class="font-serif italic text-lg">&lambda;</span>):</span>
+                <div class="text-right">
+                    <span id="result-wavelength" class="text-xl font-bold text-yellow-400">4.25 m</span>
+                    <span class="text-sm text-gray-400 block">(&lambda; = 340 m/s / Hz)</span>
+                </div>
+            </div>
+
+            <!-- Distancia Inicial Recomendada (λ/4) -->
+            <div class="p-4 bg-gray-700 rounded-lg flex items-center justify-between border-l-4 border-emerald-500">
+                <span class="text-gray-300 font-medium">Distancia Inicial Recomendada:</span>
+                <div class="text-right">
+                    <span id="result-initial" class="text-2xl font-extrabold text-emerald-400">1.06 m</span>
+                    <span class="text-sm text-gray-400 block">(&lambda;/4 para evitar cancelaciones)</span>
+                </div>
+            </div>
+
+            <!-- Distancia Máxima Teórica (2λ/3) -->
+            <div class="p-4 bg-gray-700 rounded-lg flex items-center justify-between border-l-4 border-red-500">
+                <span class="text-gray-300 font-medium">Distancia Máxima Teórica:</span>
+                <div class="text-right">
+                    <span id="result-max" class="text-xl font-bold text-red-400">2.83 m</span>
+                    <span class="text-sm text-gray-400 block">(2&lambda;/3 límite teórico)</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-8 text-sm text-gray-500 text-center">
+            <p>*Velocidad del sonido utilizada: 340 m/s</p>
+            <p>**Distancia entre los centros acústicos de los subgraves.</p>
+        </div>
+    </div>
+
+    <script>
+        // Constante de velocidad del sonido en m/s (como se usa en el ejemplo de los datos)
+        const VELOCIDAD_SONIDO = 340;
+
+        // Definición de los rangos de frecuencia basados en la imagen proporcionada (limitado a 20-200 Hz)
+        const RANGOS_FRECUENCIA = [
+            {
+                name: "Sub Bajos",
+                min: 20, 
+                max: 60, // 25-63 Hz en la imagen, ajustado a 60 para simplicidad
+                description: "Comúnmente las frecuencias del bajo, bombos y algunos syntes. Graves profundos y de impacto."
+            },
+            {
+                name: "Bajos",
+                min: 61, 
+                max: 125, // 80-125 Hz en la imagen, ajustado el límite inferior
+                description: "Frecuencias del bombo, toms y normalmente es una zona de corte de muchos instrumentos. Aquí se siente el 'punch'."
+            },
+            {
+                name: "Medios Bajos",
+                min: 126, 
+                max: 200, // 160-250 Hz en la imagen, limitado a 200 Hz por el slider
+                description: "Se encuentra el cuerpo del Snare y otros instrumentos graves. Un rango que necesita control."
+            }
+            // Los rangos superiores (Medios, Altos) están fuera del alcance del slider (20-200 Hz).
+        ];
+
+        // Referencias a elementos del DOM
+        const slider = document.getElementById('frequency-slider');
+        const currentFrequencyDisplay = document.getElementById('current-frequency');
+        const resultWavelength = document.getElementById('result-wavelength');
+        const resultInitial = document.getElementById('result-initial');
+        const resultMax = document.getElementById('result-max');
+        const rangeNameDisplay = document.getElementById('range-name');
+        const rangeDescriptionDisplay = document.getElementById('range-description');
+
+        /**
+         * Determina el rango de frecuencia y actualiza la descripción.
+         * @param {number} frequency La frecuencia actual seleccionada.
+         */
+        function updateRangeInfo(frequency) {
+            const currentRange = RANGOS_FRECUENCIA.find(range => 
+                frequency >= range.min && frequency <= range.max
+            );
+
+            if (currentRange) {
+                rangeNameDisplay.textContent = `Rango: ${currentRange.name}`;
+                rangeDescriptionDisplay.textContent = currentRange.description;
+            } else {
+                rangeNameDisplay.textContent = "Rango: Fuera de Zona Clave";
+                rangeDescriptionDisplay.textContent = "La frecuencia seleccionada es atípica para el corte de subgraves, pero los cálculos son correctos.";
+            }
+        }
+
+        /**
+         * Realiza los cálculos y actualiza la interfaz.
+         */
+        function calculateAndUpdate() {
+            // 1. Obtener la frecuencia actual del slider (como número)
+            const frequency = parseFloat(slider.value);
+
+            // 2. Actualizar la visualización de la frecuencia
+            currentFrequencyDisplay.textContent = `${frequency} Hz`;
+            
+            // 3. Actualizar la información del rango de frecuencia
+            updateRangeInfo(frequency);
+
+            // 4. CÁLCULO DE LONGITUD DE ONDA (Lambda)
+            // Fórmula: λ = v / f
+            const wavelength = VELOCIDAD_SONIDO / frequency;
+
+            // 5. CÁLCULO DE DISTANCIA INICIAL RECOMENDADA
+            // Fórmula: D_inicial = λ / 4
+            const initialDistance = wavelength / 4;
+
+            // 6. CÁLCULO DE DISTANCIA MÁXIMA TEÓRICA
+            // Fórmula: D_max = 2λ / 3
+            const maxDistance = (2 * wavelength) / 3;
+
+            // 7. Actualizar los resultados en la interfaz (redondeando a dos decimales)
+            
+            // Longitud de Onda
+            resultWavelength.textContent = `${wavelength.toFixed(2)} m`;
+            
+            // Distancia Inicial
+            resultInitial.textContent = `${initialDistance.toFixed(2)} m`;
+
+            // Distancia Máxima
+            resultMax.textContent = `${maxDistance.toFixed(2)} m`;
+        }
+
+        // Inicializar la calculadora al cargar la página
+        calculateAndUpdate();
+
+        // Escuchar el evento 'input' del slider para actualizar los cálculos en tiempo real
+        slider.addEventListener('input', calculateAndUpdate);
+
+    </script>
+
+</body>
+</html>
+
