@@ -1,12 +1,13 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Simulación de Subwoofers Interactivo (Final)</title>
+    <title>Simulación de Subwoofers Interactivo (Móvil)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         :root {
-            --canvas-width: 90vw;
-            --info-width: 90vw;
-            --slider-width: 85%;
+            --canvas-width: 95vw; /* Más ancho para móviles */
+            --info-width: 95vw;
+            --slider-width: 90%;
         }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -18,12 +19,12 @@
         }
         h1 {
             color: #4CAF50;
-            padding-top: 20px;
-            font-size: 1.8em;
+            padding-top: 15px;
+            font-size: 1.5em; /* Reducido para móviles */
         }
         canvas {
             border: 2px solid #555;
-            margin: 20px auto;
+            margin: 10px auto;
             display: block;
             background-color: #2c2c2c;
             width: var(--canvas-width);
@@ -34,23 +35,25 @@
             text-align: left;
             width: var(--info-width);
             max-width: 800px;
-            margin: 0 auto 20px auto;
+            margin: 0 auto 10px auto;
+            font-size: 0.9em;
         }
+        .leyenda div { margin-bottom: 3px; }
         .leyenda .sum, .leyenda .cancel {
             display: inline-block;
-            width: 20px;
-            height: 20px;
-            margin-right: 10px;
+            width: 15px; /* Iconos más pequeños */
+            height: 15px;
+            margin-right: 8px;
             vertical-align: middle;
-            border-radius: 4px;
+            border-radius: 3px;
         }
         .leyenda .sum { background-color: #4CAF50; }
         .leyenda .cancel { background-color: #FF5733; }
         
         #info-panel {
-            font-size: 1.1em;
-            margin-top: 20px;
-            padding: 15px;
+            font-size: 1em; /* Ajuste para móvil */
+            margin-top: 10px;
+            padding: 10px;
             border: 1px solid #444;
             background-color: #2c2c2c;
             width: var(--info-width);
@@ -60,23 +63,22 @@
             border-radius: 8px;
         }
         .control-group {
-            margin-bottom: 5px;
+            margin-bottom: 3px;
         }
         
         .slider-container {
             width: var(--slider-width);
-            margin: 0 auto 15px auto;
+            margin: 0 auto 10px auto;
             position: relative;
         }
         
-        /* Estilos para las etiquetas de los deslizadores */
         .slider-label {
             display: block;
             text-align: left;
             font-size: 0.9em;
-            margin-bottom: 5px;
+            margin-bottom: 2px;
             font-weight: bold;
-            color: #1e90ff; /* Azul para resaltar la etiqueta */
+            color: #1e90ff;
         }
         
         input[type=range] {
@@ -91,9 +93,10 @@
         #rango-description {
             font-weight: bold;
             color: #f0ad4e;
-            margin-top: 10px;
+            margin-top: 8px;
             padding: 5px;
             border-top: 1px solid #444;
+            font-size: 0.95em;
         }
     </style>
 </head>
@@ -231,15 +234,15 @@
 
             // 6. DETALLES DE TEXTO EN EL CANVAS
             ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 18px Segoe UI';
+            ctx.font = 'bold 24px Segoe UI'; /* **Aumento de fuente** para mejor visibilidad */
             ctx.textAlign = 'center';
 
             // 6a. Frecuencia Elegida (Superior)
-            ctx.fillText(`Frecuencia: ${frecuenciaHz.toFixed(0)} Hz`, WIDTH / 2, 30);
+            ctx.fillText(`${frecuenciaHz.toFixed(0)} Hz`, WIDTH / 2, 40);
 
             // 6b. Separación de Bafles (Subwoofers)
-            ctx.font = '13px Segoe UI';
-            const separacionTexto = `Separación: ${separacionMetros.toFixed(2)} m`;
+            ctx.font = 'bold 18px Segoe UI'; /* **Aumento de fuente** para separación */
+            const separacionTexto = `${separacionMetros.toFixed(2)} m`;
             
             // Dibujar línea de separación
             ctx.strokeStyle = '#f0ad4e';
@@ -252,14 +255,13 @@
             
             // Dibujar el texto centrado entre los subwoofers
             ctx.textAlign = 'center';
-            ctx.fillText(separacionTexto, WIDTH / 2, sub1Y - BAFLE_HEIGHT/2 - 10);
+            ctx.fillText(separacionTexto, WIDTH / 2, sub1Y - BAFLE_HEIGHT/2 - 15);
         }
 
         // ----------------------------------------------------
         // FUNCIONES DE CONTROL
         // ----------------------------------------------------
         function resizeCanvas() {
-            // El elemento CSS ajusta el tamaño visual. Solo redibujamos.
             drawPattern();
         }
         window.addEventListener('resize', resizeCanvas);
@@ -276,16 +278,16 @@
             let comentarioSeparacion = '';
 
             if (separacionMetros < coherenciaMax * 1.1) {
-                comentarioSeparacion = " - Máxima Coherencia (Los bafles actúan como una fuente única)";
+                comentarioSeparacion = " - Máxima Coherencia (Fuente única)";
             } else if (separacionMetros < controlDirectividad * 1.1) {
-                comentarioSeparacion = " - Ideal para Control de Directividad (Arreglo Lineal o Cardioide)";
+                comentarioSeparacion = " - Ideal para Control de Directividad (Arreglo Lineal)";
             } else if (separacionMetros >= controlDirectividad * 1.1) {
-                 comentarioSeparacion = " - **LOBING** Severo (Patrón irregular y cancelaciones fuertes)";
+                 comentarioSeparacion = " - **LOBING** Severo (Cancelaciones fuertes)";
             } 
             
-            // Actualizar la información en el panel
-            document.getElementById('frecuencia-info').innerHTML = `Frecuencia Actual: ${frecuenciaHz.toFixed(0)} Hz (Longitud de Onda: ${LONGITUD_ONDA.toFixed(2)} m)<br>Separación Ideal para Control: ${controlDirectividad.toFixed(2)} m`;
-            document.getElementById('separacion-info').innerHTML = `Separación Actual: ${separacionMetros.toFixed(2)} metros${comentarioSeparacion}`;
+            // Actualizar la información en el panel (más concisa para móviles)
+            document.getElementById('frecuencia-info').innerHTML = `Frecuencia: ${frecuenciaHz.toFixed(0)} Hz (L.O.: ${LONGITUD_ONDA.toFixed(2)} m) | Ideal: ${controlDirectividad.toFixed(2)} m`;
+            document.getElementById('separacion-info').innerHTML = `Separación: ${separacionMetros.toFixed(2)} m ${comentarioSeparacion}`;
             document.getElementById('rango-description').innerHTML = getRangeDescription(frecuenciaHz);
 
             drawPattern();
