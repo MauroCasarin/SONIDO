@@ -1,10 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Simulación de Subwoofers Interactivo (Avanzado)</title>
+    <title>Simulación de Subwoofers Interactivo (Final)</title>
     <style>
         :root {
-            /* Variables para hacer el diseño semi-responsive */
             --canvas-width: 90vw;
             --info-width: 90vw;
             --slider-width: 85%;
@@ -20,6 +19,7 @@
         h1 {
             color: #4CAF50;
             padding-top: 20px;
+            font-size: 1.8em;
         }
         canvas {
             border: 2px solid #555;
@@ -36,9 +36,6 @@
             max-width: 800px;
             margin: 0 auto 20px auto;
         }
-        .leyenda div {
-            margin-bottom: 5px;
-        }
         .leyenda .sum, .leyenda .cancel {
             display: inline-block;
             width: 20px;
@@ -47,12 +44,11 @@
             vertical-align: middle;
             border-radius: 4px;
         }
-        /* Estilos de colores específicos para la leyenda */
-        .leyenda .sum { background-color: #4CAF50; } /* Verde para Suma */
-        .leyenda .cancel { background-color: #FF5733; } /* Rojo para Cancelación */
+        .leyenda .sum { background-color: #4CAF50; }
+        .leyenda .cancel { background-color: #FF5733; }
         
         #info-panel {
-            font-size: 1.2em;
+            font-size: 1.1em;
             margin-top: 20px;
             padding: 15px;
             border: 1px solid #444;
@@ -64,29 +60,40 @@
             border-radius: 8px;
         }
         .control-group {
-            margin-bottom: 15px;
+            margin-bottom: 5px;
         }
-        .slider-label {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.9em;
+        
+        .slider-container {
             width: var(--slider-width);
-            margin: 0 auto;
+            margin: 0 auto 15px auto;
+            position: relative;
         }
+        
+        /* Estilos para las etiquetas de los deslizadores */
+        .slider-label {
+            display: block;
+            text-align: left;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #1e90ff; /* Azul para resaltar la etiqueta */
+        }
+        
+        input[type=range] {
+            width: 100%;
+            height: 5px;
+            background: #555;
+            -webkit-appearance: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
         #rango-description {
             font-weight: bold;
             color: #f0ad4e;
             margin-top: 10px;
             padding: 5px;
             border-top: 1px solid #444;
-        }
-        input[type=range] {
-            width: var(--slider-width);
-            height: 5px;
-            background: #555;
-            -webkit-appearance: none;
-            border-radius: 5px;
-            cursor: pointer;
         }
     </style>
 </head>
@@ -97,12 +104,16 @@
     <div id="info-panel">
         
         <div id="frecuencia-info" class="control-group">Frecuencia Actual: 100 Hz (Longitud de Onda: 3.40 m)</div>
-        <div class="slider-label"><span>50 Hz</span><span>400 Hz</span></div>
-        <input type="range" id="sliderFrecuencia" min="50" max="400" step="5" value="100" oninput="actualizarValores()"> 
+        <label for="sliderFrecuencia" class="slider-label">Control de Frecuencia (Hz):</label>
+        <div class="slider-container">
+            <input type="range" id="sliderFrecuencia" min="50" max="400" step="5" value="100" oninput="actualizarValores()"> 
+        </div>
         
         <div id="separacion-info" class="control-group">Separación Actual: 0.85 metros - Máxima Coherencia</div>
-        <div class="slider-label"><span>0.1 m</span><span>4.0 m</span></div>
-        <input type="range" id="sliderSeparacion" min="0.1" max="4.0" step="0.05" value="0.85" oninput="actualizarValores()">
+        <label for="sliderSeparacion" class="slider-label">Control de Separación (Metros):</label>
+        <div class="slider-container">
+            <input type="range" id="sliderSeparacion" min="0.1" max="4.0" step="0.05" value="0.85" oninput="actualizarValores()">
+        </div>
         
         <div id="rango-description"></div>
     </div>
@@ -126,7 +137,6 @@
         let HEIGHT = 400;
         const BAFLE_WIDTH = 30;
         const BAFLE_HEIGHT = 45;
-
         const PIXELS_PER_METER = 200;
 
         // Variables de estado
@@ -156,30 +166,21 @@
             // 1. DIBUJAR LA GRILLA (1m x 1m)
             ctx.strokeStyle = '#3a3a3a';
             ctx.lineWidth = 0.5;
-            // Eje horizontal (X)
             for(let i = -2; i <= 2; i++) {
                 const xPos = WIDTH / 2 + i * PIXELS_PER_METER;
-                ctx.beginPath();
-                ctx.moveTo(xPos, 0);
-                ctx.lineTo(xPos, HEIGHT);
-                ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(xPos, 0); ctx.lineTo(xPos, HEIGHT); ctx.stroke();
             }
-            // Eje vertical (Y)
             for(let i = -2; i <= 2; i++) {
                 const yPos = HEIGHT / 2 + i * PIXELS_PER_METER;
-                ctx.beginPath();
-                ctx.moveTo(0, yPos);
-                ctx.lineTo(WIDTH, yPos);
-                ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(0, yPos); ctx.lineTo(WIDTH, yPos); ctx.stroke();
             }
 
             // 2. Coordenadas de los subwoofers
             const sub1X = WIDTH / 2 - (separacionMetros / 2) * PIXELS_PER_METER;
             const sub1Y = HEIGHT / 2;
             const sub2X = WIDTH / 2 + (separacionMetros / 2) * PIXELS_PER_METER;
-            const sub2Y = HEIGHT / 2;
 
-            // 3. Iterar sobre cada pixel para calcular la fase
+            // 3. Iterar sobre cada pixel para calcular la fase (Interferencia)
             for (let x = 0; x < WIDTH; x += 3) {
                 for (let y = 0; y < HEIGHT; y += 3) {
                     
@@ -195,13 +196,9 @@
                     const intensidad = 2 * Math.abs(Math.cos(faseDiferencia / 2));
                     
                     let color;
-                    if (intensidad > 1.5) {
-                        color = `rgba(76, 175, 80, ${intensidad * 0.5})`; 
-                    } else if (intensidad < 0.5) {
-                        color = `rgba(255, 87, 51, ${1 - intensidad * 0.5})`; 
-                    } else {
-                        color = `rgba(255, 255, 255, 0.05)`; 
-                    }
+                    if (intensidad > 1.5) { color = `rgba(76, 175, 80, ${intensidad * 0.5})`; 
+                    } else if (intensidad < 0.5) { color = `rgba(255, 87, 51, ${1 - intensidad * 0.5})`; 
+                    } else { color = `rgba(255, 255, 255, 0.05)`; }
 
                     ctx.fillStyle = color;
                     ctx.fillRect(x, y, 3, 3);
@@ -218,8 +215,8 @@
             ctx.strokeRect(sub1X - BAFLE_WIDTH / 2, sub1Y - BAFLE_HEIGHT / 2, BAFLE_WIDTH, BAFLE_HEIGHT);
             
             // Bafle 2
-            ctx.fillRect(sub2X - BAFLE_WIDTH / 2, sub2Y - BAFLE_HEIGHT / 2, BAFLE_WIDTH, BAFLE_HEIGHT);
-            ctx.strokeRect(sub2X - BAFLE_WIDTH / 2, sub2Y - BAFLE_HEIGHT / 2, BAFLE_WIDTH, BAFLE_HEIGHT);
+            ctx.fillRect(sub2X - BAFLE_WIDTH / 2, sub1Y - BAFLE_HEIGHT / 2, BAFLE_WIDTH, BAFLE_HEIGHT);
+            ctx.strokeRect(sub2X - BAFLE_WIDTH / 2, sub1Y - BAFLE_HEIGHT / 2, BAFLE_WIDTH, BAFLE_HEIGHT);
 
 
             // 5. Dibujar la línea de AUDIENCIA
@@ -234,14 +231,14 @@
 
             // 6. DETALLES DE TEXTO EN EL CANVAS
             ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 20px Segoe UI';
+            ctx.font = 'bold 18px Segoe UI';
             ctx.textAlign = 'center';
 
             // 6a. Frecuencia Elegida (Superior)
             ctx.fillText(`Frecuencia: ${frecuenciaHz.toFixed(0)} Hz`, WIDTH / 2, 30);
 
             // 6b. Separación de Bafles (Subwoofers)
-            ctx.font = '14px Segoe UI';
+            ctx.font = '13px Segoe UI';
             const separacionTexto = `Separación: ${separacionMetros.toFixed(2)} m`;
             
             // Dibujar línea de separación
@@ -249,7 +246,7 @@
             ctx.setLineDash([2, 4]);
             ctx.beginPath();
             ctx.moveTo(sub1X + BAFLE_WIDTH / 2, sub1Y - BAFLE_HEIGHT/2 - 5);
-            ctx.lineTo(sub2X - BAFLE_WIDTH / 2, sub2Y - BAFLE_HEIGHT/2 - 5);
+            ctx.lineTo(sub2X - BAFLE_WIDTH / 2, sub1Y - BAFLE_HEIGHT/2 - 5);
             ctx.stroke();
             ctx.setLineDash([]);
             
@@ -261,28 +258,18 @@
         // ----------------------------------------------------
         // FUNCIONES DE CONTROL
         // ----------------------------------------------------
-
-        // La función resizeCanvas asegura que el canvas escale correctamente en la vista
         function resizeCanvas() {
-            // El canvas se escala por CSS, pero los cálculos se basan en el ancho fijo (800) para mantener la escala PIXELS_PER_METER constante
-            // Si quieres un cambio de 'zoom' real, necesitarías recalcular PIXELS_PER_METER
-            
-            // Para mantener la consistencia, solo llamamos a drawPattern()
+            // El elemento CSS ajusta el tamaño visual. Solo redibujamos.
             drawPattern();
         }
         window.addEventListener('resize', resizeCanvas);
 
 
-        // Función para actualizar todos los valores al mover cualquier slider
         window.actualizarValores = function() {
-            // 1. Obtener valores de los sliders
             frecuenciaHz = parseFloat(document.getElementById('sliderFrecuencia').value);
             separacionMetros = parseFloat(document.getElementById('sliderSeparacion').value);
-            
-            // 2. Recalcular la Longitud de Onda
             LONGITUD_ONDA = VELOCIDAD_SONIDO / frecuenciaHz;
             
-            // 3. Calcular los puntos críticos en metros
             const coherenciaMax = LONGITUD_ONDA / 4;
             const controlDirectividad = LONGITUD_ONDA / 2;
 
@@ -296,16 +283,15 @@
                  comentarioSeparacion = " - **LOBING** Severo (Patrón irregular y cancelaciones fuertes)";
             } 
             
-            // 4. Actualizar el panel de información
+            // Actualizar la información en el panel
             document.getElementById('frecuencia-info').innerHTML = `Frecuencia Actual: ${frecuenciaHz.toFixed(0)} Hz (Longitud de Onda: ${LONGITUD_ONDA.toFixed(2)} m)<br>Separación Ideal para Control: ${controlDirectividad.toFixed(2)} m`;
             document.getElementById('separacion-info').innerHTML = `Separación Actual: ${separacionMetros.toFixed(2)} metros${comentarioSeparacion}`;
             document.getElementById('rango-description').innerHTML = getRangeDescription(frecuenciaHz);
 
-            // 5. Redibujar
             drawPattern();
         }
 
-        // Dibujar al cargar
+        // Ejecutar al cargar
         actualizarValores();
     </script>
 
