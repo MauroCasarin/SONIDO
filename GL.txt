@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simulador Acústico WebGL (Three.js)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1e1e1e;
+            color: #ffffff;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            overflow: hidden; /* Oculta barras de desplazamiento */
+        }
+        h1 {
+            color: #4CAF50;
+            padding-top: 15px;
+            font-size: 1.5em;
+            margin-bottom: 5px;
+        }
+        /* Estilos para el contenedor de Three.js */
+        #container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+        
+        /* Estilos para el panel de control (superpuesto) */
+        #info-panel {
+            position: relative;
+            z-index: 10;
+            font-size: 1em;
+            padding: 10px;
+            background-color: rgba(44, 44, 44, 0.8); /* Fondo semitransparente */
+            width: 95vw;
+            max-width: 400px;
+            margin: 10px auto;
+            border-radius: 8px;
+            text-align: left;
+        }
+        .control-group { margin-bottom: 5px; }
+        .slider-container { width: 90%; margin: 0 auto 10px 0; position: relative; }
+        .slider-label { display: block; font-size: 0.9em; margin-bottom: 2px; font-weight: bold; color: #1e90ff; }
+        
+        input[type=range] {
+            width: 100%;
+            height: 5px;
+            background: #555;
+            -webkit-appearance: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        #rango-description {
+            font-weight: bold;
+            color: #f0ad4e;
+            margin-top: 8px;
+            padding: 5px;
+            border-top: 1px solid #444;
+            font-size: 0.95em;
+        }
+        
+        /* Leyenda simple flotante */
+        #leyenda-flotante {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background-color: rgba(44, 44, 44, 0.8);
+            padding: 8px;
+            border-radius: 5px;
+            font-size: 0.8em;
+            z-index: 10;
+            text-align: left;
+        }
+        .leyenda-item { display: flex; align-items: center; margin-bottom: 3px; }
+        .color-box { width: 15px; height: 15px; border-radius: 3px; margin-right: 5px; }
+        .sum { background-color: #4CAF50; }
+        .cancel { background-color: #FF5733; }
+        
+    </style>
+</head>
+<body>
+
+    <div id="container"></div>
+
+    <div id="info-panel">
+        <h1>Simulador Acústico WebGL</h1>
+        
+        <div id="frecuencia-info" class="control-group">Frecuencia: 100 Hz (L.O.: 3.40 m) | Ideal: 1.70 m</div>
+        <label for="sliderFrecuencia" class="slider-label">Control de Frecuencia (Hz):</label>
+        <div class="slider-container">
+            <input type="range" id="sliderFrecuencia" min="50" max="400" step="5" value="100" oninput="actualizarValores()"> 
+        </div>
+        
+        <div id="separacion-info" class="control-group">Separación: 0.85 metros - Máxima Coherencia</div>
+        <label for="sliderSeparacion" class="slider-label">Control de Separación (Metros):</label>
+        <div class="slider-container">
+            <input type="range" id="sliderSeparacion" min="0.1" max="4.0" step="0.05" value="0.85" oninput="actualizarValores()">
+        </div>
+        
+        <div id="rango-description"></div>
+    </div>
+    
+    <div id="leyenda-flotante">
+        <p style="font-weight: bold; margin: 0 0 5px 0;">Leyenda:</p>
+        <div class="leyenda-item"><span class="color-box sum"></span> Verde: Refuerzo (Suma)</div>
+        <div class="leyenda-item"><span class="color-box cancel"></span> Rojo: Cancelación (Resta)</div>
+    </div>
+
+    <!-- Carga de la librería Three.js (la necesitamos para WebGL) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <script>
+        // --- INICIALIZACIÓN DE THREE.JS ---
+        let scene, camera, renderer, plane, material, sub1, sub2;
+        const SIMULATION_SIZE = 8; // Tamaño del plano en metros (8x8)
+        const SEGMENTS = 256; // Detalle del plano (256x256 vértices)
+        const PIXELS_PER_METER = SEGMENTS / SIMULATION_SIZE;
+
+        function initThree() {
+            scene = new THREE.Scene();
+            
+            // Cámara (Perspectiva ortográfica para una vista superior plana)
+            const aspectRatio = window.innerWidth / window.innerHeight;
+            const size = SIMULATION_SIZE / 2;
+            camera = new THREE.OrthographicCamera(-size * aspectRatio, size * aspectRatio, size, -size, 0.1, 1000);
+            camera.position.set(0, 5, 0); // Posición superior
+            camera.lookAt(0, 0, 0);
+
+            // Renderizador
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setClearColor(0x1e1e1e);
+            document.getElementById('container').appendChild(renderer.domElement);
+
+            // Luz ambiental
+            scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+
+            // Geometría del Plano (la superficie de la audiencia)
+            const geometry = new THREE.PlaneGeometry(SIMULATION_SIZE, SIMULATION_SIZE, SEGMENTS, SEGMENTS);
+            
+            // Material personalizado con Shader
+            material = new THREE.ShaderMaterial({
+                uniforms: {
+                    u_lambda: { value: 3.4 }, // Longitud de onda inicial (100Hz)
+                    u_separation: { value: 0.85 }, // Separación inicial
+                    u_size: { value: SIMULATION_SIZE },
+                    u_red_color: { value: new THREE.Color(0xFF5733) }, // Cancelación (Rojo)
+                    u_green_color: { value: new THREE.Color(0x4CAF50) }, // Refuerzo (Verde)
+                },
+                vertexShader: `
+                    varying vec2 vUv;
+                    void main() {
+                        vUv = uv;
+                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                    }
+                `,
+                fragmentShader: `
+                    uniform float u_lambda;
+                    uniform float u_separation;
+                    uniform float u_size;
+                    uniform vec3 u_red_color;
+                    uniform vec3 u_green_color;
+                    varying vec2 vUv;
+                    
+                    void main() {
+                        // Coordenadas del punto en metros (ej: de -4 a 4)
+                        vec2 pos = (vUv - 0.5) * u_size; 
+
+                        // Posición de los subwoofers (separación horizontal a lo largo del eje X)
+                        float sub_offset = u_separation / 2.0;
+                        
+                        // Distancia al subwoofer 1 y 2
+                        float r1 = distance(pos, vec2(-sub_offset, 0.0));
+                        float r2 = distance(pos, vec2(sub_offset, 0.0));
+                        
+                        // Diferencia de fase (en radianes)
+                        float deltaR = r2 - r1;
+                        float phase_diff = (deltaR / u_lambda) * 6.2831853; // 2 * PI
+                        
+                        // Intensidad resultante (de 0 a 2)
+                        float intensity = 2.0 * abs(cos(phase_diff / 2.0));
+
+                        // Mapeo de color: (0=Cancelación, 2=Refuerzo)
+                        vec3 final_color = mix(u_red_color, u_green_color, intensity / 2.0);
+                        
+                        // Degradado suave (potencia para hacer la transición más dramática)
+                        float power = pow(intensity / 2.0, 1.5);
+                        final_color = mix(u_red_color, u_green_color, power);
+
+
+                        // Para oscurecer los bordes de la simulación
+                        float border_fade = 1.0 - smoothstep(2.5, 4.0, length(pos));
+                        final_color *= border_fade;
+
+
+                        gl_FragColor = vec4(final_color, 1.0);
+                    }
+                `,
+                transparent: true,
+                side: THREE.DoubleSide
+            });
+
+            plane = new THREE.Mesh(geometry, material);
+            plane.rotation.x = -Math.PI / 2; // Gira el plano para que esté horizontal
+            scene.add(plane);
+            
+            // Representación de los bafles (rectángulos 3D)
+            const bafleGeo = new THREE.BoxGeometry(0.3, 0.5, 0.3); // 30cm x 50cm x 30cm
+            const bafleMat = new THREE.MeshBasicMaterial({ color: 0x444444, wireframe: false });
+
+            sub1 = new THREE.Mesh(bafleGeo, bafleMat);
+            sub2 = new THREE.Mesh(bafleGeo, bafleMat);
+            
+            // Posicionar inicialmente los bafles
+            sub1.position.x = -0.85 / 2; 
+            sub2.position.x = 0.85 / 2;
+            
+            scene.add(sub1);
+            scene.add(sub2);
+            
+            window.addEventListener('resize', onWindowResize, false);
+        }
+
+        function onWindowResize() {
+            const aspectRatio = window.innerWidth / window.innerHeight;
+            const size = SIMULATION_SIZE / 2;
+            camera.left = -size * aspectRatio;
+            camera.right = size * aspectRatio;
+            camera.top = size;
+            camera.bottom = -size;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // --- BUCLE DE ANIMACIÓN ---
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+        
+        // --- CÁLCULOS Y CONTROLES ---
+        const VELOCIDAD_SONIDO = 340; // m/s
+        
+        function getRangeDescription(f) {
+            if (f < 63) { return "Sub Bajos (25-63 Hz): Frecuencias del bajo, bombos y synths. (Subwoofers)"; } 
+            else if (f >= 63 && f < 250) { return "Bajos (63-250 Hz): Frecuencias del bombo, toms y zona de corte. (Subwoofers/Woofers)"; } 
+            else if (f >= 250 && f <= 400) { return "Medios Bajos (250-500 Hz): Cuerpo del Snare, rango que necesita control. (Woofers/Medios)"; } 
+            return "";
+        }
+
+        window.actualizarValores = function() {
+            const frecuenciaHz = parseFloat(document.getElementById('sliderFrecuencia').value);
+            const separacionMetros = parseFloat(document.getElementById('sliderSeparacion').value);
+            const LONGITUD_ONDA = VELOCIDAD_SONIDO / frecuenciaHz;
+            
+            // 1. ACTUALIZAR SHADER (Renderizado WebGL)
+            if (material) {
+                material.uniforms.u_lambda.value = LONGITUD_ONDA;
+                material.uniforms.u_separation.value = separacionMetros;
+            }
+            
+            // 2. ACTUALIZAR POSICIÓN DE BAFLES 3D
+            const offset = separacionMetros / 2;
+            if (sub1 && sub2) {
+                sub1.position.x = -offset;
+                sub2.position.x = offset;
+            }
+
+            // 3. ACTUALIZAR TEXTO EN EL PANEL (UI)
+            const coherenciaMax = LONGITUD_ONDA / 4;
+            const controlDirectividad = LONGITUD_ONDA / 2;
+            let comentarioSeparacion = '';
+
+            if (separacionMetros < coherenciaMax * 1.1) {
+                comentarioSeparacion = " - Máxima Coherencia (Fuente única)";
+            } else if (separacionMetros < controlDirectividad * 1.1) {
+                comentarioSeparacion = " - Ideal para Control de Directividad (Arreglo Lineal)";
+            } else if (separacionMetros >= controlDirectividad * 1.1) {
+                 comentarioSeparacion = " - **LOBING** Severo (Cancelaciones fuertes)";
+            } 
+            
+            document.getElementById('frecuencia-info').innerHTML = `Frecuencia: ${frecuenciaHz.toFixed(0)} Hz (L.O.: ${LONGITUD_ONDA.toFixed(2)} m) | Ideal: ${controlDirectividad.toFixed(2)} m`;
+            document.getElementById('separacion-info').innerHTML = `Separación: ${separacionMetros.toFixed(2)} m ${comentarioSeparacion}`;
+            document.getElementById('rango-description').innerHTML = getRangeDescription(frecuenciaHz);
+        }
+
+        // --- INICIO DE LA APLICACIÓN ---
+        initThree();
+        actualizarValores();
+        animate();
+    </script>
+
+</body>
+</html>

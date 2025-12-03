@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simulación de Subwoofers Interactivo (Móvil)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        :root {
+            --canvas-width: 95vw; /* Más ancho para móviles */
+            --info-width: 95vw;
+            --slider-width: 90%;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1e1e1e;
+            color: #ffffff;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+        h1 {
+            color: #4CAF50;
+            padding-top: 15px;
+            font-size: 1.5em; /* Reducido para móviles */
+        }
+        canvas {
+            border: 2px solid #555;
+            margin: 10px auto;
+            display: block;
+            background-color: #2c2c2c;
+            width: var(--canvas-width);
+            max-width: 800px;
+            height: auto;
+        }
+        .leyenda {
+            text-align: left;
+            width: var(--info-width);
+            max-width: 800px;
+            margin: 0 auto 10px auto;
+            font-size: 0.9em;
+        }
+        .leyenda div { margin-bottom: 3px; }
+        .leyenda .sum, .leyenda .cancel {
+            display: inline-block;
+            width: 15px; /* Iconos más pequeños */
+            height: 15px;
+            margin-right: 8px;
+            vertical-align: middle;
+            border-radius: 3px;
+        }
+        .leyenda .sum { background-color: #4CAF50; }
+        .leyenda .cancel { background-color: #FF5733; }
+        
+        #info-panel {
+            font-size: 1em; /* Ajuste para móvil */
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px solid #444;
+            background-color: #2c2c2c;
+            width: var(--info-width);
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            border-radius: 8px;
+        }
+        .control-group {
+            margin-bottom: 3px;
+        }
+        
+        .slider-container {
+            width: var(--slider-width);
+            margin: 0 auto 10px auto;
+            position: relative;
+        }
+        
+        .slider-label {
+            display: block;
+            text-align: left;
+            font-size: 0.9em;
+            margin-bottom: 2px;
+            font-weight: bold;
+            color: #1e90ff;
+        }
+        
+        input[type=range] {
+            width: 100%;
+            height: 5px;
+            background: #555;
+            -webkit-appearance: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        #rango-description {
+            font-weight: bold;
+            color: #f0ad4e;
+            margin-top: 8px;
+            padding: 5px;
+            border-top: 1px solid #444;
+            font-size: 0.95em;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Simulador Acústico de Subwoofers</h1>
+
+    <div id="info-panel">
+        
+        <div id="frecuencia-info" class="control-group">Frecuencia Actual: 100 Hz (Longitud de Onda: 3.40 m)</div>
+        <label for="sliderFrecuencia" class="slider-label">Control de Frecuencia (Hz):</label>
+        <div class="slider-container">
+            <input type="range" id="sliderFrecuencia" min="50" max="400" step="5" value="100" oninput="actualizarValores()"> 
+        </div>
+        
+        <div id="separacion-info" class="control-group">Separación Actual: 0.85 metros - Máxima Coherencia</div>
+        <label for="sliderSeparacion" class="slider-label">Control de Separación (Metros):</label>
+        <div class="slider-container">
+            <input type="range" id="sliderSeparacion" min="0.1" max="4.0" step="0.05" value="0.85" oninput="actualizarValores()">
+        </div>
+        
+        <div id="rango-description"></div>
+    </div>
+
+    <canvas id="subwooferCanvas" width="800" height="400"></canvas>
+
+    <div class="leyenda">
+        <p><strong>Leyenda:</strong></p>
+        <div><span class="sum"></span> Color **Verde**: Zonas de **Refuerzo** (Suma de energía, sonido más fuerte)</div>
+        <div><span class="cancel"></span> Color **Rojo**: Zonas de **Cancelación** (Resta de energía, "agujeros" de sonido)</div>
+    </div>
+
+    <script>
+        // Parámetros Fijos
+        const VELOCIDAD_SONIDO = 340; // m/s
+        
+        // Parámetros del Canvas
+        const canvas = document.getElementById('subwooferCanvas');
+        const ctx = canvas.getContext('2d');
+        let WIDTH = 800;
+        let HEIGHT = 400;
+        const BAFLE_WIDTH = 30;
+        const BAFLE_HEIGHT = 45;
+        const PIXELS_PER_METER = 200;
+
+        // Variables de estado
+        let frecuenciaHz = parseFloat(document.getElementById('sliderFrecuencia').value);
+        let separacionMetros = parseFloat(document.getElementById('sliderSeparacion').value);
+        let LONGITUD_ONDA = VELOCIDAD_SONIDO / frecuenciaHz;
+
+        // FUNCIÓN PARA OBTENER LA DESCRIPCIÓN DEL RANGO
+        function getRangeDescription(f) {
+            if (f < 63) {
+                return "Sub Bajos (25 - 63 Hz): Frecuencias del bajo, bombos y algunos synths. (Subwoofers)";
+            } else if (f >= 63 && f < 250) {
+                return "Bajos (63 - 250 Hz): Frecuencias del bombo, toms y es una zona de corte de muchos instrumentos. (Subwoofers/Woofers)";
+            } else if (f >= 250 && f <= 400) {
+                return "Medios Bajos (250 - 500 Hz): Se encuentra el cuerpo del Snare, normalmente un rango que necesita mucho control. (Woofers/Medios)";
+            } else {
+                 return "Frecuencia en el límite superior del rango de bajos.";
+            }
+        }
+
+        // ----------------------------------------------------
+        // FUNCIÓN PRINCIPAL DE DIBUJO
+        // ----------------------------------------------------
+        function drawPattern() {
+            ctx.clearRect(0, 0, WIDTH, HEIGHT);
+
+            // 1. DIBUJAR LA GRILLA (1m x 1m)
+            ctx.strokeStyle = '#3a3a3a';
+            ctx.lineWidth = 0.5;
+            for(let i = -2; i <= 2; i++) {
+                const xPos = WIDTH / 2 + i * PIXELS_PER_METER;
+                ctx.beginPath(); ctx.moveTo(xPos, 0); ctx.lineTo(xPos, HEIGHT); ctx.stroke();
+            }
+            for(let i = -2; i <= 2; i++) {
+                const yPos = HEIGHT / 2 + i * PIXELS_PER_METER;
+                ctx.beginPath(); ctx.moveTo(0, yPos); ctx.lineTo(WIDTH, yPos); ctx.stroke();
+            }
+
+            // 2. Coordenadas de los subwoofers
+            const sub1X = WIDTH / 2 - (separacionMetros / 2) * PIXELS_PER_METER;
+            const sub1Y = HEIGHT / 2;
+            const sub2X = WIDTH / 2 + (separacionMetros / 2) * PIXELS_PER_METER;
+
+            // 3. Iterar sobre cada pixel para calcular la fase (Interferencia)
+            for (let x = 0; x < WIDTH; x += 3) {
+                for (let y = 0; y < HEIGHT; y += 3) {
+                    
+                    const xMetros = (x - WIDTH / 2) / PIXELS_PER_METER;
+                    const yMetros = (y - HEIGHT / 2) / PIXELS_PER_METER;
+
+                    const r1 = Math.sqrt(Math.pow(xMetros + separacionMetros / 2, 2) + Math.pow(yMetros, 2));
+                    const r2 = Math.sqrt(Math.pow(xMetros - separacionMetros / 2, 2) + Math.pow(yMetros, 2));
+                    
+                    const deltaR = r2 - r1; 
+                    const faseDiferencia = (deltaR / LONGITUD_ONDA) * (2 * Math.PI);
+
+                    const intensidad = 2 * Math.abs(Math.cos(faseDiferencia / 2));
+                    
+                    let color;
+                    if (intensidad > 1.5) { color = `rgba(76, 175, 80, ${intensidad * 0.5})`; 
+                    } else if (intensidad < 0.5) { color = `rgba(255, 87, 51, ${1 - intensidad * 0.5})`; 
+                    } else { color = `rgba(255, 255, 255, 0.05)`; }
+
+                    ctx.fillStyle = color;
+                    ctx.fillRect(x, y, 3, 3);
+                }
+            }
+            
+            // 4. Dibujar los BAFLES (Rectángulos)
+            ctx.fillStyle = '#444444'; 
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 1;
+            
+            // Bafle 1
+            ctx.fillRect(sub1X - BAFLE_WIDTH / 2, sub1Y - BAFLE_HEIGHT / 2, BAFLE_WIDTH, BAFLE_HEIGHT);
+            ctx.strokeRect(sub1X - BAFLE_WIDTH / 2, sub1Y - BAFLE_HEIGHT / 2, BAFLE_WIDTH, BAFLE_HEIGHT);
+            
+            // Bafle 2
+            ctx.fillRect(sub2X - BAFLE_WIDTH / 2, sub1Y - BAFLE_HEIGHT / 2, BAFLE_WIDTH, BAFLE_HEIGHT);
+            ctx.strokeRect(sub2X - BAFLE_WIDTH / 2, sub1Y - BAFLE_HEIGHT / 2, BAFLE_WIDTH, BAFLE_HEIGHT);
+
+
+            // 5. Dibujar la línea de AUDIENCIA
+            ctx.strokeStyle = '#ffffff';
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(WIDTH / 2, 0);
+            ctx.lineTo(WIDTH / 2, HEIGHT);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+
+            // 6. DETALLES DE TEXTO EN EL CANVAS
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 24px Segoe UI'; /* **Aumento de fuente** para mejor visibilidad */
+            ctx.textAlign = 'center';
+
+            // 6a. Frecuencia Elegida (Superior)
+            ctx.fillText(`${frecuenciaHz.toFixed(0)} Hz`, WIDTH / 2, 40);
+
+            // 6b. Separación de Bafles (Subwoofers)
+            ctx.font = 'bold 18px Segoe UI'; /* **Aumento de fuente** para separación */
+            const separacionTexto = `${separacionMetros.toFixed(2)} m`;
+            
+            // Dibujar línea de separación
+            ctx.strokeStyle = '#f0ad4e';
+            ctx.setLineDash([2, 4]);
+            ctx.beginPath();
+            ctx.moveTo(sub1X + BAFLE_WIDTH / 2, sub1Y - BAFLE_HEIGHT/2 - 5);
+            ctx.lineTo(sub2X - BAFLE_WIDTH / 2, sub1Y - BAFLE_HEIGHT/2 - 5);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // Dibujar el texto centrado entre los subwoofers
+            ctx.textAlign = 'center';
+            ctx.fillText(separacionTexto, WIDTH / 2, sub1Y - BAFLE_HEIGHT/2 - 15);
+        }
+
+        // ----------------------------------------------------
+        // FUNCIONES DE CONTROL
+        // ----------------------------------------------------
+        function resizeCanvas() {
+            drawPattern();
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+
+        window.actualizarValores = function() {
+            frecuenciaHz = parseFloat(document.getElementById('sliderFrecuencia').value);
+            separacionMetros = parseFloat(document.getElementById('sliderSeparacion').value);
+            LONGITUD_ONDA = VELOCIDAD_SONIDO / frecuenciaHz;
+            
+            const coherenciaMax = LONGITUD_ONDA / 4;
+            const controlDirectividad = LONGITUD_ONDA / 2;
+
+            let comentarioSeparacion = '';
+
+            if (separacionMetros < coherenciaMax * 1.1) {
+                comentarioSeparacion = " - Máxima Coherencia (Fuente única)";
+            } else if (separacionMetros < controlDirectividad * 1.1) {
+                comentarioSeparacion = " - Ideal para Control de Directividad (Arreglo Lineal)";
+            } else if (separacionMetros >= controlDirectividad * 1.1) {
+                 comentarioSeparacion = " - **LOBING** Severo (Cancelaciones fuertes)";
+            } 
+            
+            // Actualizar la información en el panel (más concisa para móviles)
+            document.getElementById('frecuencia-info').innerHTML = `Frecuencia: ${frecuenciaHz.toFixed(0)} Hz (L.O.: ${LONGITUD_ONDA.toFixed(2)} m) | Ideal: ${controlDirectividad.toFixed(2)} m`;
+            document.getElementById('separacion-info').innerHTML = `Separación: ${separacionMetros.toFixed(2)} m ${comentarioSeparacion}`;
+            document.getElementById('rango-description').innerHTML = getRangeDescription(frecuenciaHz);
+
+            drawPattern();
+        }
+
+        // Ejecutar al cargar
+        actualizarValores();
+    </script>
+
+</body>
+</html>
