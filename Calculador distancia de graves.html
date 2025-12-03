@@ -51,6 +51,13 @@
         .control-group {
             margin-bottom: 15px;
         }
+        #rango-description {
+            font-weight: bold;
+            color: #f0ad4e; /* Amarillo/Naranja para la descripción */
+            margin-top: 10px;
+            padding: 5px;
+            border-top: 1px solid #444;
+        }
         input[type=range] {
             width: 90%;
             height: 5px;
@@ -67,10 +74,11 @@
 
     <div id="info-panel">
         <div id="frecuencia-info" class="control-group">Frecuencia Actual: 100 Hz (Longitud de Onda: 3.40 m)</div>
-        <input type="range" id="sliderFrecuencia" min="50" max="250" step="5" value="100" oninput="actualizarValores()">
-        
+        <!-- Rango modificado de 50 Hz a 400 Hz -->
+        <input type="range" id="sliderFrecuencia" min="50" max="400" step="5" value="100" oninput="actualizarValores()"> 
         <div id="separacion-info" class="control-group">Separación Actual: 0.85 metros - Máxima Coherencia</div>
         <input type="range" id="sliderSeparacion" min="0.1" max="4.0" step="0.05" value="0.85" oninput="actualizarValores()">
+        <div id="rango-description"></div>
     </div>
 
     <canvas id="subwooferCanvas" width="800" height="400"></canvas>
@@ -90,13 +98,27 @@
         const ctx = canvas.getContext('2d');
         const WIDTH = canvas.width;
         const HEIGHT = canvas.height;
-        const SUB_DIAMETER = 15; // Radio del Subwoofer en pixeles
-        const PIXELS_PER_METER = 200; // Escala: 1 metro = 200 pixeles
+        const SUB_DIAMETER = 15;
+        const PIXELS_PER_METER = 200;
 
         // Variables de estado
         let frecuenciaHz = parseFloat(document.getElementById('sliderFrecuencia').value);
         let separacionMetros = parseFloat(document.getElementById('sliderSeparacion').value);
         let LONGITUD_ONDA = VELOCIDAD_SONIDO / frecuenciaHz;
+
+        // FUNCIÓN PARA OBTENER LA DESCRIPCIÓN DEL RANGO (Basado en la imagen)
+        function getRangeDescription(f) {
+            if (f < 63) {
+                return "Sub Bajos (25 - 63 Hz): Comúnmente las frecuencias del bajo, bombos y algunos synths.";
+            } else if (f >= 63 && f < 250) {
+                return "Bajos (63 - 250 Hz): Frecuencias del bombo, toms y es una zona de corte de muchos instrumentos.";
+            } else if (f >= 250 && f <= 400) {
+                return "Medios Bajos (250 - 500 Hz): Se encuentra el cuerpo del Snare, normalmente un rango que necesita mucho control.";
+            } else {
+                 // Si se expandiera el rango del slider, estos serían los siguientes
+                 return "Frecuencia en el límite superior del rango de bajos.";
+            }
+        }
 
         // Función principal de dibujo
         function drawPattern() {
@@ -112,33 +134,24 @@
             for (let x = 0; x < WIDTH; x += 3) {
                 for (let y = 0; y < HEIGHT; y += 3) {
                     
-                    // Convertir coordenadas de pixeles a metros (origen en el centro)
                     const xMetros = (x - WIDTH / 2) / PIXELS_PER_METER;
                     const yMetros = (y - HEIGHT / 2) / PIXELS_PER_METER;
 
-                    // Distancia al Subwoofer 1 y 2 en metros
                     const r1 = Math.sqrt(Math.pow(xMetros + separacionMetros / 2, 2) + Math.pow(yMetros, 2));
                     const r2 = Math.sqrt(Math.pow(xMetros - separacionMetros / 2, 2) + Math.pow(yMetros, 2));
                     
-                    // Diferencia de camino (path difference)
                     const deltaR = r2 - r1; 
-                    
-                    // Diferencia de Fase en Radianes
                     const faseDiferencia = (deltaR / LONGITUD_ONDA) * (2 * Math.PI);
 
-                    // Amplitud Resultante
                     const intensidad = 2 * Math.abs(Math.cos(faseDiferencia / 2));
                     
                     let color;
                     if (intensidad > 1.5) {
-                         // Refuerzo (Verde)
                         color = `rgba(76, 175, 80, ${intensidad * 0.5})`; 
                     } else if (intensidad < 0.5) {
-                        // Cancelación (Rojo)
                         color = `rgba(255, 87, 51, ${1 - intensidad * 0.5})`; 
                     } else {
-                        // Zona de transición (transparencia muy baja)
-                         color = `rgba(255, 255, 255, 0.05)`; 
+                        color = `rgba(255, 255, 255, 0.05)`; 
                     }
 
                     ctx.fillStyle = color;
@@ -147,7 +160,7 @@
             }
             
             // 3. Dibujar Subwoofers (círculos)
-            ctx.fillStyle = '#1e90ff'; // Azul
+            ctx.fillStyle = '#1e90ff';
             ctx.beginPath();
             ctx.arc(sub1X, sub1Y, SUB_DIAMETER, 0, 2 * Math.PI);
             ctx.fill();
@@ -155,7 +168,7 @@
             ctx.arc(sub2X, sub2Y, SUB_DIAMETER, 0, 2 * Math.PI);
             ctx.fill();
 
-            // 4. Dibujar la línea de audiencia (eje Y, en el centro horizontal)
+            // 4. Dibujar la línea de audiencia
             ctx.strokeStyle = '#ffffff';
             ctx.setLineDash([5, 5]);
             ctx.beginPath();
@@ -178,22 +191,22 @@
             const coherenciaMax = LONGITUD_ONDA / 4;
             const controlDirectividad = LONGITUD_ONDA / 2;
 
-            let comentario = '';
+            let comentarioSeparacion = '';
 
-            // Lógica de comentarios
             if (separacionMetros < coherenciaMax * 1.1) {
-                comentario = " - Máxima Coherencia (Los subs actúan como una fuente única)";
+                comentarioSeparacion = " - Máxima Coherencia (Los subs actúan como una fuente única)";
             } else if (separacionMetros < controlDirectividad * 1.1) {
-                comentario = " - Ideal para Control de Directividad (Arreglo Lineal o Cardioide)";
+                comentarioSeparacion = " - Ideal para Control de Directividad (Arreglo Lineal o Cardioide)";
             } else if (separacionMetros >= controlDirectividad * 1.1) {
-                 comentario = " - **LOBING** Severo (Patrón irregular y cancelaciones fuertes)";
+                 comentarioSeparacion = " - **LOBING** Severo (Patrón irregular y cancelaciones fuertes)";
             } 
             
-            // Actualizar el panel de información
+            // 4. Actualizar el panel de información
             document.getElementById('frecuencia-info').innerHTML = `Frecuencia Actual: ${frecuenciaHz.toFixed(0)} Hz (Longitud de Onda: ${LONGITUD_ONDA.toFixed(2)} m)<br>Separación Ideal para Control: ${controlDirectividad.toFixed(2)} m`;
-            document.getElementById('separacion-info').innerHTML = `Separación Actual: ${separacionMetros.toFixed(2)} metros${comentario}`;
+            document.getElementById('separacion-info').innerHTML = `Separación Actual: ${separacionMetros.toFixed(2)} metros${comentarioSeparacion}`;
+            document.getElementById('rango-description').innerHTML = getRangeDescription(frecuenciaHz);
 
-            // 4. Redibujar
+            // 5. Redibujar
             drawPattern();
         }
 
