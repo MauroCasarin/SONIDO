@@ -62,71 +62,57 @@
 
     <div id="calculator-card" class="w-full max-w-xl bg-gray-800 p-6 md:p-8 rounded-xl shadow-2xl border border-gray-700">
         <h1 class="text-3xl font-extrabold text-white text-center mb-6">Cálculo de Distancia de Subgraves</h1>
-        <p class="text-gray-400 text-center mb-8">Selecciona la frecuencia de corte (Hz) para calcular la separación ideal y visualizar la interferencia.</p>
+        <!-- CAMBIO: Texto introductorio simplificado -->
+        <p class="text-gray-400 text-center mb-8">Selecciona la frecuencia de corte (Hz) para calcular la separación ideal</p>
 
         <!-- Sección de Control Deslizante (Slider) CON REGLA INFERIOR -->
         <div class="mb-6 p-4 bg-gray-700 rounded-lg shadow-inner">
-            <label for="frequency-slider" class="block text-lg font-semibold mb-3 text-white">Frecuencia de Corte (Crossover):</label>
-            <!-- Rango cambiado de 25 Hz a 600 Hz -->
-            <input type="range" id="frequency-slider" min="25" max="600" value="80" step="1"
+            <!-- CAMBIO: Etiqueta del deslizador simplificada -->
+            <label for="frequency-slider" class="block text-lg font-semibold mb-3 text-white">Selecciona la frecuencia.</label>
+            <!-- CAMBIO: Rango ajustado de 30 Hz a 300 Hz -->
+            <input type="range" id="frequency-slider" min="30" max="300" value="80" step="1"
                    class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer">
             <div class="flex justify-between mt-2 text-gray-400 font-mono text-sm relative h-10">
-                <!-- Regla de Frecuencias (Marcadores) - Actualizada a intervalos de 100 Hz -->
+                <!-- CAMBIO: Regla de Frecuencias (Marcadores) - Actualizada a intervalos de 100 Hz en el rango 30-300 Hz -->
                 <div class="absolute w-full -top-3">
-                    <!-- 25 Hz (Inicio) -->
+                    <!-- 30 Hz (Inicio) -->
                     <span class="frequency-marker" style="left: 0%;">
                         <span class="frequency-marker-line"></span>
-                        <span class="frequency-marker-text">25 Hz</span>
+                        <span class="frequency-marker-text">30 Hz</span>
                     </span>
-                    <!-- 100 Hz (Pos: 13.04%) -->
-                    <span class="frequency-marker" style="left: 13.04%;">
+                    <!-- 100 Hz (Pos: 25.93%) -->
+                    <span class="frequency-marker" style="left: 25.93%;">
                         <span class="frequency-marker-line"></span>
                         <span class="frequency-marker-text">100 Hz</span>
                     </span>
-                    <!-- 200 Hz (Pos: 30.43%) -->
-                    <span class="frequency-marker" style="left: 30.43%;">
+                    <!-- 200 Hz (Pos: 62.96%) -->
+                    <span class="frequency-marker" style="left: 62.96%;">
                         <span class="frequency-marker-line"></span>
                         <span class="frequency-marker-text">200 Hz</span>
                     </span>
-                    <!-- 300 Hz (Pos: 47.83%) -->
-                    <span class="frequency-marker" style="left: 47.83%;">
+                    <!-- 300 Hz (Fin) -->
+                    <span class="frequency-marker" style="left: 100%;">
                         <span class="frequency-marker-line"></span>
                         <span class="frequency-marker-text">300 Hz</span>
                     </span>
-                    <!-- 400 Hz (Pos: 65.22%) -->
-                    <span class="frequency-marker" style="left: 65.22%;">
-                        <span class="frequency-marker-line"></span>
-                        <span class="frequency-marker-text">400 Hz</span>
-                    </span>
-                    <!-- 500 Hz (Pos: 82.61%) -->
-                    <span class="frequency-marker" style="left: 82.61%;">
-                        <span class="frequency-marker-line"></span>
-                        <span class="frequency-marker-text">500 Hz</span>
-                    </span>
-                    <!-- 600 Hz (Fin) -->
-                    <span class="frequency-marker" style="left: 100%;">
-                        <span class="frequency-marker-line"></span>
-                        <span class="frequency-marker-text">600 Hz</span>
-                    </span>
                 </div>
                 <!-- Fin Regla de Frecuencias -->
-                <span class="text-xs text-gray-500">25 Hz</span>
+                <span class="text-xs text-gray-500">30 Hz</span>
                 <span id="current-frequency" class="text-2xl font-bold text-emerald-400">80 Hz</span>
-                <span class="text-xs text-gray-500">600 Hz</span>
+                <span class="text-xs text-gray-500">300 Hz</span>
             </div>
         </div>
 
         <!-- Sección de Rango de Frecuencia -->
         <div id="frequency-range-info" class="mb-8 p-4 bg-gray-900 rounded-lg border border-gray-700">
-            <h3 class="text-lg font-bold text-center mb-2 text-white"><span id="range-name">Rango: Bajos (Punch)</span></h3>
-            <p id="range-description" class="text-gray-400 text-sm text-center">Frecuencias del bombo y toms. Aquí se siente el 'punch' y es una zona de cruce común para altavoces principales.</p>
+            <h3 class="text-lg font-bold text-center mb-2 text-white"><span id="range-name">Rango: BAJOS</span></h3>
+            <p id="range-description" class="text-gray-400 text-sm text-center">Una frecuencia que puede sentirse retumbante, pero también añade calidez y potencia. Frecuencia donde instrumentos como el bombo o las cuerdas más graves del bajo pueden tener su fundamental, proporcionando esa sensación de "retumbo"</p>
         </div>
 
         <!-- Nueva Sección de Visualización de Distancia y Ondas -->
         <h2 class="text-xl font-bold text-white mb-3 text-center">Visualización de Interferencias</h2>
         <div id="canvas-container" class="w-full rounded-lg shadow-lg mb-4 p-2">
             <canvas id="subwoofer-canvas"></canvas>
-            <!-- LEYENDA DE COLORES ELIMINADA (Según petición del usuario) -->
         </div>
 
         <!-- Sección de Resultados Numéricos -->
@@ -149,14 +135,7 @@
                 </div>
             </div>
 
-            <!-- Distancia de Cancelación (λ/2) -->
-             <div class="p-4 bg-gray-700 rounded-lg flex items-center justify-between border-l-4 border-red-600">
-                <span class="text-gray-300 font-medium font-bold text-lg">Distancia de Cancelación:</span>
-                <div class="text-right">
-                    <span id="result-cancellation" class="text-2xl font-extrabold text-red-500">2.12 m</span>
-                    <span class="text-sm text-gray-400 block">Separación donde el sonido se anula</span>
-                </div>
-            </div>
+            <!-- DISTANCIA DE CANCELACIÓN ELIMINADA -->
 
             <!-- Distancia Máxima Teórica (2λ/3) -->
             <div class="p-4 bg-gray-700 rounded-lg flex items-center justify-between border-l-4 border-red-500">
@@ -177,25 +156,25 @@
         // Constante de velocidad del sonido en m/s
         const VELOCIDAD_SONIDO = 340;
 
-        // Definición de los rangos de frecuencia (actualizado para 25-600 Hz)
+        // CAMBIO: Definición de los rangos de frecuencia (actualizado para 30-300 Hz) con las nuevas descripciones
         const RANGOS_FRECUENCIA = [
             {
-                name: "Sub Bajos",
-                min: 25, 
+                name: "SUB BAJOS",
+                min: 30, 
                 max: 79, 
-                description: "Comúnmente las frecuencias del bajo, bombos y algunos syntes. Graves profundos y de impacto. Ideal para el acoplamiento de subgraves."
+                description: "A menudo se percibe como una vibración en lugar de un tono puro. Los sonidos de frecuencia ultra baja por debajo de 25 Hz son poco comunes en la mayoría de la música, que generalmente no baja de los 30 Hz."
             },
             {
-                name: "Bajos (Punch)",
+                name: "BAJOS",
                 min: 80, 
-                max: 159, 
-                description: "Frecuencias del bombo y toms. Aquí se siente el 'punch' y es una zona de cruce común para altavoces principales."
+                max: 149, 
+                description: "Una frecuencia que puede sentirse retumbante, pero también añade calidez y potencia. Frecuencia donde instrumentos como el bombo o las cuerdas más graves del bajo pueden tener su fundamental, proporcionando esa sensación de 'retumbo'."
             },
             {
-                name: "Medios Bajos (Cuerpo)",
-                min: 160, 
-                max: 600, 
-                description: "Se encuentra el cuerpo de la mayoría de los instrumentos y la parte inferior de la voz. El acoplamiento de subgraves se vuelve menos crítico aquí."
+                name: "MEDIOS BAJOS",
+                min: 150, 
+                max: 300, 
+                description: "Frecuencia que da 'cuerpo' y calidez al sonido. Un exceso de esta frecuencia puede hacer que el audio suene apagado, mientras que una cantidad adecuada proporciona una base sólida para la mezcla. Fundamental para la sensación de ritmo y potencia"
             }
         ];
 
@@ -205,7 +184,7 @@
         const currentFrequencyDisplay = document.getElementById('current-frequency');
         const resultWavelength = document.getElementById('result-wavelength');
         const resultInitial = document.getElementById('result-initial');
-        const resultCancellation = document.getElementById('result-cancellation'); 
+        // resultCancellation ELIMINADO
         const resultMax = document.getElementById('result-max');
         const rangeNameDisplay = document.getElementById('range-name');
         const rangeDescriptionDisplay = document.getElementById('range-description');
@@ -303,20 +282,16 @@
 
                 let color;
                 
-                // Mapeo de Colores según la Amplitud (M_amplitude: 0 a 1)
-                // Rojo para Refuerzo, Celeste para Cancelación, Verde para zona fuerte
-                if (M_amplitude > 0.9) {
+                // CAMBIO: Mapeo de Colores para eliminar la banda amarilla/naranja
+                if (M_amplitude > 0.8) {
                     // Máximo Refuerzo (Rojo)
                     color = '#f87171'; // Red-400
-                } else if (M_amplitude > 0.75) {
-                    // Zona Ideal/Fuerte (Verde)
+                } else if (M_amplitude >= 0.3) {
+                    // Zona Fuerte / Coherencia (Verde) - Absorbe la zona ideal y transicion
                     color = '#34d399'; // Green-400
-                } else if (M_amplitude < 0.2) {
-                    // Cancelación Profunda (Celeste)
-                    color = '#60a5fa'; // Blue-400 (Celeste)
                 } else {
-                    // Zona Intermedia (Amarillo/Naranja)
-                    color = '#fde047'; // Yellow-400
+                    // Cancelación Profunda (Celeste) - M_amplitude < 0.3
+                    color = '#60a5fa'; // Blue-400 (Celeste)
                 }
                 
                 // Dibujar el pixel/línea vertical del gradiente
@@ -401,7 +376,7 @@
             const textY = lineY - 10;
             
             // Mostrar la medida
-            const distanceText = `${idealDistance.toFixed(2)} m`; // Ya no incluye lambda/4
+            const distanceText = `${idealDistance.toFixed(2)} m`; 
 
             // Dibujar un fondo oscuro para el texto si los subs están muy cerca
             if (pixelSeparation < 100) {
@@ -473,8 +448,8 @@
                 rangeNameDisplay.textContent = `Rango: ${currentRange.name}`;
                 rangeDescriptionDisplay.textContent = currentRange.description;
             } else {
-                rangeNameDisplay.textContent = "Rango: Muy Alto (Fuera de Audio Profesional)";
-                rangeDescriptionDisplay.textContent = "Esta frecuencia está fuera de la zona típica de cruce de subgraves. Los cálculos son correctos, pero el acoplamiento no es relevante.";
+                rangeNameDisplay.textContent = "Rango: Fuera de Audio Profesional";
+                rangeDescriptionDisplay.textContent = "Esta frecuencia está fuera de la zona típica de cruce de subgraves (30-300 Hz). Los cálculos son correctos, pero el acoplamiento no es relevante.";
             }
         }
 
@@ -499,8 +474,7 @@
             // Fórmula: D_inicial = λ / 4
             const initialDistance = wavelength / 4;
 
-            // 6. CÁLCULO DE DISTANCIA DE CANCELACIÓN
-            // Fórmula: D_cancelación = λ / 2
+            // 6. CÁLCULO DE DISTANCIA DE CANCELACIÓN (variable interna, no mostrada)
             const cancellationDistance = wavelength / 2;
 
             // 7. CÁLCULO DE DISTANCIA MÁXIMA TEÓRICA
@@ -510,9 +484,8 @@
             // 8. Actualizar los resultados en la interfaz (redondeando a dos decimales)
             
             resultWavelength.textContent = `${wavelength.toFixed(2)} m`;
-            // Se quita la notación lambda del display principal:
             resultInitial.textContent = `${initialDistance.toFixed(2)} m`; 
-            resultCancellation.textContent = `${cancellationDistance.toFixed(2)} m`; 
+            // resultCancellation ELIMINADO del DOM
             resultMax.textContent = `${maxDistance.toFixed(2)} m`;
             
             // 9. Dibujar la visualización de la distancia y el gradiente
