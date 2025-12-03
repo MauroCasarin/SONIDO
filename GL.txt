@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Simulador Acústico WebGL (Ajuste de Pantalla)</title>
+    <title>Simulador Acústico WebGL (Final)</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body {
@@ -23,28 +23,26 @@
             margin-bottom: 5px;
         }
         
-        /* Contenedor del Panel de Control */
         #info-panel {
-            flex-shrink: 0; /* No se encogerá */
+            flex-shrink: 0;
             font-size: 1em;
             padding: 10px;
             background-color: #2c2c2c;
             width: 95vw;
             max-width: 800px;
-            margin: 10px auto 5px auto; /* Reducir margen inferior */
+            margin: 10px auto 5px auto;
             border-radius: 8px;
             text-align: left;
         }
         
-        /* Contenedor del Renderizado WebGL */
         #container {
-            flex-grow: 1; /* Ocupará el espacio restante */
+            flex-grow: 1;
             width: 95vw;
             max-width: 800px;
             margin: 5px auto 10px auto;
-            min-height: 200px; /* Mínimo para asegurar espacio */
+            min-height: 250px;
+            position: relative; 
         }
-        /* El canvas de Three.js ocupará todo el espacio del contenedor */
         #container canvas {
             display: block;
             width: 100% !important;
@@ -53,21 +51,34 @@
             border-radius: 8px;
         }
 
-
-        /* Estilos de Controles */
+        /* Estilos de las etiquetas de texto superpuestas */
+        .scene-label {
+            position: absolute;
+            background-color: rgba(30, 30, 30, 0.7);
+            color: white;
+            padding: 3px 6px;
+            border-radius: 4px;
+            font-size: 14px;
+            white-space: nowrap;
+            transform: translate(-50%, -50%); 
+            pointer-events: none;
+            border: 1px solid #444;
+        }
+        #label-freq {
+            font-size: 16px;
+            font-weight: bold;
+            color: #4CAF50; /* Verde */
+        }
+        #label-distancia {
+            font-size: 14px;
+            color: #f0ad4e; /* Amarillo */
+        }
+        
         .control-group { margin-bottom: 3px; }
         .slider-container { width: 95%; margin: 0 auto 10px 0; position: relative; }
         .slider-label { display: block; font-size: 0.9em; margin-bottom: 2px; font-weight: bold; color: #1e90ff; }
         input[type=range] { width: 100%; height: 5px; background: #555; -webkit-appearance: none; border-radius: 5px; cursor: pointer; }
-        
-        #rango-description {
-            font-weight: bold;
-            color: #f0ad4e;
-            margin-top: 8px;
-            padding: 5px;
-            border-top: 1px solid #444;
-            font-size: 0.95em;
-        }
+        #rango-description { font-weight: bold; color: #f0ad4e; margin-top: 8px; padding: 5px; border-top: 1px solid #444; font-size: 0.95em; }
         
     </style>
 </head>
@@ -95,92 +106,83 @@
         </p>
     </div>
 
-    <div id="container"></div>
+    <div id="container">
+        <!-- Etiquetas de texto que se actualizarán en el bucle de animación -->
+        <div id="label-freq" class="scene-label"></div>
+        <div id="label-distancia" class="scene-label"></div>
+    </div>
 
     <!-- Carga de la librería Three.js (la necesitamos para WebGL) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     
     <script>
-        // --- INICIALIZACIÓN DE THREE.JS ---
+        // --- VARIABLES GLOBALES ---
         let scene, camera, renderer, plane, material, sub1, sub2;
-        const SIMULATION_SIZE = 8; // Tamaño del plano en metros (8x8)
+        const SIMULATION_SIZE_Y = 8; 
         const SEGMENTS = 256;
+        const VELOCIDAD_SONIDO = 340; 
+        
+        // Elementos DOM para las etiquetas
+        const container = document.getElementById('container');
+        const labelFreq = document.getElementById('label-freq');
+        const labelDistancia = document.getElementById('label-distancia');
+        
+        // Vectores para la proyección de coordenadas
+        // Posición de la etiqueta de Frecuencia: Centro (X=0) y en el borde superior (Z=3.5m)
+        const vectorFreq = new THREE.Vector3(0, 0, SIMULATION_SIZE_Y / 2 * 0.875); 
+        // Posición de la etiqueta de Distancia: Centro (X=0) y justo detrás de los bafles (Z=-0.5m)
+        const vectorDist = new THREE.Vector3(0, 0, -0.5); 
 
+        // --- INICIALIZACIÓN DE THREE.JS ---
         function initThree() {
-            const container = document.getElementById('container');
-            
             // 1. Configuración del Renderizador
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setClearColor(0x1e1e1e);
             container.appendChild(renderer.domElement);
 
-            // 2. Escena y Luces
+            // 2. Escena, Cámara y Luces
             scene = new THREE.Scene();
             scene.add(new THREE.AmbientLight(0xffffff, 0.5));
-
-            // 3. Configuración de la Cámara (Inicializada en onWindowResize)
             camera = new THREE.OrthographicCamera();
             camera.position.set(0, 5, 0); 
             camera.lookAt(0, 0, 0);
 
-            // 4. Geometría del Plano
-            const geometry = new THREE.PlaneGeometry(SIMULATION_SIZE, SIMULATION_SIZE, SEGMENTS, SEGMENTS);
-            
-            // 5. Material con Shader (Interferencia)
+            // 3. Geometría y Shader
+            const geometry = new THREE.PlaneGeometry(SIMULATION_SIZE_Y, SIMULATION_SIZE_Y, SEGMENTS, SEGMENTS);
             material = new THREE.ShaderMaterial({
                 uniforms: {
-                    u_lambda: { value: 3.4 }, 
-                    u_separation: { value: 0.85 },
-                    u_size: { value: SIMULATION_SIZE },
-                    u_red_color: { value: new THREE.Color(0xFF5733) }, 
-                    u_green_color: { value: new THREE.Color(0x4CAF50) },
+                    u_lambda: { value: 3.4 }, u_separation: { value: 0.85 }, u_size: { value: SIMULATION_SIZE_Y },
+                    u_red_color: { value: new THREE.Color(0xFF5733) }, u_green_color: { value: new THREE.Color(0x4CAF50) },
                 },
                 vertexShader: `
                     varying vec2 vUv;
-                    void main() {
-                        vUv = uv;
-                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-                    }
+                    void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }
                 `,
                 fragmentShader: `
-                    uniform float u_lambda;
-                    uniform float u_separation;
-                    uniform float u_size;
-                    uniform vec3 u_red_color;
-                    uniform vec3 u_green_color;
-                    varying vec2 vUv;
-                    
+                    uniform float u_lambda; uniform float u_separation; uniform float u_size; uniform vec3 u_red_color; uniform vec3 u_green_color; varying vec2 vUv;
                     void main() {
                         vec2 pos = (vUv - 0.5) * u_size; 
                         float sub_offset = u_separation / 2.0;
-                        
                         float r1 = distance(pos, vec2(-sub_offset, 0.0));
                         float r2 = distance(pos, vec2(sub_offset, 0.0));
-                        
                         float deltaR = r2 - r1;
-                        float phase_diff = (deltaR / u_lambda) * 6.2831853; 
-                        
+                        float phase_diff = (deltaR / u_lambda) * 6.2831853;
                         float intensity = 2.0 * abs(cos(phase_diff / 2.0));
-
                         float power = pow(intensity / 2.0, 1.5);
                         vec3 final_color = mix(u_red_color, u_green_color, power);
-                        
-                        // Oscurecer los bordes de la simulación
                         float border_fade = 1.0 - smoothstep(2.5, 4.0, length(pos));
                         final_color *= border_fade;
-
                         gl_FragColor = vec4(final_color, 1.0);
                     }
                 `,
-                transparent: true,
-                side: THREE.DoubleSide
+                transparent: true, side: THREE.DoubleSide
             });
 
             plane = new THREE.Mesh(geometry, material);
             plane.rotation.x = -Math.PI / 2;
             scene.add(plane);
             
-            // 6. Representación de Bafles (Subwoofers 3D)
+            // 4. Bafles 3D
             const bafleGeo = new THREE.BoxGeometry(0.3, 0.5, 0.3);
             const bafleMat = new THREE.MeshBasicMaterial({ color: 0x808080, wireframe: false }); 
             const bafleEdgeMat = new THREE.LineBasicMaterial({ color: 0xffffff }); 
@@ -192,48 +194,68 @@
             sub2 = new THREE.Mesh(bafleGeo, bafleMat);
             sub2.add(new THREE.LineSegments(new THREE.EdgesGeometry(bafleGeo), bafleEdgeMat));
             scene.add(sub2);
-
-            // Posicionar Bafles
-            sub1.position.x = -0.85 / 2; 
-            sub2.position.x = 0.85 / 2;
             
             window.addEventListener('resize', onWindowResize, false);
-            onWindowResize(); // Llama a redimensionar la primera vez
+            onWindowResize();
         }
 
-        // --- FUNCIÓN DE AJUSTE DE PANTALLA CRÍTICA ---
         function onWindowResize() {
-            const container = document.getElementById('container');
             const rect = container.getBoundingClientRect();
             const width = rect.width;
             const height = rect.height;
             
             const aspectRatio = width / height;
             
-            // Definir un tamaño de visualización constante basado en la altura de la simulación
-            const viewHeight = SIMULATION_SIZE; 
-            const viewWidth = viewHeight * aspectRatio;
-            
-            // Actualizar la cámara ortográfica para que el plano ocupe todo el espacio.
+            let viewHeight = SIMULATION_SIZE_Y;
+            let viewWidth = viewHeight * aspectRatio;
+
+            if (viewWidth < SIMULATION_SIZE_Y) {
+                viewWidth = SIMULATION_SIZE_Y;
+                viewHeight = viewWidth / aspectRatio;
+            }
+
             camera.left = -viewWidth / 2;
             camera.right = viewWidth / 2;
             camera.top = viewHeight / 2;
             camera.bottom = -viewHeight / 2;
             
             camera.updateProjectionMatrix();
-            
             renderer.setSize(width, height);
         }
+
+        // --- FUNCIÓN DE ACTUALIZACIÓN DE ETIQUETAS DE TEXTO ---
+        function updateLabels() {
+            const rect = container.getBoundingClientRect();
+            const width = rect.width;
+            const height = rect.height;
+
+            // 1. Etiqueta de Frecuencia (Centro Superior)
+            // vectorFreq.x ya es 0 (centro)
+            // vectorFreq.z ya está en el borde superior (Z es el eje que va hacia el fondo)
+            
+            let posFreq = vectorFreq.clone().project(camera);
+            labelFreq.style.left = `${(posFreq.x * 0.5 + 0.5) * width}px`;
+            labelFreq.style.top = `${(-posFreq.y * 0.5 + 0.5) * height}px`;
+
+
+            // 2. Etiqueta de Distancia (Detrás de los bafles)
+            // vectorDist.x ya es 0 (centro de la separación)
+            
+            let posDist = vectorDist.clone().project(camera);
+            labelDistancia.style.left = `${(posDist.x * 0.5 + 0.5) * width}px`;
+            // Ajuste para estar justo encima de los bafles en Y (verticalmente)
+            labelDistancia.style.top = `${(-posDist.y * 0.5 + 0.5) * height - 30}px`;
+        }
+
 
         // --- BUCLE DE ANIMACIÓN ---
         function animate() {
             requestAnimationFrame(animate);
+            updateLabels(); // Actualiza la posición de las etiquetas DOM
             renderer.render(scene, camera);
         }
         
         // --- CÁLCULOS Y CONTROLES ---
-        const VELOCIDAD_SONIDO = 340; // m/s
-        
         function getRangeDescription(f) {
             if (f < 63) { return "Sub Bajos (25-63 Hz): Frecuencias del bajo, bombos y synths. (Subwoofers)"; } 
             else if (f >= 63 && f < 250) { return "Bajos (63-250 Hz): Frecuencias del bombo, toms y zona de corte. (Subwoofers/Woofers)"; } 
@@ -246,18 +268,20 @@
             const separacionMetros = parseFloat(document.getElementById('sliderSeparacion').value);
             const LONGITUD_ONDA = VELOCIDAD_SONIDO / frecuenciaHz;
             
-            // 1. ACTUALIZAR SHADER
+            // 1. ACTUALIZAR SHADER y BAFLES
             if (material) {
                 material.uniforms.u_lambda.value = LONGITUD_ONDA;
                 material.uniforms.u_separation.value = separacionMetros;
             }
-            
-            // 2. ACTUALIZAR POSICIÓN DE BAFLES 3D
             const offset = separacionMetros / 2;
             if (sub1 && sub2) {
                 sub1.position.x = -offset;
                 sub2.position.x = offset;
             }
+
+            // 2. ACTUALIZAR ETIQUETAS DOM
+            labelFreq.textContent = `Frecuencia: ${frecuenciaHz.toFixed(0)} Hz`;
+            labelDistancia.textContent = `Separación: ${separacionMetros.toFixed(2)} Metros`;
 
             // 3. ACTUALIZAR TEXTO EN EL PANEL (UI)
             const controlDirectividad = LONGITUD_ONDA / 2;
