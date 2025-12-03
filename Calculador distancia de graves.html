@@ -1,506 +1,204 @@
 <!DOCTYPE html>
-<html lang="es">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calculadora de Distancia de Subgraves</title>
-    <!-- Carga de Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Configuración para usar la fuente Inter -->
+    <title>Simulación de Subwoofers Interactivo (Modo Oscuro)</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #0d1117;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1e1e1e; /* Fondo Oscuro */
+            color: #ffffff; /* Texto Blanco */
+            text-align: center;
         }
-        /* Estilo personalizado para el control deslizante (slider) */
-        input[type=range]::-webkit-slider-thumb {
+        h1 {
+            color: #4CAF50; /* Título Verde */
+        }
+        canvas {
+            border: 2px solid #555;
+            margin: 20px auto;
+            display: block;
+            background-color: #2c2c2c; /* Fondo del Canvas */
+        }
+        .leyenda {
+            text-align: left;
+            width: 800px;
+            margin: 0 auto;
+        }
+        .leyenda div {
+            margin-bottom: 5px;
+        }
+        .leyenda .sum, .leyenda .cancel {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+            vertical-align: middle;
+            border-radius: 4px;
+        }
+        .leyenda .sum { background-color: #4CAF50; } /* Verde para Suma */
+        .leyenda .cancel { background-color: #FF5733; } /* Rojo para Cancelación */
+        
+        #info-panel {
+            font-size: 1.2em;
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #444;
+            background-color: #2c2c2c;
+            width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            border-radius: 8px;
+        }
+        .control-group {
+            margin-bottom: 15px;
+        }
+        input[type=range] {
+            width: 90%;
+            height: 5px;
+            background: #555;
             -webkit-appearance: none;
-            border: 1px solid #000;
-            height: 24px;
-            width: 24px;
-            border-radius: 50%;
-            background: #10b981; /* Esmeralda 500 */
+            border-radius: 5px;
             cursor: pointer;
-            box-shadow: 0 0 5px rgba(16, 185, 129, 0.7);
-        }
-        input[type=range]::-moz-range-thumb {
-            height: 24px;
-            width: 24px;
-            border-radius: 50%;
-            background: #10b981;
-            cursor: pointer;
-            box-shadow: 0 0 5px rgba(16, 185, 129, 0.7);
-        }
-        /* Estilo para el contenedor del canvas */
-        #canvas-container {
-            background-color: #1f2937; /* Gray-800 oscuro */
-            border: 1px solid #374151; /* Gray-700 */
-        }
-        /* Estilos para la regla de frecuencia */
-        .frequency-marker {
-            position: absolute;
-            top: 0;
-            transform: translateX(-50%);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        .frequency-marker-line {
-            width: 1px;
-            height: 8px;
-            background-color: #4b5563;
-        }
-        .frequency-marker-text {
-            font-size: 0.75rem;
-            color: #9ca3af;
-            margin-top: 2px;
         }
     </style>
 </head>
-<body class="p-4 md:p-8 min-h-screen flex items-center justify-center">
+<body>
 
-    <div id="calculator-card" class="w-full max-w-xl bg-gray-800 p-6 md:p-8 rounded-xl shadow-2xl border border-gray-700">
-        <h1 class="text-3xl font-extrabold text-white text-center mb-6">Cálculo de Distancia de Subgraves</h1>
-        <!-- CAMBIO: Texto introductorio simplificado -->
-        <p class="text-gray-400 text-center mb-8">Selecciona la frecuencia de corte (Hz) para calcular la separación ideal</p>
+    <h1>Simulador Acústico de Subwoofers</h1>
 
-        <!-- Sección de Control Deslizante (Slider) CON REGLA INFERIOR -->
-        <div class="mb-6 p-4 bg-gray-700 rounded-lg shadow-inner">
-            <!-- CAMBIO: Etiqueta del deslizador simplificada -->
-            <label for="frequency-slider" class="block text-lg font-semibold mb-3 text-white">Selecciona la frecuencia.</label>
-            <!-- CAMBIO: Rango ajustado de 30 Hz a 300 Hz -->
-            <input type="range" id="frequency-slider" min="30" max="300" value="80" step="1"
-                   class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer">
-            <div class="flex justify-between mt-2 text-gray-400 font-mono text-sm relative h-10">
-                <!-- CAMBIO: Regla de Frecuencias (Marcadores) - Actualizada a intervalos de 100 Hz en el rango 30-300 Hz -->
-                <div class="absolute w-full -top-3">
-                    <!-- 30 Hz (Inicio) -->
-                    <span class="frequency-marker" style="left: 0%;">
-                        <span class="frequency-marker-line"></span>
-                        <span class="frequency-marker-text">30 Hz</span>
-                    </span>
-                    <!-- 100 Hz (Pos: 25.93%) -->
-                    <span class="frequency-marker" style="left: 25.93%;">
-                        <span class="frequency-marker-line"></span>
-                        <span class="frequency-marker-text">100 Hz</span>
-                    </span>
-                    <!-- 200 Hz (Pos: 62.96%) -->
-                    <span class="frequency-marker" style="left: 62.96%;">
-                        <span class="frequency-marker-line"></span>
-                        <span class="frequency-marker-text">200 Hz</span>
-                    </span>
-                    <!-- 300 Hz (Fin) -->
-                    <span class="frequency-marker" style="left: 100%;">
-                        <span class="frequency-marker-line"></span>
-                        <span class="frequency-marker-text">300 Hz</span>
-                    </span>
-                </div>
-                <!-- Fin Regla de Frecuencias -->
-                <span class="text-xs text-gray-500">30 Hz</span>
-                <span id="current-frequency" class="text-2xl font-bold text-emerald-400">80 Hz</span>
-                <span class="text-xs text-gray-500">300 Hz</span>
-            </div>
-        </div>
-
-        <!-- Sección de Rango de Frecuencia -->
-        <div id="frequency-range-info" class="mb-8 p-4 bg-gray-900 rounded-lg border border-gray-700">
-            <h3 class="text-lg font-bold text-center mb-2 text-white"><span id="range-name">Rango: BAJOS</span></h3>
-            <p id="range-description" class="text-gray-400 text-sm text-center">Una frecuencia que puede sentirse retumbante, pero también añade calidez y potencia. Frecuencia donde instrumentos como el bombo o las cuerdas más graves del bajo pueden tener su fundamental, proporcionando esa sensación de "retumbo"</p>
-        </div>
-
-        <!-- Nueva Sección de Visualización de Distancia y Ondas -->
-        <h2 class="text-xl font-bold text-white mb-3 text-center">Visualización de Interferencias</h2>
-        <div id="canvas-container" class="w-full rounded-lg shadow-lg mb-4 p-2">
-            <canvas id="subwoofer-canvas"></canvas>
-        </div>
-
-        <!-- Sección de Resultados Numéricos -->
-        <div class="space-y-4">
-            <!-- Longitud de Onda -->
-            <div class="p-4 bg-gray-700 rounded-lg flex items-center justify-between">
-                <span class="text-gray-300 font-medium">Longitud de Onda (<span class="font-serif italic text-lg">&lambda;</span>):</span>
-                <div class="text-right">
-                    <span id="result-wavelength" class="text-xl font-bold text-yellow-400">4.25 m</span>
-                    <span class="text-sm text-gray-400 block">(&lambda; = 340 m/s / Hz)</span>
-                </div>
-            </div>
-
-            <!-- Distancia Inicial Recomendada (λ/4) - Detalle la distancia ideal, SIN la notación lambda -->
-            <div class="p-4 bg-gray-700 rounded-lg flex items-center justify-between border-l-4 border-emerald-500">
-                <span class="text-gray-300 font-medium font-bold text-lg">Distancia Ideal:</span>
-                <div class="text-right">
-                    <span id="result-initial" class="text-3xl font-extrabold text-emerald-400">1.06 m</span>
-                    <span class="text-sm text-gray-400 block">Separación óptima de centros acústicos</span>
-                </div>
-            </div>
-
-            <!-- DISTANCIA DE CANCELACIÓN ELIMINADA -->
-
-            <!-- Distancia Máxima Teórica (2λ/3) -->
-            <div class="p-4 bg-gray-700 rounded-lg flex items-center justify-between border-l-4 border-red-500">
-                <span class="text-gray-300 font-medium">Distancia Máxima Teórica:</span>
-                <div class="text-right">
-                    <span id="result-max" class="text-xl font-bold text-red-400">2.83 m</span>
-                    <span class="text-sm text-gray-400 block">(2&lambda;/3 límite teórico)</span>
-                </div>
-            </div>
-        </div>
+    <div id="info-panel">
+        <div id="frecuencia-info" class="control-group">Frecuencia Actual: 100 Hz (Longitud de Onda: 3.40 m)</div>
+        <input type="range" id="sliderFrecuencia" min="50" max="250" step="5" value="100" oninput="actualizarValores()">
         
-        <div class="mt-8 text-sm text-gray-500 text-center">
-            <p>*Velocidad del sonido utilizada: 340 m/s</p>
-        </div>
+        <div id="separacion-info" class="control-group">Separación Actual: 0.85 metros - Máxima Coherencia</div>
+        <input type="range" id="sliderSeparacion" min="0.1" max="4.0" step="0.05" value="0.85" oninput="actualizarValores()">
+    </div>
+
+    <canvas id="subwooferCanvas" width="800" height="400"></canvas>
+
+    <div class="leyenda">
+        <p><strong>Leyenda:</strong></p>
+        <div><span class="sum"></span> Zonas de **Refuerzo** (Suma de energía, sonido más fuerte)</div>
+        <div><span class="cancel"></span> Zonas de **Cancelación** (Resta de energía, "agujeros" de sonido)</div>
     </div>
 
     <script>
-        // Constante de velocidad del sonido en m/s
-        const VELOCIDAD_SONIDO = 340;
-
-        // CAMBIO: Definición de los rangos de frecuencia (actualizado para 30-300 Hz) con las nuevas descripciones
-        const RANGOS_FRECUENCIA = [
-            {
-                name: "SUB BAJOS",
-                min: 30, 
-                max: 79, 
-                description: "A menudo se percibe como una vibración en lugar de un tono puro. Los sonidos de frecuencia ultra baja por debajo de 25 Hz son poco comunes en la mayoría de la música, que generalmente no baja de los 30 Hz."
-            },
-            {
-                name: "BAJOS",
-                min: 80, 
-                max: 149, 
-                description: "Una frecuencia que puede sentirse retumbante, pero también añade calidez y potencia. Frecuencia donde instrumentos como el bombo o las cuerdas más graves del bajo pueden tener su fundamental, proporcionando esa sensación de 'retumbo'."
-            },
-            {
-                name: "MEDIOS BAJOS",
-                min: 150, 
-                max: 300, 
-                description: "Frecuencia que da 'cuerpo' y calidez al sonido. Un exceso de esta frecuencia puede hacer que el audio suene apagado, mientras que una cantidad adecuada proporciona una base sólida para la mezcla. Fundamental para la sensación de ritmo y potencia"
-            }
-        ];
-
-
-        // Referencias a elementos del DOM
-        const slider = document.getElementById('frequency-slider');
-        const currentFrequencyDisplay = document.getElementById('current-frequency');
-        const resultWavelength = document.getElementById('result-wavelength');
-        const resultInitial = document.getElementById('result-initial');
-        // resultCancellation ELIMINADO
-        const resultMax = document.getElementById('result-max');
-        const rangeNameDisplay = document.getElementById('range-name');
-        const rangeDescriptionDisplay = document.getElementById('range-description');
-        const canvas = document.getElementById('subwoofer-canvas');
+        // Parámetros Fijos
+        const VELOCIDAD_SONIDO = 340; // m/s
+        
+        // Parámetros del Canvas
+        const canvas = document.getElementById('subwooferCanvas');
         const ctx = canvas.getContext('2d');
-        const canvasContainer = document.getElementById('canvas-container');
+        const WIDTH = canvas.width;
+        const HEIGHT = canvas.height;
+        const SUB_DIAMETER = 15; // Radio del Subwoofer en pixeles
+        const PIXELS_PER_METER = 200; // Escala: 1 metro = 200 pixeles
 
-        /**
-         * Dibuja la visualización de los subwoofers, la distancia ideal y el gradiente de interferencia.
-         * @param {number} wavelength La longitud de onda completa (λ).
-         * @param {number} idealDistance La distancia ideal calculada (λ/4) en metros.
-         */
-        function drawCanvas(wavelength, idealDistance) {
-            
-            // Ajustar el tamaño del canvas a su contenedor
-            canvas.width = canvasContainer.clientWidth - 4; 
-            canvas.height = 180; 
+        // Variables de estado
+        let frecuenciaHz = parseFloat(document.getElementById('sliderFrecuencia').value);
+        let separacionMetros = parseFloat(document.getElementById('sliderSeparacion').value);
+        let LONGITUD_ONDA = VELOCIDAD_SONIDO / frecuenciaHz;
 
-            const W = canvas.width;
-            const H = canvas.height;
-            const PADDING = 20;
-            
-            // Limpiar el canvas
-            ctx.clearRect(0, 0, W, H);
+        // Función principal de dibujo
+        function drawPattern() {
+            ctx.clearRect(0, 0, WIDTH, HEIGHT);
 
-            // --- Lógica de Escala ---
-            // La distancia máxima que se puede visualizar claramente es 4.0 metros
-            const MAX_VISUAL_DISTANCE = 4.0; 
-            
-            // Usamos el 95% del ancho del canvas para la zona de medición (para que los subs no toquen los bordes)
-            const availableWidth = W - (2 * PADDING);
-            
-            // Factor de conversión: píxeles por metro
-            const pixelsPerMeter = availableWidth / MAX_VISUAL_DISTANCE; 
-            
-            // Separación real en píxeles (limitada a la máxima visual)
-            const pixelSeparation = Math.min(idealDistance * pixelsPerMeter, availableWidth);
-            
-            // --- Parámetros de Dibujo ---
-            const subWidth = 45;
-            const subHeight = 80;
-            const subColor = '#4b5563'; // Gray-600
-            const idealDistanceColor = '#10b981'; // Esmeralda (Verde)
-            const shadowColor = 'rgba(0, 0, 0, 0.4)';
+            // 1. Coordenadas de los subwoofers (Separación Horizontal)
+            const sub1X = WIDTH / 2 - (separacionMetros / 2) * PIXELS_PER_METER;
+            const sub1Y = HEIGHT / 2;
+            const sub2X = WIDTH / 2 + (separacionMetros / 2) * PIXELS_PER_METER;
+            const sub2Y = HEIGHT / 2;
 
-            // Posición base
-            const centerX = W / 2;
-            const baseY = H - 10; // Cerca del fondo
+            // 2. Iterar sobre cada pixel para calcular la fase
+            for (let x = 0; x < WIDTH; x += 3) {
+                for (let y = 0; y < HEIGHT; y += 3) {
+                    
+                    // Convertir coordenadas de pixeles a metros (origen en el centro)
+                    const xMetros = (x - WIDTH / 2) / PIXELS_PER_METER;
+                    const yMetros = (y - HEIGHT / 2) / PIXELS_PER_METER;
 
-            // Posiciones de los subwoofers (centros)
-            const center1X = centerX - (pixelSeparation / 2);
-            const center2X = centerX + (pixelSeparation / 2);
-            
-            const sub1X = center1X - (subWidth / 2);
-            const sub2X = center2X - (subWidth / 2);
+                    // Distancia al Subwoofer 1 y 2 en metros
+                    const r1 = Math.sqrt(Math.pow(xMetros + separacionMetros / 2, 2) + Math.pow(yMetros, 2));
+                    const r2 = Math.sqrt(Math.pow(xMetros - separacionMetros / 2, 2) + Math.pow(yMetros, 2));
+                    
+                    // Diferencia de camino (path difference)
+                    const deltaR = r2 - r1; 
+                    
+                    // Diferencia de Fase en Radianes
+                    const faseDiferencia = (deltaR / LONGITUD_ONDA) * (2 * Math.PI);
 
-            // 1. Dibujar el Suelo/Etapa
-            ctx.strokeStyle = '#6b7280'; // Gray-500
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.moveTo(0, baseY);
-            ctx.lineTo(W, baseY);
-            ctx.stroke();
-            
-            // --- ZONA DE INTERFERENCIA (GRADIENTE) ---
-            const SPL_BAR_Y = 10;
-            const SPL_BAR_HEIGHT = 35;
-            
-            // Dibujar una línea de fondo para el gradiente
-            ctx.fillStyle = '#1f2937';
-            ctx.fillRect(PADDING, SPL_BAR_Y, availableWidth, SPL_BAR_HEIGHT);
+                    // Amplitud Resultante
+                    const intensidad = 2 * Math.abs(Math.cos(faseDiferencia / 2));
+                    
+                    let color;
+                    if (intensidad > 1.5) {
+                         // Refuerzo (Verde)
+                        color = `rgba(76, 175, 80, ${intensidad * 0.5})`; 
+                    } else if (intensidad < 0.5) {
+                        // Cancelación (Rojo)
+                        color = `rgba(255, 87, 51, ${1 - intensidad * 0.5})`; 
+                    } else {
+                        // Zona de transición (transparencia muy baja)
+                         color = `rgba(255, 255, 255, 0.05)`; 
+                    }
 
-            for (let x = PADDING; x < W - PADDING; x++) {
-                // Posición horizontal en metros (desde el borde izquierdo del área de visualización)
-                const x_meter = (x - PADDING) / pixelsPerMeter;
-                
-                // Distancia de los centros acústicos en metros (relativa al borde izquierdo del área de visualización)
-                const center1_meter = (center1X - PADDING) / pixelsPerMeter;
-                const center2_meter = (center2X - PADDING) / pixelsPerMeter;
-                
-                // Distancia del punto 'x' a cada centro acústico
-                const L1 = x_meter - center1_meter;
-                const L2 = x_meter - center2_meter;
-                
-                // Diferencia de camino (Path Difference) en metros (tomamos la diferencia de distancias al oyente potencial)
-                const delta_L = Math.abs(L1 - L2);
-                
-                // Fase: 0 es refuerzo, 𝛑 (180°) es cancelación.
-                // phase = (delta_L / lambda) * 2 * PI
-                const phase = (delta_L / wavelength) * 2 * Math.PI;
-                
-                // Interferencia (M): cos(phase) donde 1 es refuerzo y -1 es cancelación.
-                // Se simplifica a |cos(phase/2)| para obtener la amplitud resultante (0 a 1)
-                const M_amplitude = Math.abs(Math.cos(phase / 2)); 
-
-                let color;
-                
-                // CAMBIO: Mapeo de Colores para eliminar la banda amarilla/naranja
-                if (M_amplitude > 0.8) {
-                    // Máximo Refuerzo (Rojo)
-                    color = '#f87171'; // Red-400
-                } else if (M_amplitude >= 0.3) {
-                    // Zona Fuerte / Coherencia (Verde) - Absorbe la zona ideal y transicion
-                    color = '#34d399'; // Green-400
-                } else {
-                    // Cancelación Profunda (Celeste) - M_amplitude < 0.3
-                    color = '#60a5fa'; // Blue-400 (Celeste)
-                }
-                
-                // Dibujar el pixel/línea vertical del gradiente
-                ctx.fillStyle = color;
-                ctx.fillRect(x, SPL_BAR_Y, 1, SPL_BAR_HEIGHT);
-            }
-            // --- FIN ZONA DE INTERFERENCIA ---
-
-
-            // Función para dibujar un Subwoofer
-            function drawSub(x, center) {
-                // Sombra
-                ctx.shadowColor = shadowColor;
-                ctx.shadowBlur = 8;
-                ctx.shadowOffsetX = 3;
-                ctx.shadowOffsetY = 3;
-
-                // Cuerpo del Subwoofer
-                ctx.fillStyle = subColor;
-                ctx.fillRect(x, baseY - subHeight, subWidth, subHeight);
-                
-                // Resetear sombra antes de dibujar el cono y el contorno
-                ctx.shadowColor = 'transparent';
-
-                // Contorno
-                ctx.strokeStyle = '#d1d5db'; // Gray-300
-                ctx.lineWidth = 2;
-                ctx.strokeRect(x, baseY - subHeight, subWidth, subHeight);
-                
-                // Cono (simulación de un driver)
-                ctx.fillStyle = '#1f2937'; 
-                ctx.beginPath();
-                ctx.arc(x + subWidth / 2, baseY - subHeight / 2, subWidth / 3, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Flecha indicadora en el gradiente (centro acústico)
-                ctx.strokeStyle = '#e5e7eb';
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.moveTo(center, SPL_BAR_Y + SPL_BAR_HEIGHT);
-                ctx.lineTo(center, SPL_BAR_Y + SPL_BAR_HEIGHT + 10);
-                ctx.stroke();
-            }
-
-            // 2. Dibujar Subwoofers
-            drawSub(sub1X, center1X);
-            drawSub(sub2X, center2X);
-
-
-            // 3. Dibujar la Línea de Distancia Ideal
-            const lineY = baseY - subHeight - 15;
-            const lineStart = center1X;
-            const lineEnd = center2X;
-
-            // Línea de medición (centros acústicos)
-            ctx.strokeStyle = idealDistanceColor;
-            ctx.lineWidth = 2;
-            ctx.setLineDash([5, 5]); // Línea discontinua para la distancia ideal
-            ctx.beginPath();
-            ctx.moveTo(lineStart, lineY);
-            ctx.lineTo(lineEnd, lineY);
-            ctx.stroke();
-            ctx.setLineDash([]); // Resetear línea discontinua
-
-            // Cabezas de flecha
-            ctx.beginPath();
-            ctx.moveTo(lineStart + 5, lineY - 5);
-            ctx.lineTo(lineStart, lineY);
-            ctx.lineTo(lineStart + 5, lineY + 5);
-            
-            ctx.moveTo(lineEnd - 5, lineY - 5);
-            ctx.lineTo(lineEnd, lineY);
-            ctx.lineTo(lineEnd - 5, lineY + 5);
-            ctx.stroke();
-
-            // 4. Dibujar el Texto de la Medida Ideal
-            ctx.fillStyle = idealDistanceColor;
-            ctx.font = '600 18px Inter, sans-serif';
-            ctx.textAlign = 'center';
-            
-            const textX = centerX;
-            const textY = lineY - 10;
-            
-            // Mostrar la medida
-            const distanceText = `${idealDistance.toFixed(2)} m`; 
-
-            // Dibujar un fondo oscuro para el texto si los subs están muy cerca
-            if (pixelSeparation < 100) {
-                 ctx.fillStyle = 'rgba(13, 17, 23, 0.8)'; 
-                 ctx.fillRect(textX - ctx.measureText(distanceText).width / 2 - 5, textY - 18, ctx.measureText(distanceText).width + 10, 25);
-            }
-
-            ctx.fillStyle = idealDistanceColor;
-            ctx.fillText(distanceText, textX, textY);
-            
-            // 5. Advertencia si la distancia excede la escala de visualización
-            if (idealDistance > MAX_VISUAL_DISTANCE) {
-                 ctx.fillStyle = '#f87171'; // Red-400
-                 ctx.font = '14px Inter, sans-serif';
-                 ctx.textAlign = 'center';
-                 ctx.fillText(`Distancia real: ${idealDistance.toFixed(2)} m (Fuera de escala)`, centerX, 20);
-            }
-            
-            // 6. DIBUJAR REGLA DE MEDICIÓN INFERIOR (Metros)
-            const rulerY = baseY + 5;
-            ctx.strokeStyle = '#6b7280';
-            ctx.lineWidth = 1;
-            ctx.textAlign = 'center';
-            ctx.font = '400 10px Inter, sans-serif';
-            ctx.fillStyle = '#9ca3af';
-
-            // Dibujar la línea principal de la regla
-            ctx.beginPath();
-            ctx.moveTo(PADDING, rulerY);
-            ctx.lineTo(W - PADDING, rulerY);
-            ctx.stroke();
-
-            // Dibujar marcadores cada 0.5m y 1.0m (hasta MAX_VISUAL_DISTANCE = 4.0m)
-            for (let meter = 0; meter <= MAX_VISUAL_DISTANCE; meter += 0.5) {
-                const x = PADDING + (meter * pixelsPerMeter);
-                let tickHeight = 5;
-                let labelText = '';
-
-                if (meter % 1 === 0) {
-                    // Marcador de metro completo
-                    tickHeight = 10;
-                    labelText = `${meter.toFixed(0)} m`;
-                } else {
-                    // Marcador de medio metro
-                    tickHeight = 5;
-                }
-
-                ctx.beginPath();
-                ctx.moveTo(x, rulerY);
-                ctx.lineTo(x, rulerY + tickHeight);
-                ctx.stroke();
-
-                if (labelText) {
-                    ctx.fillText(labelText, x, rulerY + tickHeight + 10);
+                    ctx.fillStyle = color;
+                    ctx.fillRect(x, y, 3, 3);
                 }
             }
-        }
-        
-        /**
-         * Determina el rango de frecuencia y actualiza la descripción.
-         * @param {number} frequency La frecuencia actual seleccionada.
-         */
-        function updateRangeInfo(frequency) {
-            const currentRange = RANGOS_FRECUENCIA.find(range => 
-                frequency >= range.min && frequency <= range.max
-            );
-
-            if (currentRange) {
-                rangeNameDisplay.textContent = `Rango: ${currentRange.name}`;
-                rangeDescriptionDisplay.textContent = currentRange.description;
-            } else {
-                rangeNameDisplay.textContent = "Rango: Fuera de Audio Profesional";
-                rangeDescriptionDisplay.textContent = "Esta frecuencia está fuera de la zona típica de cruce de subgraves (30-300 Hz). Los cálculos son correctos, pero el acoplamiento no es relevante.";
-            }
-        }
-
-        /**
-         * Realiza los cálculos y actualiza la interfaz.
-         */
-        function calculateAndUpdate() {
-            // 1. Obtener la frecuencia actual del slider (como número)
-            const frequency = parseFloat(slider.value);
-
-            // 2. Actualizar la visualización de la frecuencia
-            currentFrequencyDisplay.textContent = `${frequency} Hz`;
             
-            // 3. Actualizar la información del rango de frecuencia
-            updateRangeInfo(frequency);
+            // 3. Dibujar Subwoofers (círculos)
+            ctx.fillStyle = '#1e90ff'; // Azul
+            ctx.beginPath();
+            ctx.arc(sub1X, sub1Y, SUB_DIAMETER, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(sub2X, sub2Y, SUB_DIAMETER, 0, 2 * Math.PI);
+            ctx.fill();
 
-            // 4. CÁLCULO DE LONGITUD DE ONDA (Lambda)
-            // Fórmula: λ = v / f
-            const wavelength = VELOCIDAD_SONIDO / frequency;
-
-            // 5. CÁLCULO DE DISTANCIA INICIAL RECOMENDADA (Distancia Ideal)
-            // Fórmula: D_inicial = λ / 4
-            const initialDistance = wavelength / 4;
-
-            // 6. CÁLCULO DE DISTANCIA DE CANCELACIÓN (variable interna, no mostrada)
-            const cancellationDistance = wavelength / 2;
-
-            // 7. CÁLCULO DE DISTANCIA MÁXIMA TEÓRICA
-            // Fórmula: D_max = 2λ / 3
-            const maxDistance = (2 * wavelength) / 3;
-
-            // 8. Actualizar los resultados en la interfaz (redondeando a dos decimales)
-            
-            resultWavelength.textContent = `${wavelength.toFixed(2)} m`;
-            resultInitial.textContent = `${initialDistance.toFixed(2)} m`; 
-            // resultCancellation ELIMINADO del DOM
-            resultMax.textContent = `${maxDistance.toFixed(2)} m`;
-            
-            // 9. Dibujar la visualización de la distancia y el gradiente
-            drawCanvas(wavelength, initialDistance);
+            // 4. Dibujar la línea de audiencia (eje Y, en el centro horizontal)
+            ctx.strokeStyle = '#ffffff';
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(WIDTH / 2, 0);
+            ctx.lineTo(WIDTH / 2, HEIGHT);
+            ctx.stroke();
+            ctx.setLineDash([]);
         }
 
-        // Inicializar la calculadora al cargar la página
-        calculateAndUpdate();
+        // Función para actualizar todos los valores al mover cualquier slider
+        window.actualizarValores = function() {
+            // 1. Obtener valores de los sliders
+            frecuenciaHz = parseFloat(document.getElementById('sliderFrecuencia').value);
+            separacionMetros = parseFloat(document.getElementById('sliderSeparacion').value);
+            
+            // 2. Recalcular la Longitud de Onda
+            LONGITUD_ONDA = VELOCIDAD_SONIDO / frecuenciaHz;
+            
+            // 3. Calcular los puntos críticos en metros
+            const coherenciaMax = LONGITUD_ONDA / 4;
+            const controlDirectividad = LONGITUD_ONDA / 2;
 
-        // Escuchar el evento 'input' del slider para actualizar los cálculos en tiempo real
-        slider.addEventListener('input', calculateAndUpdate);
-        
-        // Hacer el canvas responsivo al redimensionar la ventana
-        window.addEventListener('resize', calculateAndUpdate);
+            let comentario = '';
 
+            // Lógica de comentarios
+            if (separacionMetros < coherenciaMax * 1.1) {
+                comentario = " - Máxima Coherencia (Los subs actúan como una fuente única)";
+            } else if (separacionMetros < controlDirectividad * 1.1) {
+                comentario = " - Ideal para Control de Directividad (Arreglo Lineal o Cardioide)";
+            } else if (separacionMetros >= controlDirectividad * 1.1) {
+                 comentario = " - **LOBING** Severo (Patrón irregular y cancelaciones fuertes)";
+            } 
+            
+            // Actualizar el panel de información
+            document.getElementById('frecuencia-info').innerHTML = `Frecuencia Actual: ${frecuenciaHz.toFixed(0)} Hz (Longitud de Onda: ${LONGITUD_ONDA.toFixed(2)} m)<br>Separación Ideal para Control: ${controlDirectividad.toFixed(2)} m`;
+            document.getElementById('separacion-info').innerHTML = `Separación Actual: ${separacionMetros.toFixed(2)} metros${comentario}`;
+
+            // 4. Redibujar
+            drawPattern();
+        }
+
+        // Dibujar al cargar
+        actualizarValores();
     </script>
 
 </body>
