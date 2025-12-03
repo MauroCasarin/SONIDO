@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Simulador Acústico WebGL (Panel Separado)</title>
+    <title>Simulador Acústico WebGL (Ajuste de Pantalla)</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body {
@@ -31,7 +31,7 @@
             background-color: #2c2c2c;
             width: 95vw;
             max-width: 800px;
-            margin: 10px auto 0 auto; /* Espacio debajo del panel */
+            margin: 10px auto 5px auto; /* Reducir margen inferior */
             border-radius: 8px;
             text-align: left;
         }
@@ -39,9 +39,10 @@
         /* Contenedor del Renderizado WebGL */
         #container {
             flex-grow: 1; /* Ocupará el espacio restante */
-            width: 100%;
-            max-width: 800px; /* Igual que el panel */
-            margin: 10px 0;
+            width: 95vw;
+            max-width: 800px;
+            margin: 5px auto 10px auto;
+            min-height: 200px; /* Mínimo para asegurar espacio */
         }
         /* El canvas de Three.js ocupará todo el espacio del contenedor */
         #container canvas {
@@ -54,10 +55,9 @@
 
 
         /* Estilos de Controles */
-        .control-group { margin-bottom: 5px; }
+        .control-group { margin-bottom: 3px; }
         .slider-container { width: 95%; margin: 0 auto 10px 0; position: relative; }
         .slider-label { display: block; font-size: 0.9em; margin-bottom: 2px; font-weight: bold; color: #1e90ff; }
-        
         input[type=range] { width: 100%; height: 5px; background: #555; -webkit-appearance: none; border-radius: 5px; cursor: pointer; }
         
         #rango-description {
@@ -68,8 +68,6 @@
             border-top: 1px solid #444;
             font-size: 0.95em;
         }
-        
-        /* Leyenda flotante para móviles (opcional, eliminada para simplicidad del layout) */
         
     </style>
 </head>
@@ -106,36 +104,29 @@
         // --- INICIALIZACIÓN DE THREE.JS ---
         let scene, camera, renderer, plane, material, sub1, sub2;
         const SIMULATION_SIZE = 8; // Tamaño del plano en metros (8x8)
-        const SEGMENTS = 256; // Detalle del plano (256x256 vértices)
+        const SEGMENTS = 256;
 
         function initThree() {
             const container = document.getElementById('container');
-            const rect = container.getBoundingClientRect();
-            const width = rect.width;
-            const height = rect.height;
-
-            scene = new THREE.Scene();
             
-            // Cámara (Perspectiva ortográfica para una vista superior plana)
-            const aspectRatio = width / height;
-            const size = SIMULATION_SIZE / 2;
-            camera = new THREE.OrthographicCamera(-size * aspectRatio, size * aspectRatio, size, -size, 0.1, 1000);
-            camera.position.set(0, 5, 0); // Posición superior
-            camera.lookAt(0, 0, 0);
-
-            // Renderizador
+            // 1. Configuración del Renderizador
             renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(width, height);
             renderer.setClearColor(0x1e1e1e);
             container.appendChild(renderer.domElement);
 
-            // Luz ambiental
+            // 2. Escena y Luces
+            scene = new THREE.Scene();
             scene.add(new THREE.AmbientLight(0xffffff, 0.5));
 
-            // Geometría del Plano (la superficie de la audiencia)
+            // 3. Configuración de la Cámara (Inicializada en onWindowResize)
+            camera = new THREE.OrthographicCamera();
+            camera.position.set(0, 5, 0); 
+            camera.lookAt(0, 0, 0);
+
+            // 4. Geometría del Plano
             const geometry = new THREE.PlaneGeometry(SIMULATION_SIZE, SIMULATION_SIZE, SEGMENTS, SEGMENTS);
             
-            // Material personalizado con Shader
+            // 5. Material con Shader (Interferencia)
             material = new THREE.ShaderMaterial({
                 uniforms: {
                     u_lambda: { value: 3.4 }, 
@@ -160,31 +151,23 @@
                     varying vec2 vUv;
                     
                     void main() {
-                        // Coordenadas del punto en metros (ej: de -4 a 4)
                         vec2 pos = (vUv - 0.5) * u_size; 
-
-                        // Posición de los subwoofers (separación horizontal a lo largo del eje X)
                         float sub_offset = u_separation / 2.0;
                         
-                        // Distancia al subwoofer 1 y 2
                         float r1 = distance(pos, vec2(-sub_offset, 0.0));
                         float r2 = distance(pos, vec2(sub_offset, 0.0));
                         
-                        // Diferencia de fase (en radianes)
                         float deltaR = r2 - r1;
-                        float phase_diff = (deltaR / u_lambda) * 6.2831853; // 2 * PI
+                        float phase_diff = (deltaR / u_lambda) * 6.2831853; 
                         
-                        // Intensidad resultante (de 0 a 2)
                         float intensity = 2.0 * abs(cos(phase_diff / 2.0));
 
-                        // Mapeo de color con degradado suave
                         float power = pow(intensity / 2.0, 1.5);
                         vec3 final_color = mix(u_red_color, u_green_color, power);
                         
                         // Oscurecer los bordes de la simulación
                         float border_fade = 1.0 - smoothstep(2.5, 4.0, length(pos));
                         final_color *= border_fade;
-
 
                         gl_FragColor = vec4(final_color, 1.0);
                     }
@@ -194,35 +177,31 @@
             });
 
             plane = new THREE.Mesh(geometry, material);
-            plane.rotation.x = -Math.PI / 2; // Gira el plano para que esté horizontal
+            plane.rotation.x = -Math.PI / 2;
             scene.add(plane);
             
-            // Representación de los bafles (rectángulos 3D)
-            const bafleGeo = new THREE.BoxGeometry(0.3, 0.5, 0.3); // 30cm x 50cm x 30cm
-            const bafleMat = new THREE.MeshBasicMaterial({ color: 0x808080, wireframe: false }); // Color gris claro
-            const bafleEdgeMat = new THREE.LineBasicMaterial({ color: 0xffffff }); // Borde blanco
+            // 6. Representación de Bafles (Subwoofers 3D)
+            const bafleGeo = new THREE.BoxGeometry(0.3, 0.5, 0.3);
+            const bafleMat = new THREE.MeshBasicMaterial({ color: 0x808080, wireframe: false }); 
+            const bafleEdgeMat = new THREE.LineBasicMaterial({ color: 0xffffff }); 
 
-            // Bafle 1
             sub1 = new THREE.Mesh(bafleGeo, bafleMat);
-            const edges1 = new THREE.LineSegments(new THREE.EdgesGeometry(bafleGeo), bafleEdgeMat);
-            sub1.add(edges1);
+            sub1.add(new THREE.LineSegments(new THREE.EdgesGeometry(bafleGeo), bafleEdgeMat));
             scene.add(sub1);
             
-            // Bafle 2
             sub2 = new THREE.Mesh(bafleGeo, bafleMat);
-            const edges2 = new THREE.LineSegments(new THREE.EdgesGeometry(bafleGeo), bafleEdgeMat);
-            sub2.add(edges2);
+            sub2.add(new THREE.LineSegments(new THREE.EdgesGeometry(bafleGeo), bafleEdgeMat));
             scene.add(sub2);
 
-            // Posicionar inicialmente los bafles (Eje Z es donde se extienden las ondas)
+            // Posicionar Bafles
             sub1.position.x = -0.85 / 2; 
             sub2.position.x = 0.85 / 2;
-            sub1.position.z = 0;
-            sub2.position.z = 0;
             
             window.addEventListener('resize', onWindowResize, false);
+            onWindowResize(); // Llama a redimensionar la primera vez
         }
 
+        // --- FUNCIÓN DE AJUSTE DE PANTALLA CRÍTICA ---
         function onWindowResize() {
             const container = document.getElementById('container');
             const rect = container.getBoundingClientRect();
@@ -230,13 +209,17 @@
             const height = rect.height;
             
             const aspectRatio = width / height;
-            const size = SIMULATION_SIZE / 2;
             
-            // Ajustar la cámara para mantener la escala
-            camera.left = -size * aspectRatio;
-            camera.right = size * aspectRatio;
-            camera.top = size;
-            camera.bottom = -size;
+            // Definir un tamaño de visualización constante basado en la altura de la simulación
+            const viewHeight = SIMULATION_SIZE; 
+            const viewWidth = viewHeight * aspectRatio;
+            
+            // Actualizar la cámara ortográfica para que el plano ocupe todo el espacio.
+            camera.left = -viewWidth / 2;
+            camera.right = viewWidth / 2;
+            camera.top = viewHeight / 2;
+            camera.bottom = -viewHeight / 2;
+            
             camera.updateProjectionMatrix();
             
             renderer.setSize(width, height);
@@ -263,7 +246,7 @@
             const separacionMetros = parseFloat(document.getElementById('sliderSeparacion').value);
             const LONGITUD_ONDA = VELOCIDAD_SONIDO / frecuenciaHz;
             
-            // 1. ACTUALIZAR SHADER (Renderizado WebGL)
+            // 1. ACTUALIZAR SHADER
             if (material) {
                 material.uniforms.u_lambda.value = LONGITUD_ONDA;
                 material.uniforms.u_separation.value = separacionMetros;
