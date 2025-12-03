@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Simulador Acústico WebGL (Three.js)</title>
+    <title>Simulador Acústico WebGL (Panel Separado)</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body {
@@ -11,49 +11,54 @@
             text-align: center;
             margin: 0;
             padding: 0;
-            overflow: hidden; /* Oculta barras de desplazamiento */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
         }
         h1 {
             color: #4CAF50;
-            padding-top: 15px;
+            padding-top: 5px;
             font-size: 1.5em;
             margin-bottom: 5px;
         }
-        /* Estilos para el contenedor de Three.js */
-        #container {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
-        }
         
-        /* Estilos para el panel de control (superpuesto) */
+        /* Contenedor del Panel de Control */
         #info-panel {
-            position: relative;
-            z-index: 10;
+            flex-shrink: 0; /* No se encogerá */
             font-size: 1em;
             padding: 10px;
-            background-color: rgba(44, 44, 44, 0.8); /* Fondo semitransparente */
+            background-color: #2c2c2c;
             width: 95vw;
-            max-width: 400px;
-            margin: 10px auto;
+            max-width: 800px;
+            margin: 10px auto 0 auto; /* Espacio debajo del panel */
             border-radius: 8px;
             text-align: left;
         }
+        
+        /* Contenedor del Renderizado WebGL */
+        #container {
+            flex-grow: 1; /* Ocupará el espacio restante */
+            width: 100%;
+            max-width: 800px; /* Igual que el panel */
+            margin: 10px 0;
+        }
+        /* El canvas de Three.js ocupará todo el espacio del contenedor */
+        #container canvas {
+            display: block;
+            width: 100% !important;
+            height: 100% !important;
+            border: 2px solid #555;
+            border-radius: 8px;
+        }
+
+
+        /* Estilos de Controles */
         .control-group { margin-bottom: 5px; }
-        .slider-container { width: 90%; margin: 0 auto 10px 0; position: relative; }
+        .slider-container { width: 95%; margin: 0 auto 10px 0; position: relative; }
         .slider-label { display: block; font-size: 0.9em; margin-bottom: 2px; font-weight: bold; color: #1e90ff; }
         
-        input[type=range] {
-            width: 100%;
-            height: 5px;
-            background: #555;
-            -webkit-appearance: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
+        input[type=range] { width: 100%; height: 5px; background: #555; -webkit-appearance: none; border-radius: 5px; cursor: pointer; }
         
         #rango-description {
             font-weight: bold;
@@ -64,28 +69,11 @@
             font-size: 0.95em;
         }
         
-        /* Leyenda simple flotante */
-        #leyenda-flotante {
-            position: fixed;
-            bottom: 10px;
-            right: 10px;
-            background-color: rgba(44, 44, 44, 0.8);
-            padding: 8px;
-            border-radius: 5px;
-            font-size: 0.8em;
-            z-index: 10;
-            text-align: left;
-        }
-        .leyenda-item { display: flex; align-items: center; margin-bottom: 3px; }
-        .color-box { width: 15px; height: 15px; border-radius: 3px; margin-right: 5px; }
-        .sum { background-color: #4CAF50; }
-        .cancel { background-color: #FF5733; }
+        /* Leyenda flotante para móviles (opcional, eliminada para simplicidad del layout) */
         
     </style>
 </head>
 <body>
-
-    <div id="container"></div>
 
     <div id="info-panel">
         <h1>Simulador Acústico WebGL</h1>
@@ -103,13 +91,13 @@
         </div>
         
         <div id="rango-description"></div>
+
+        <p style="font-size: 0.8em; margin-top: 10px;">
+            **Leyenda:** <span style="color:#4CAF50; font-weight: bold;">Verde</span> = Refuerzo (Suma) | <span style="color:#FF5733; font-weight: bold;">Rojo</span> = Cancelación (Resta)
+        </p>
     </div>
-    
-    <div id="leyenda-flotante">
-        <p style="font-weight: bold; margin: 0 0 5px 0;">Leyenda:</p>
-        <div class="leyenda-item"><span class="color-box sum"></span> Verde: Refuerzo (Suma)</div>
-        <div class="leyenda-item"><span class="color-box cancel"></span> Rojo: Cancelación (Resta)</div>
-    </div>
+
+    <div id="container"></div>
 
     <!-- Carga de la librería Three.js (la necesitamos para WebGL) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -119,13 +107,17 @@
         let scene, camera, renderer, plane, material, sub1, sub2;
         const SIMULATION_SIZE = 8; // Tamaño del plano en metros (8x8)
         const SEGMENTS = 256; // Detalle del plano (256x256 vértices)
-        const PIXELS_PER_METER = SEGMENTS / SIMULATION_SIZE;
 
         function initThree() {
+            const container = document.getElementById('container');
+            const rect = container.getBoundingClientRect();
+            const width = rect.width;
+            const height = rect.height;
+
             scene = new THREE.Scene();
             
             // Cámara (Perspectiva ortográfica para una vista superior plana)
-            const aspectRatio = window.innerWidth / window.innerHeight;
+            const aspectRatio = width / height;
             const size = SIMULATION_SIZE / 2;
             camera = new THREE.OrthographicCamera(-size * aspectRatio, size * aspectRatio, size, -size, 0.1, 1000);
             camera.position.set(0, 5, 0); // Posición superior
@@ -133,9 +125,9 @@
 
             // Renderizador
             renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setSize(width, height);
             renderer.setClearColor(0x1e1e1e);
-            document.getElementById('container').appendChild(renderer.domElement);
+            container.appendChild(renderer.domElement);
 
             // Luz ambiental
             scene.add(new THREE.AmbientLight(0xffffff, 0.5));
@@ -146,11 +138,11 @@
             // Material personalizado con Shader
             material = new THREE.ShaderMaterial({
                 uniforms: {
-                    u_lambda: { value: 3.4 }, // Longitud de onda inicial (100Hz)
-                    u_separation: { value: 0.85 }, // Separación inicial
+                    u_lambda: { value: 3.4 }, 
+                    u_separation: { value: 0.85 },
                     u_size: { value: SIMULATION_SIZE },
-                    u_red_color: { value: new THREE.Color(0xFF5733) }, // Cancelación (Rojo)
-                    u_green_color: { value: new THREE.Color(0x4CAF50) }, // Refuerzo (Verde)
+                    u_red_color: { value: new THREE.Color(0xFF5733) }, 
+                    u_green_color: { value: new THREE.Color(0x4CAF50) },
                 },
                 vertexShader: `
                     varying vec2 vUv;
@@ -185,15 +177,11 @@
                         // Intensidad resultante (de 0 a 2)
                         float intensity = 2.0 * abs(cos(phase_diff / 2.0));
 
-                        // Mapeo de color: (0=Cancelación, 2=Refuerzo)
-                        vec3 final_color = mix(u_red_color, u_green_color, intensity / 2.0);
-                        
-                        // Degradado suave (potencia para hacer la transición más dramática)
+                        // Mapeo de color con degradado suave
                         float power = pow(intensity / 2.0, 1.5);
-                        final_color = mix(u_red_color, u_green_color, power);
-
-
-                        // Para oscurecer los bordes de la simulación
+                        vec3 final_color = mix(u_red_color, u_green_color, power);
+                        
+                        // Oscurecer los bordes de la simulación
                         float border_fade = 1.0 - smoothstep(2.5, 4.0, length(pos));
                         final_color *= border_fade;
 
@@ -211,30 +199,47 @@
             
             // Representación de los bafles (rectángulos 3D)
             const bafleGeo = new THREE.BoxGeometry(0.3, 0.5, 0.3); // 30cm x 50cm x 30cm
-            const bafleMat = new THREE.MeshBasicMaterial({ color: 0x444444, wireframe: false });
+            const bafleMat = new THREE.MeshBasicMaterial({ color: 0x808080, wireframe: false }); // Color gris claro
+            const bafleEdgeMat = new THREE.LineBasicMaterial({ color: 0xffffff }); // Borde blanco
 
+            // Bafle 1
             sub1 = new THREE.Mesh(bafleGeo, bafleMat);
-            sub2 = new THREE.Mesh(bafleGeo, bafleMat);
+            const edges1 = new THREE.LineSegments(new THREE.EdgesGeometry(bafleGeo), bafleEdgeMat);
+            sub1.add(edges1);
+            scene.add(sub1);
             
-            // Posicionar inicialmente los bafles
+            // Bafle 2
+            sub2 = new THREE.Mesh(bafleGeo, bafleMat);
+            const edges2 = new THREE.LineSegments(new THREE.EdgesGeometry(bafleGeo), bafleEdgeMat);
+            sub2.add(edges2);
+            scene.add(sub2);
+
+            // Posicionar inicialmente los bafles (Eje Z es donde se extienden las ondas)
             sub1.position.x = -0.85 / 2; 
             sub2.position.x = 0.85 / 2;
-            
-            scene.add(sub1);
-            scene.add(sub2);
+            sub1.position.z = 0;
+            sub2.position.z = 0;
             
             window.addEventListener('resize', onWindowResize, false);
         }
 
         function onWindowResize() {
-            const aspectRatio = window.innerWidth / window.innerHeight;
+            const container = document.getElementById('container');
+            const rect = container.getBoundingClientRect();
+            const width = rect.width;
+            const height = rect.height;
+            
+            const aspectRatio = width / height;
             const size = SIMULATION_SIZE / 2;
+            
+            // Ajustar la cámara para mantener la escala
             camera.left = -size * aspectRatio;
             camera.right = size * aspectRatio;
             camera.top = size;
             camera.bottom = -size;
             camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
+            
+            renderer.setSize(width, height);
         }
 
         // --- BUCLE DE ANIMACIÓN ---
@@ -272,8 +277,8 @@
             }
 
             // 3. ACTUALIZAR TEXTO EN EL PANEL (UI)
-            const coherenciaMax = LONGITUD_ONDA / 4;
             const controlDirectividad = LONGITUD_ONDA / 2;
+            const coherenciaMax = LONGITUD_ONDA / 4;
             let comentarioSeparacion = '';
 
             if (separacionMetros < coherenciaMax * 1.1) {
