@@ -91,11 +91,7 @@
             width: 100%;
             height: 15px;
             background: linear-gradient(to right, 
-                #FF5733 0%, /* 20Hz */
-                #FFD700 20%, /* 100Hz */
-                #4CAF50 40%, /* 500Hz */
-                #1e90ff 65%, /* 5kHz */
-                #ffffff 100% /* 20kHz */
+                #FF5733 0%, #FFD700 20%, #4CAF50 40%, #1e90ff 65%, #ffffff 100%
             );
             border-radius: 7px;
             border: 1px solid #444;
@@ -121,15 +117,16 @@
         }
         
         /* Etiqueta de Rango Abajo */
-        #rango-label, #decibel-label {
+        #rango-label {
             font-size: 0.8em;
             font-weight: bold;
             color: #ccc;
             margin-top: 5px;
         }
         #decibel-label {
-            color: #FF5733; /* Rojo para el dB para llamar la atención */
-            font-size: 0.75em; /* Más pequeño aún */
+            color: #FF5733; 
+            font-size: 0.75em; 
+            margin-top: 2px; /* Margen reducido */
         }
 
         /* Overlay de inicio (requerido para desbloqueo de audio) */
@@ -225,7 +222,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     
     <script>
-        // --- VARIABLES GLOBALES ---
+        // --- MÓDULO DE WEBGL/THREE.JS (VARIABLES Y FUNCIONES) ---
         let scene, camera, renderer, plane, material, sub1, sub2;
         const SIMULATION_SIZE_Y = 8; 
         const SEGMENTS = 256;
@@ -236,7 +233,6 @@
         const vectorFreq = new THREE.Vector3(0, 0, SIMULATION_SIZE_Y / 2 * 0.875); 
         const vectorDist = new THREE.Vector3(0, 0, -0.5); 
 
-        // --- INICIALIZACIÓN DE THREE.JS (Omitido por ser idéntico) ---
         function initThree() {
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setClearColor(0x1e1e1e);
@@ -367,26 +363,28 @@
         }
         
         function classifyFrequency(f) {
-            if (f < 20) return "INFRA SONIDO (No audible)";
-            if (f < 60) return "SUB GRAVE (GOLPE PERCIBIDO)";
-            if (f < 200) return "GRAVE (FUNDAMENTOS, BOMBO)";
-            if (f < 500) return "MEDIO GRAVE (CUERPO/BARRO)";
-            if (f < 2000) return "MEDIO (PRESENCIA VOCAL/INTRUMENTAL)";
-            if (f < 8000) return "MEDIO ALTO (CLARIDAD, VOZ)";
-            if (f <= 20000) return "ALTO (BRILLO, AIRE, SIBILANCIA)";
-            return "ULTRA SONIDO (No audible)";
+            if (f < 20) return "INFRA SONIDO";
+            if (f < 60) return "SUB GRAVE";
+            if (f < 200) return "GRAVE";
+            if (f < 500) return "MEDIO GRAVE";
+            if (f < 2000) return "MEDIO";
+            if (f < 8000) return "MEDIO ALTO";
+            if (f <= 20000) return "ALTO";
+            return "ULTRA SONIDO";
         }
 
+        // *** FUNCIÓN DE CLASIFICACIÓN DE DECIBELIOS SIMPLIFICADA ***
         function classifyDecibels(dB) {
-            if (dB < 30) return "SILENCIO TOTAL (Estudio, biblioteca, dormitorio)";
-            if (dB < 60) return "NORMAL (Conversación tranquila, oficina silenciosa)";
-            if (dB < 75) return "RUIDO MEDIO (Aspiradora, tráfico ligero, TV a volumen normal)";
-            if (dB < 90) return "RUIDO FUERTE (Tráfico pesado, cortadora de césped, secador de pelo)";
-            if (dB < 105) return "MUY FUERTE (Concierto de Rock, herramientas eléctricas) - **RIESGO DE DAÑO CON EXPOSICIÓN PROLONGADA**";
-            if (dB < 120) return "EXTREMO (Sirena, Motosierra) - **RIESGO INMINENTE DE DAÑO AUDITIVO**";
-            return "DOLOR (Avión despegando, Fuegos artificiales) - **DOLOR SEVERO**";
+            if (dB < 30) return "SILENCIO TOTAL";
+            if (dB < 60) return "NORMAL";
+            if (dB < 75) return "RUIDO MEDIO";
+            if (dB < 90) return "RUIDO FUERTE";
+            if (dB < 105) return "MUY FUERTE (Riesgo)";
+            if (dB < 120) return "EXTREMO (Peligro)";
+            return "DOLOR SEVERO";
         }
 
+        // ... (Funciones de Actualización de Valores y Audio sin cambios en la lógica) ...
         window.actualizarValores = function() {
             const frecuenciaHz = parseFloat(document.getElementById('sliderFrecuencia').value);
             const separacionMetros = parseFloat(document.getElementById('sliderSeparacion').value);
@@ -426,7 +424,7 @@
         let audioContext = null;
         let analyser = null;
         let frequencyData = null;
-        let timeDomainData = null; // Para la medición de dB
+        let timeDomainData = null;
         let dominantFreqElement = null;
         let decibelLabel = null;
         let audioInitialized = false;
@@ -437,7 +435,7 @@
         const MIN_FREQ_LOG = Math.log10(MIN_FREQ);
         const MAX_FREQ_LOG = Math.log10(MAX_FREQ);
         const LOG_RANGE = MAX_FREQ_LOG - MIN_FREQ_LOG;
-        const NOISE_THRESHOLD = 0.005; // Umbral de RMS para considerar "sonido"
+        const NOISE_THRESHOLD = 0.005;
 
         function freqToPercent(f) {
             if (f < MIN_FREQ) return 0;
@@ -450,7 +448,6 @@
         function calculateRMS(data) {
             let sumOfSquares = 0;
             for (let i = 0; i < data.length; i++) {
-                // Normalizar de 0-255 (Byte) a -1 a 1 (Float)
                 const normalized = (data[i] / 128) - 1;
                 sumOfSquares += normalized * normalized;
             }
@@ -475,7 +472,7 @@
                 analyser.fftSize = 1024; 
                 analyser.smoothingTimeConstant = 0.92;
                 frequencyData = new Uint8Array(analyser.frequencyBinCount);
-                timeDomainData = new Uint8Array(analyser.fftSize); // Inicializar para medición de dB
+                timeDomainData = new Uint8Array(analyser.fftSize); 
                 
                 if (audioContext.state === 'suspended') { audioContext.resume(); }
                 
@@ -504,15 +501,15 @@
             if (!analyser || !audioInitialized) return;
             
             analyser.getByteFrequencyData(frequencyData);
-            analyser.getByteTimeDomainData(timeDomainData); // Obtener datos para RMS/dB
+            analyser.getByteTimeDomainData(timeDomainData); 
             
             const sampleRate = analyser.context.sampleRate;
             const binWidth = sampleRate / analyser.fftSize;
             
-            // --- 1. DETECCIÓN DE FRECUENCIA DOMINANTE ---
             let maxVolume = 0;
             let dominantFreq = 0;
-            const powerMaxFreq = 1000; // Priorizar hasta 1kHz
+            
+            const powerMaxFreq = 1000; 
             const maxIndexPower = Math.min(frequencyData.length, Math.ceil(powerMaxFreq / binWidth)); 
             const minIndex = Math.ceil(30 / binWidth);
 
@@ -528,9 +525,6 @@
             let approx_dB = 0;
 
             if (rms > NOISE_THRESHOLD) {
-                // Fórmula aproximada de dBFS a dBSPL (asumiendo 93dB SPL = 0dBFS en el micrófono)
-                // Se resta un valor base de ruido (ej: 40dB)
-                // 20 * log10(RMS) + Offset
                 approx_dB = 20 * Math.log10(rms) + 93; 
                 if (approx_dB < 0) approx_dB = 0;
             } else {
@@ -557,7 +551,7 @@
             if (approx_dB > 0) {
                  decibelLabel.innerHTML = `**${approx_dB.toFixed(1)} dB** | ${classifyDecibels(approx_dB)}`;
             } else {
-                 decibelLabel.innerHTML = `**< 30 dB** | SILENCIO (La sensibilidad del micrófono no detecta sonido)`;
+                 decibelLabel.innerHTML = `**< 30 dB** | SILENCIO TOTAL`;
             }
         }
 
