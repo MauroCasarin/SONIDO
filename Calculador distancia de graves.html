@@ -4,7 +4,6 @@
     <title>Calculador distancia de graves según Hz.</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        /* (Estilos CSS omitidos por ser iguales a la versión anterior) */
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #1e1e1e;
@@ -97,6 +96,24 @@
             margin-top: 5px;
         }
         
+        /* Estilos del botón de inicio (para centrar y llamar la atención) */
+        #audio-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            font-size: 1.2em;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            z-index: 20;
+            border-radius: 4px;
+        }
+        
         #imagen-referencia {
             width: 95vw;
             max-width: 800px;
@@ -142,8 +159,13 @@
     
     <div id="audio-analizador">
         <p style="font-size: 0.9em; margin-bottom: 3px;">Analizador de Micrófono (Solo para HTTPS)</p>
-        <canvas id="audioCanvas" width="800" height="100"></canvas>
-        <p id="dominante-freq" style="font-size: 0.9em; color: #1e90ff; margin-top: 5px;">Frecuencia Ambiental Dominante: Esperando audio...</p>
+        <div style="position: relative; width: 100%; height: 100px;">
+            <canvas id="audioCanvas" width="800" height="100"></canvas>
+            <div id="audio-overlay" onclick="iniciarAudio()" style="position: absolute;">
+                Toca aquí para activar el micrófono y el análisis de espectro
+            </div>
+        </div>
+        <p id="dominante-freq" style="font-size: 0.9em; color: #1e90ff; margin-top: 5px;">Frecuencia Ambiental Dominante: No iniciado</p>
     </div>
 
     <div id="imagen-referencia">
@@ -155,7 +177,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     
     <script>
-        // --- MÓDULO DE WEBGL/THREE.JS (SIN CAMBIOS FUNCIONALES) ---
+        // --- MÓDULO DE WEBGL/THREE.JS (VARIABLES Y FUNCIONES) ---
         let scene, camera, renderer, plane, material, sub1, sub2;
         const SIMULATION_SIZE_Y = 8; 
         const SEGMENTS = 256;
@@ -165,6 +187,8 @@
         const labelDistancia = document.getElementById('label-distancia');
         const vectorFreq = new THREE.Vector3(0, 0, SIMULATION_SIZE_Y / 2 * 0.875); 
         const vectorDist = new THREE.Vector3(0, 0, -0.5); 
+        
+        // ... (Funciones initThree, onWindowResize, updateLabels, animate, getRangeDescription, actualizarValores) ...
 
         function initThree() {
             renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -259,7 +283,10 @@
             const audioContainer = document.getElementById('audio-analizador');
             if (audioContainer) {
                 const audioCanvas = document.getElementById('audioCanvas');
-                audioCanvas.width = audioContainer.clientWidth;
+                audioCanvas.width = document.getElementById('audio-analizador').clientWidth;
+                // Asegurar que el overlay también se ajuste
+                const audioOverlay = document.getElementById('audio-overlay');
+                if (audioOverlay) audioOverlay.style.height = `${audioCanvas.offsetHeight}px`;
             }
         }
 
@@ -284,7 +311,6 @@
             drawAnalyser(); 
         }
         
-        // --- CÁLCULOS Y CONTROLES (Sin cambios) ---
         function getRangeDescription(f) {
             if (f < 63) {
                 return "Sub Bajos (25-63 Hz): A menudo se percibe como una vibración en lugar de un tono puro. La mayoría de la música generalmente no baja de los 30 Hz.";
@@ -332,9 +358,17 @@
         }
         
         // --- MÓDULO DE ANALIZADOR DE AUDIO (WEB AUDIO API) ---
-        let audioContext, analyser, frequencyData, audioCanvas, dominantFreqElement;
+        let audioContext = null;
+        let analyser = null;
+        let frequencyData = null;
+        let audioCanvas = null;
+        let dominantFreqElement = null;
+        let audioInitialized = false;
         
-        function initAudioAnalyser() {
+        // Función principal que se llama con el gesto del usuario
+        window.iniciarAudio = function() {
+            if (audioInitialized) return;
+            
             dominantFreqElement = document.getElementById('dominante-freq');
             
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -346,47 +380,56 @@
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 analyser = audioContext.createAnalyser();
                 analyser.fftSize = 2048; 
-                analyser.smoothingTimeConstant = 0.85; // **ESTABILIZACIÓN CRÍTICA** (0.0 a 1.0)
+                analyser.smoothingTimeConstant = 0.85; 
                 frequencyData = new Uint8Array(analyser.frequencyBinCount);
-                
                 audioCanvas = document.getElementById('audioCanvas');
+                
+                // Si el contexto está suspendido, lo reanudamos (necesario en móviles)
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
                 
                 // 1. Solicitar acceso al micrófono
                 navigator.mediaDevices.getUserMedia({ audio: true })
                     .then(stream => {
                         const source = audioContext.createMediaStreamSource(stream);
                         source.connect(analyser);
+                        document.getElementById('audio-overlay').style.display = 'none'; // Ocultar overlay
+                        audioInitialized = true;
+                        dominantFreqElement.innerHTML = 'Frecuencia Ambiental Dominante: <span style="font-weight: bold;">(Escuchando...)</span>';
                     })
                     .catch(err => {
-                        dominantFreqElement.innerHTML = '<span style="color:red;">Acceso denegado al micrófono (se requiere permiso o HTTPS).</span>';
+                        dominantFreqElement.innerHTML = '<span style="color:red;">Acceso denegado al micrófono. Recarga la página y vuelve a intentarlo (HTTPS requerido).</span>';
+                        document.getElementById('audio-overlay').innerHTML = 'Acceso Denegado al Micrófono';
+                        document.getElementById('audio-overlay').style.cursor = 'default';
                     });
             } catch (e) {
                  dominantFreqElement.innerHTML = '<span style="color:red;">No se pudo iniciar el AudioContext.</span>';
+                 document.getElementById('audio-overlay').innerHTML = 'Error de AudioContext';
             }
         }
 
         function drawAnalyser() {
-            if (!analyser || !audioCanvas) return;
+            if (!analyser || !audioInitialized) return;
             
             analyser.getByteFrequencyData(frequencyData);
             const canvasWidth = audioCanvas.width;
             const canvasHeight = audioCanvas.height;
             const ctx = audioCanvas.getContext('2d');
             
-            // Limpiar el canvas
             ctx.clearRect(0, 0, canvasWidth, canvasHeight);
             
             const sampleRate = analyser.context.sampleRate;
+            const binWidth = sampleRate / analyser.fftSize;
             
-            // 1. Detección de Frecuencia Dominante
+            // Analizar solo hasta 500 Hz (zona de sub-bajos a medio-bajos)
+            const maxFreqToAnalyze = 500;
+            const maxIndex = Math.min(frequencyData.length, Math.ceil(maxFreqToAnalyze / binWidth)); 
+
             let maxVolume = 0;
             let dominantIndex = -1;
             
-            // Analizar solo hasta 500 Hz (índice aproximado para graves y medio-graves)
-            const maxFreqToAnalyze = 500;
-            const binWidth = sampleRate / analyser.fftSize;
-            const maxIndex = Math.min(frequencyData.length, Math.ceil(maxFreqToAnalyze / binWidth)); 
-
+            // 1. Detección de Frecuencia Dominante
             for (let i = 0; i < maxIndex; i++) {
                 if (frequencyData[i] > maxVolume) {
                     maxVolume = frequencyData[i];
@@ -403,29 +446,46 @@
                 const barHeight = frequencyData[i] / 255 * canvasHeight;
                 const freq = i * binWidth;
                 
-                // Estilo
-                const hue = i / numBinsToDraw * 120; // 0 (Rojo) a 120 (Verde)
+                const hue = i / numBinsToDraw * 120; // 0 (Rojo, 0Hz) a 120 (Verde, 500Hz)
                 ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
                 
-                // Dibujar
                 ctx.fillRect(x, canvasHeight - barHeight, barWidth, barHeight);
                 x += barWidth + 1;
+                
+                // Opcional: Marcar la frecuencia del deslizador principal (100Hz)
+                if (i * binWidth > 95 && i * binWidth < 105) {
+                   ctx.strokeStyle = '#fff';
+                   ctx.lineWidth = 1;
+                   ctx.beginPath();
+                   ctx.moveTo(x - barWidth/2, 0);
+                   ctx.lineTo(x - barWidth/2, canvasHeight);
+                   ctx.stroke();
+                }
             }
 
             // 3. Mostrar Frecuencia Dominante
-            if (dominantIndex > 0 && maxVolume > 50) { // Umbral de 50 para evitar ruido de fondo
+            if (dominantIndex > 0 && maxVolume > 50) { 
                 const dominantFreq = dominantIndex * binWidth;
                 dominantFreqElement.innerHTML = `Frecuencia Ambiental Dominante (aprox.): <span style="font-weight: bold; color:#4CAF50;">${dominantFreq.toFixed(1)} Hz</span>`;
+                
+                // Opcional: Dibujar una línea vertical en la dominante
+                const dominantX = (dominantIndex / numBinsToDraw) * canvasWidth;
+                ctx.strokeStyle = 'red';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(dominantX, 0);
+                ctx.lineTo(dominantX, canvasHeight);
+                ctx.stroke();
+
             } else {
-                 dominantFreqElement.innerHTML = `Frecuencia Ambiental Dominante: <span style="font-weight: bold;">(Nivel bajo o silencioso)</span>`;
+                 dominantFreqElement.innerHTML = `Frecuencia Ambiental Dominante: <span style="font-weight: bold;">(Nivel bajo o silencioso. Toca las manos para probar)</span>`;
             }
         }
 
 
         // --- INICIO DE LA APLICACIÓN ---
         initThree();
-        initAudioAnalyser();
-        window.onload = onWindowResize;
+        window.onload = onWindowResize; // Inicializar Three.js y WebGL
         actualizarValores();
         animate();
     </script>
