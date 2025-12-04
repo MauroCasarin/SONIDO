@@ -116,17 +116,13 @@
             margin-top: 5px;
         }
         
-        /* Etiqueta de Rango Abajo */
-        #rango-label {
-            font-size: 0.8em;
-            font-weight: bold;
-            color: #ccc;
-            margin-top: 5px;
-        }
+        /* Etiquetas de información de Audio */
+        #dominante-freq { font-size: 0.9em; color: #1e90ff; margin-top: 5px; }
+        #rango-label { font-size: 0.8em; font-weight: bold; color: #ccc; margin-top: 5px; }
         #decibel-label {
             color: #FF5733; 
             font-size: 0.75em; 
-            margin-top: 2px; /* Margen reducido */
+            margin-top: 2px;
         }
 
         /* Overlay de inicio (requerido para desbloqueo de audio) */
@@ -373,7 +369,6 @@
             return "ULTRA SONIDO";
         }
 
-        // *** FUNCIÓN DE CLASIFICACIÓN DE DECIBELIOS SIMPLIFICADA ***
         function classifyDecibels(dB) {
             if (dB < 30) return "SILENCIO TOTAL";
             if (dB < 60) return "NORMAL";
@@ -384,14 +379,14 @@
             return "DOLOR SEVERO";
         }
 
-        // ... (Funciones de Actualización de Valores y Audio sin cambios en la lógica) ...
         window.actualizarValores = function() {
             const frecuenciaHz = parseFloat(document.getElementById('sliderFrecuencia').value);
             const separacionMetros = parseFloat(document.getElementById('sliderSeparacion').value);
             const LONGITUD_ONDA = VELOCIDAD_SONIDO / frecuenciaHz;
             
+            // *** CORRECCIÓN: Uso de LONGITUD_ONDA en lugar de LONGITUD_ONMSDA ***
             if (material) {
-                material.uniforms.u_lambda.value = LONGITUD_ONDA;
+                material.uniforms.u_lambda.value = LONGITUD_ONDA; 
                 material.uniforms.u_separation.value = separacionMetros;
             }
             const offset = separacionMetros / 2;
@@ -548,11 +543,10 @@
             }
 
             // Actualización de Decibelios
-            if (approx_dB > 0) {
-                 decibelLabel.innerHTML = `**${approx_dB.toFixed(1)} dB** | ${classifyDecibels(approx_dB)}`;
-            } else {
-                 decibelLabel.innerHTML = `**< 30 dB** | SILENCIO TOTAL`;
-            }
+            const dBText = approx_dB > 0 ? `${approx_dB.toFixed(1)} dB` : `< 30 dB`;
+            const dBClass = classifyDecibels(approx_dB);
+            
+            decibelLabel.innerHTML = `**${dBText}** | ${dBClass}`;
         }
 
 
