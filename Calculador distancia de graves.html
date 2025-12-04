@@ -90,7 +90,6 @@
             position: relative;
             width: 100%;
             height: 15px;
-            /* Degradado logarítmico: más espacio para bajos */
             background: linear-gradient(to right, 
                 #FF5733 0%, /* 20Hz */
                 #FFD700 20%, /* 100Hz */
@@ -111,7 +110,7 @@
             border: 2px solid #1e90ff;
             border-radius: 3px;
             transform: translateX(-50%);
-            transition: left 0.1s linear; /* Más suave que ease-out para un medidor */
+            transition: left 0.1s linear;
         }
         #freq-ticks-labels {
             width: 100%;
@@ -122,13 +121,17 @@
         }
         
         /* Etiqueta de Rango Abajo */
-        #rango-label {
+        #rango-label, #decibel-label {
             font-size: 0.8em;
             font-weight: bold;
             color: #ccc;
             margin-top: 5px;
         }
-        
+        #decibel-label {
+            color: #FF5733; /* Rojo para el dB para llamar la atención */
+            font-size: 0.75em; /* Más pequeño aún */
+        }
+
         /* Overlay de inicio (requerido para desbloqueo de audio) */
         #audio-overlay {
             position: absolute;
@@ -210,6 +213,7 @@
         </div>
         <p id="dominante-freq" style="font-size: 0.9em; color: #1e90ff; margin-top: 5px;">Frecuencia Dominante: No iniciado</p>
         <p id="rango-label">Rango: Esperando análisis...</p>
+        <p id="decibel-label">Decibelios (dB): No iniciado</p>
     </div>
 
     <div id="imagen-referencia">
@@ -231,7 +235,7 @@
         const labelDistancia = document.getElementById('label-distancia');
         const vectorFreq = new THREE.Vector3(0, 0, SIMULATION_SIZE_Y / 2 * 0.875); 
         const vectorDist = new THREE.Vector3(0, 0, -0.5); 
-        
+
         // --- INICIALIZACIÓN DE THREE.JS (Omitido por ser idéntico) ---
         function initThree() {
             renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -373,6 +377,16 @@
             return "ULTRA SONIDO (No audible)";
         }
 
+        function classifyDecibels(dB) {
+            if (dB < 30) return "SILENCIO TOTAL (Estudio, biblioteca, dormitorio)";
+            if (dB < 60) return "NORMAL (Conversación tranquila, oficina silenciosa)";
+            if (dB < 75) return "RUIDO MEDIO (Aspiradora, tráfico ligero, TV a volumen normal)";
+            if (dB < 90) return "RUIDO FUERTE (Tráfico pesado, cortadora de césped, secador de pelo)";
+            if (dB < 105) return "MUY FUERTE (Concierto de Rock, herramientas eléctricas) - **RIESGO DE DAÑO CON EXPOSICIÓN PROLONGADA**";
+            if (dB < 120) return "EXTREMO (Sirena, Motosierra) - **RIESGO INMINENTE DE DAÑO AUDITIVO**";
+            return "DOLOR (Avión despegando, Fuegos artificiales) - **DOLOR SEVERO**";
+        }
+
         window.actualizarValores = function() {
             const frecuenciaHz = parseFloat(document.getElementById('sliderFrecuencia').value);
             const separacionMetros = parseFloat(document.getElementById('sliderSeparacion').value);
@@ -408,24 +422,39 @@
             document.getElementById('rango-description').innerHTML = getRangeDescription(frecuenciaHz);
         }
         
-        // --- MÓDULO DE ANALIZADOR DE AUDIO (MEDIDOR LOGARÍTMICO) ---
+        // --- MÓDULO DE ANALIZADOR DE AUDIO (MEDIDOR LOGARÍTMICO Y DB) ---
         let audioContext = null;
         let analyser = null;
         let frequencyData = null;
+        let timeDomainData = null; // Para la medición de dB
         let dominantFreqElement = null;
+        let decibelLabel = null;
         let audioInitialized = false;
         let rangoLabel = null;
         
-        const MIN_FREQ_LOG = Math.log10(20); // 20 Hz
-        const MAX_FREQ_LOG = Math.log10(20000); // 20 kHz
+        const MIN_FREQ = 20;
+        const MAX_FREQ = 20000;
+        const MIN_FREQ_LOG = Math.log10(MIN_FREQ);
+        const MAX_FREQ_LOG = Math.log10(MAX_FREQ);
         const LOG_RANGE = MAX_FREQ_LOG - MIN_FREQ_LOG;
+        const NOISE_THRESHOLD = 0.005; // Umbral de RMS para considerar "sonido"
 
         function freqToPercent(f) {
-            if (f < 20) return 0;
-            if (f > 20000) return 100;
+            if (f < MIN_FREQ) return 0;
+            if (f > MAX_FREQ) return 100;
             
             const logF = Math.log10(f);
             return (logF - MIN_FREQ_LOG) / LOG_RANGE * 100;
+        }
+
+        function calculateRMS(data) {
+            let sumOfSquares = 0;
+            for (let i = 0; i < data.length; i++) {
+                // Normalizar de 0-255 (Byte) a -1 a 1 (Float)
+                const normalized = (data[i] / 128) - 1;
+                sumOfSquares += normalized * normalized;
+            }
+            return Math.sqrt(sumOfSquares / data.length);
         }
 
         window.iniciarAudio = function() {
@@ -433,6 +462,7 @@
             
             dominantFreqElement = document.getElementById('dominante-freq');
             rangoLabel = document.getElementById('rango-label');
+            decibelLabel = document.getElementById('decibel-label');
             
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                 dominantFreqElement.innerHTML = '<span style="color:red;">Tu navegador no soporta la API de Micrófono.</span>';
@@ -443,8 +473,9 @@
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 analyser = audioContext.createAnalyser();
                 analyser.fftSize = 1024; 
-                analyser.smoothingTimeConstant = 0.92; // Promedio más lento
+                analyser.smoothingTimeConstant = 0.92;
                 frequencyData = new Uint8Array(analyser.frequencyBinCount);
+                timeDomainData = new Uint8Array(analyser.fftSize); // Inicializar para medición de dB
                 
                 if (audioContext.state === 'suspended') { audioContext.resume(); }
                 
@@ -473,15 +504,15 @@
             if (!analyser || !audioInitialized) return;
             
             analyser.getByteFrequencyData(frequencyData);
+            analyser.getByteTimeDomainData(timeDomainData); // Obtener datos para RMS/dB
             
             const sampleRate = analyser.context.sampleRate;
             const binWidth = sampleRate / analyser.fftSize;
             
+            // --- 1. DETECCIÓN DE FRECUENCIA DOMINANTE ---
             let maxVolume = 0;
             let dominantFreq = 0;
-            
-            // Buscar la dominante en el rango de 30Hz a 1kHz para priorizar la potencia relevante (más allá es ruido)
-            const powerMaxFreq = 1000; 
+            const powerMaxFreq = 1000; // Priorizar hasta 1kHz
             const maxIndexPower = Math.min(frequencyData.length, Math.ceil(powerMaxFreq / binWidth)); 
             const minIndex = Math.ceil(30 / binWidth);
 
@@ -492,8 +523,23 @@
                 }
             }
             
+            // --- 2. CÁLCULO DE DECIBELIOS ---
+            const rms = calculateRMS(timeDomainData);
+            let approx_dB = 0;
+
+            if (rms > NOISE_THRESHOLD) {
+                // Fórmula aproximada de dBFS a dBSPL (asumiendo 93dB SPL = 0dBFS en el micrófono)
+                // Se resta un valor base de ruido (ej: 40dB)
+                // 20 * log10(RMS) + Offset
+                approx_dB = 20 * Math.log10(rms) + 93; 
+                if (approx_dB < 0) approx_dB = 0;
+            } else {
+                approx_dB = 0;
+            }
+            
             const indicator = document.getElementById('freq-meter-indicator');
 
+            // --- 3. ACTUALIZACIÓN DE UI ---
             if (dominantFreq > 0 && maxVolume > 50) { 
                 const percent = freqToPercent(dominantFreq);
                 indicator.style.left = `${percent}%`;
@@ -505,6 +551,13 @@
                 indicator.style.left = `0%`;
                  dominantFreqElement.innerHTML = `Frecuencia Dominante: <span style="font-weight: bold;">(Nivel bajo o silencioso)</span>`;
                  rangoLabel.innerHTML = `Rango: <span style="font-weight: bold; color:#ccc;">(Esperando sonido...)</span>`;
+            }
+
+            // Actualización de Decibelios
+            if (approx_dB > 0) {
+                 decibelLabel.innerHTML = `**${approx_dB.toFixed(1)} dB** | ${classifyDecibels(approx_dB)}`;
+            } else {
+                 decibelLabel.innerHTML = `**< 30 dB** | SILENCIO (La sensibilidad del micrófono no detecta sonido)`;
             }
         }
 
