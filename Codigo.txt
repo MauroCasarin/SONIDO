@@ -158,11 +158,11 @@
     </div>
     
     <div id="audio-analizador">
-        <p style="font-size: 0.9em; margin-bottom: 3px;">Analizador de Micrófono (Solo para HTTPS)</p>
+        <p style="font-size: 0.9em; margin-bottom: 3px;">Analizador de Micrófono</p>
         <div style="position: relative; width: 100%; height: 100px;">
             <canvas id="audioCanvas" width="800" height="100"></canvas>
             <div id="audio-overlay" onclick="iniciarAudio()" style="position: absolute;">
-                Toca aquí para activar el micrófono y el análisis de espectro
+                Toca aquí para activar el micrófono y el análisis de espectro (HTTPS Requerido)
             </div>
         </div>
         <p id="dominante-freq" style="font-size: 0.9em; color: #1e90ff; margin-top: 5px;">Frecuencia Ambiental Dominante: No iniciado</p>
@@ -177,7 +177,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     
     <script>
-        // --- MÓDULO DE WEBGL/THREE.JS (VARIABLES Y FUNCIONES) ---
+        // --- MÓDULO DE WEBGL/THREE.JS ---
         let scene, camera, renderer, plane, material, sub1, sub2;
         const SIMULATION_SIZE_Y = 8; 
         const SEGMENTS = 256;
@@ -187,8 +187,6 @@
         const labelDistancia = document.getElementById('label-distancia');
         const vectorFreq = new THREE.Vector3(0, 0, SIMULATION_SIZE_Y / 2 * 0.875); 
         const vectorDist = new THREE.Vector3(0, 0, -0.5); 
-        
-        // ... (Funciones initThree, onWindowResize, updateLabels, animate, getRangeDescription, actualizarValores) ...
 
         function initThree() {
             renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -283,7 +281,7 @@
             const audioContainer = document.getElementById('audio-analizador');
             if (audioContainer) {
                 const audioCanvas = document.getElementById('audioCanvas');
-                audioCanvas.width = document.getElementById('audio-analizador').clientWidth;
+                audioCanvas.width = audioContainer.clientWidth;
                 // Asegurar que el overlay también se ajuste
                 const audioOverlay = document.getElementById('audio-overlay');
                 if (audioOverlay) audioOverlay.style.height = `${audioCanvas.offsetHeight}px`;
@@ -379,7 +377,7 @@
             try {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 analyser = audioContext.createAnalyser();
-                analyser.fftSize = 2048; 
+                analyser.fftSize = 1024; // *** OPTIMIZACIÓN *** (Más rápido que 2048)
                 analyser.smoothingTimeConstant = 0.85; 
                 frequencyData = new Uint8Array(analyser.frequencyBinCount);
                 audioCanvas = document.getElementById('audioCanvas');
@@ -397,6 +395,7 @@
                         document.getElementById('audio-overlay').style.display = 'none'; // Ocultar overlay
                         audioInitialized = true;
                         dominantFreqElement.innerHTML = 'Frecuencia Ambiental Dominante: <span style="font-weight: bold;">(Escuchando...)</span>';
+                        onWindowResize(); // Asegurarse de que el canvas de audio tenga el tamaño correcto.
                     })
                     .catch(err => {
                         dominantFreqElement.innerHTML = '<span style="color:red;">Acceso denegado al micrófono. Recarga la página y vuelve a intentarlo (HTTPS requerido).</span>';
@@ -439,28 +438,16 @@
             
             // 2. Dibujo de Barras
             const numBinsToDraw = maxIndex; 
-            const barWidth = (canvasWidth / numBinsToDraw) * 0.9;
+            const barWidth = canvasWidth / numBinsToDraw; // *** DIBUJO OPTIMIZADO ***
             let x = 0;
             
             for (let i = 0; i < numBinsToDraw; i++) {
                 const barHeight = frequencyData[i] / 255 * canvasHeight;
-                const freq = i * binWidth;
-                
                 const hue = i / numBinsToDraw * 120; // 0 (Rojo, 0Hz) a 120 (Verde, 500Hz)
                 ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
                 
-                ctx.fillRect(x, canvasHeight - barHeight, barWidth, barHeight);
-                x += barWidth + 1;
-                
-                // Opcional: Marcar la frecuencia del deslizador principal (100Hz)
-                if (i * binWidth > 95 && i * binWidth < 105) {
-                   ctx.strokeStyle = '#fff';
-                   ctx.lineWidth = 1;
-                   ctx.beginPath();
-                   ctx.moveTo(x - barWidth/2, 0);
-                   ctx.lineTo(x - barWidth/2, canvasHeight);
-                   ctx.stroke();
-                }
+                ctx.fillRect(x, canvasHeight - barHeight, barWidth - 1, barHeight); // barWidth - 1 para un pequeño espacio
+                x += barWidth;
             }
 
             // 3. Mostrar Frecuencia Dominante
@@ -468,7 +455,7 @@
                 const dominantFreq = dominantIndex * binWidth;
                 dominantFreqElement.innerHTML = `Frecuencia Ambiental Dominante (aprox.): <span style="font-weight: bold; color:#4CAF50;">${dominantFreq.toFixed(1)} Hz</span>`;
                 
-                // Opcional: Dibujar una línea vertical en la dominante
+                // Dibujar la línea vertical en la dominante
                 const dominantX = (dominantIndex / numBinsToDraw) * canvasWidth;
                 ctx.strokeStyle = 'red';
                 ctx.lineWidth = 2;
@@ -478,14 +465,14 @@
                 ctx.stroke();
 
             } else {
-                 dominantFreqElement.innerHTML = `Frecuencia Ambiental Dominante: <span style="font-weight: bold;">(Nivel bajo o silencioso. Toca las manos para probar)</span>`;
+                 dominantFreqElement.innerHTML = `Frecuencia Ambiental Dominante: <span style="font-weight: bold;">(Nivel bajo o silencioso)</span>`;
             }
         }
 
 
         // --- INICIO DE LA APLICACIÓN ---
         initThree();
-        window.onload = onWindowResize; // Inicializar Three.js y WebGL
+        window.onload = onWindowResize;
         actualizarValores();
         animate();
     </script>
