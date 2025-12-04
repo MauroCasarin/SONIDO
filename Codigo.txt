@@ -1,14 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Simulación de Subwoofers Interactivo (Móvil)</title>
+    <title>Calculador distancia de graves según Hz.</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        :root {
-            --canvas-width: 95vw; /* Más ancho para móviles */
-            --info-width: 95vw;
-            --slider-width: 90%;
-        }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #1e1e1e;
@@ -16,265 +11,308 @@
             text-align: center;
             margin: 0;
             padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
         }
         h1 {
             color: #4CAF50;
-            padding-top: 15px;
-            font-size: 1.5em; /* Reducido para móviles */
+            padding-top: 5px;
+            font-size: 1.4em;
+            margin-bottom: 5px;
         }
-        canvas {
-            border: 2px solid #555;
-            margin: 10px auto;
-            display: block;
-            background-color: #2c2c2c;
-            width: var(--canvas-width);
-            max-width: 800px;
-            height: auto;
-        }
-        .leyenda {
-            text-align: left;
-            width: var(--info-width);
-            max-width: 800px;
-            margin: 0 auto 10px auto;
-            font-size: 0.9em;
-        }
-        .leyenda div { margin-bottom: 3px; }
-        .leyenda .sum, .leyenda .cancel {
-            display: inline-block;
-            width: 15px; /* Iconos más pequeños */
-            height: 15px;
-            margin-right: 8px;
-            vertical-align: middle;
-            border-radius: 3px;
-        }
-        .leyenda .sum { background-color: #4CAF50; }
-        .leyenda .cancel { background-color: #FF5733; }
         
         #info-panel {
-            font-size: 1em; /* Ajuste para móvil */
-            margin-top: 10px;
-            padding: 10px;
-            border: 1px solid #444;
+            flex-shrink: 0;
+            font-size: 0.95em;
+            padding: 8px;
             background-color: #2c2c2c;
-            width: var(--info-width);
+            width: 95vw;
             max-width: 800px;
-            margin-left: auto;
-            margin-right: auto;
+            margin: 10px auto 5px auto;
+            border-radius: 8px;
+            text-align: left;
+        }
+        
+        #container {
+            flex-grow: 1;
+            width: 95vw;
+            max-width: 800px;
+            margin: 5px auto 10px auto;
+            min-height: 250px;
+            position: relative; 
+        }
+        #container canvas {
+            display: block;
+            width: 100% !important;
+            height: 100% !important;
+            border: 2px solid #555;
             border-radius: 8px;
         }
-        .control-group {
-            margin-bottom: 3px;
-        }
         
-        .slider-container {
-            width: var(--slider-width);
-            margin: 0 auto 10px auto;
-            position: relative;
+        /* Estilos de las etiquetas de texto superpuestas */
+        .scene-label {
+            position: absolute;
+            background-color: rgba(30, 30, 30, 0.8);
+            color: white;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-size: 12px;
+            white-space: nowrap;
+            transform: translate(-50%, -50%); 
+            pointer-events: none;
+            border: 1px solid #444;
         }
+        #label-freq { font-size: 14px; font-weight: bold; color: #4CAF50; }
+        #label-distancia { font-size: 12px; color: #f0ad4e; }
         
-        .slider-label {
-            display: block;
-            text-align: left;
-            font-size: 0.9em;
-            margin-bottom: 2px;
-            font-weight: bold;
-            color: #1e90ff;
-        }
-        
-        input[type=range] {
-            width: 100%;
-            height: 5px;
-            background: #555;
-            -webkit-appearance: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
+        .control-group { margin-bottom: 2px; }
+        .slider-container { width: 95%; margin: 0 auto 8px 0; position: relative; }
+        .slider-label { display: block; font-size: 0.85em; margin-bottom: 1px; font-weight: bold; color: #1e90ff; }
+        input[type=range] { width: 100%; height: 5px; background: #555; -webkit-appearance: none; border-radius: 5px; cursor: pointer; }
         
         #rango-description {
             font-weight: bold;
             color: #f0ad4e;
-            margin-top: 8px;
-            padding: 5px;
+            margin-top: 5px;
+            padding: 4px;
             border-top: 1px solid #444;
-            font-size: 0.95em;
+            font-size: 0.8em;
         }
+        
+        /* Contenedor del Analizador de Audio */
+        #audio-analizador {
+            width: 95vw;
+            max-width: 800px;
+            margin: 10px auto;
+        }
+        #audioCanvas {
+            background-color: #2c2c2c;
+            border: 1px solid #444;
+            border-radius: 4px;
+            display: block;
+            width: 100%;
+            height: 100px;
+            margin-top: 5px;
+        }
+        
+        #imagen-referencia {
+            width: 95vw;
+            max-width: 800px;
+            margin: 20px auto;
+        }
+        #imagen-referencia img {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+        }
+
     </style>
 </head>
 <body>
 
-    <h1>Simulador Acústico de Subwoofers</h1>
-
     <div id="info-panel">
+        <h1>Calculador distancia de graves según Hz.</h1>
         
-        <div id="frecuencia-info" class="control-group">Frecuencia Actual: 100 Hz (Longitud de Onda: 3.40 m)</div>
-        <label for="sliderFrecuencia" class="slider-label">Control de Frecuencia (Hz):</label>
+        <div id="frecuencia-info" class="control-group">Frecuencia: 100 Hz (L.O.: 3.40 m) | Ideal: 1.70 m</div>
+        <label for="sliderFrecuencia" class="slider-label">Control de Frecuencia (Hz) [30 - 400 Hz]:</label>
         <div class="slider-container">
-            <input type="range" id="sliderFrecuencia" min="50" max="400" step="5" value="100" oninput="actualizarValores()"> 
+            <input type="range" id="sliderFrecuencia" min="30" max="400" step="5" value="100" oninput="actualizarValores()"> 
         </div>
         
-        <div id="separacion-info" class="control-group">Separación Actual: 0.85 metros - Máxima Coherencia</div>
-        <label for="sliderSeparacion" class="slider-label">Control de Separación (Metros):</label>
+        <div id="separacion-info" class="control-group">Separación: 0.85 metros - Máxima Coherencia</div>
+        <label for="sliderSeparacion" class="slider-label">Control de Separación (Metros) [0.1 - 4.0 m]:</label>
         <div class="slider-container">
             <input type="range" id="sliderSeparacion" min="0.1" max="4.0" step="0.05" value="0.85" oninput="actualizarValores()">
         </div>
         
         <div id="rango-description"></div>
+
+        <p style="font-size: 0.75em; margin-top: 5px;">
+            **Leyenda:** <span style="color:#4CAF50; font-weight: bold;">Verde</span> = Refuerzo (Suma) | <span style="color:#FF5733; font-weight: bold;">Rojo</span> = Cancelación (Resta)
+        </p>
     </div>
 
-    <canvas id="subwooferCanvas" width="800" height="400"></canvas>
-
-    <div class="leyenda">
-        <p><strong>Leyenda:</strong></p>
-        <div><span class="sum"></span> Color **Verde**: Zonas de **Refuerzo** (Suma de energía, sonido más fuerte)</div>
-        <div><span class="cancel"></span> Color **Rojo**: Zonas de **Cancelación** (Resta de energía, "agujeros" de sonido)</div>
+    <div id="container">
+        <div id="label-freq" class="scene-label"></div>
+        <div id="label-distancia" class="scene-label"></div>
+    </div>
+    
+    <div id="audio-analizador">
+        <p style="font-size: 0.9em; margin-bottom: 3px;">Analizador de Micrófono (Solo para HTTPS)</p>
+        <canvas id="audioCanvas" width="800" height="100"></canvas>
     </div>
 
+    <div id="imagen-referencia">
+        <h2 style="font-size: 1.2em; margin-bottom: 10px; color: #ffffff;">Rangos de Frecuencia Musical</h2>
+        <img src="https://maurocasarin.github.io/SONIDO/index_archivos/image005.jpg" alt="Gráfico de Rangos de Frecuencia para Mezcla de Sonido" />
+    </div>
+
+    <!-- Carga de la librería Three.js (la necesitamos para WebGL) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
     <script>
-        // Parámetros Fijos
-        const VELOCIDAD_SONIDO = 340; // m/s
+        // --- MÓDULO DE WEBGL/THREE.JS (SIN CAMBIOS FUNCIONALES) ---
+        let scene, camera, renderer, plane, material, sub1, sub2;
+        const SIMULATION_SIZE_Y = 8; 
+        const SEGMENTS = 256;
+        const VELOCIDAD_SONIDO = 340; 
+        const container = document.getElementById('container');
+        const labelFreq = document.getElementById('label-freq');
+        const labelDistancia = document.getElementById('label-distancia');
+        const vectorFreq = new THREE.Vector3(0, 0, SIMULATION_SIZE_Y / 2 * 0.875); 
+        const vectorDist = new THREE.Vector3(0, 0, -0.5); 
+
+        function initThree() {
+            // ... (Código initThree omitido por ser igual) ...
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setClearColor(0x1e1e1e);
+            container.appendChild(renderer.domElement);
+
+            scene = new THREE.Scene();
+            scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+            camera = new THREE.OrthographicCamera();
+            camera.position.set(0, 5, 0); 
+            camera.lookAt(0, 0, 0);
+
+            const geometry = new THREE.PlaneGeometry(SIMULATION_SIZE_Y, SIMULATION_SIZE_Y, SEGMENTS, SEGMENTS);
+            material = new THREE.ShaderMaterial({
+                uniforms: {
+                    u_lambda: { value: 3.4 }, u_separation: { value: 0.85 }, u_size: { value: SIMULATION_SIZE_Y },
+                    u_red_color: { value: new THREE.Color(0xFF5733) }, u_green_color: { value: new THREE.Color(0x4CAF50) },
+                },
+                vertexShader: `
+                    varying vec2 vUv;
+                    void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }
+                `,
+                fragmentShader: `
+                    uniform float u_lambda; uniform float u_separation; uniform float u_size; uniform vec3 u_red_color; uniform vec3 u_green_color; varying vec2 vUv;
+                    void main() {
+                        vec2 pos = (vUv - 0.5) * u_size; 
+                        float sub_offset = u_separation / 2.0;
+                        float r1 = distance(pos, vec2(-sub_offset, 0.0));
+                        float r2 = distance(pos, vec2(sub_offset, 0.0));
+                        float deltaR = r2 - r1;
+                        float phase_diff = (deltaR / u_lambda) * 6.2831853;
+                        float intensity = 2.0 * abs(cos(phase_diff / 2.0));
+                        float power = pow(intensity / 2.0, 4.0); 
+                        vec3 final_color = mix(u_red_color, u_green_color, power);
+                        float border_fade = 1.0 - smoothstep(2.5, 4.0, length(pos));
+                        final_color *= border_fade;
+                        gl_FragColor = vec4(final_color, 1.0);
+                    }
+                `,
+                transparent: true, side: THREE.DoubleSide
+            });
+
+            plane = new THREE.Mesh(geometry, material);
+            plane.rotation.x = -Math.PI / 2;
+            scene.add(plane);
+            
+            const bafleGeo = new THREE.BoxGeometry(0.3, 0.3, 0.3);
+            const bafleMat = new THREE.MeshBasicMaterial({ color: 0x444444, wireframe: false }); 
+            const bafleEdgeMat = new THREE.LineBasicMaterial({ color: 0xffffff }); 
+            const coneGeo = new THREE.ConeGeometry(0.15, 0.15, 16);
+            const coneMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            coneGeo.translate(0, 0.15, -0.15);
+            
+            sub1 = new THREE.Mesh(bafleGeo, bafleMat);
+            sub1.add(new THREE.LineSegments(new THREE.EdgesGeometry(bafleGeo), bafleEdgeMat));
+            sub1.add(new THREE.Mesh(coneGeo, coneMat));
+            scene.add(sub1);
+            
+            sub2 = new THREE.Mesh(bafleGeo, bafleMat);
+            sub2.add(new THREE.LineSegments(new THREE.EdgesGeometry(bafleGeo), bafleEdgeMat));
+            sub2.add(new THREE.Mesh(coneGeo, coneMat));
+            scene.add(sub2);
+            
+            window.addEventListener('resize', onWindowResize, false);
+            onWindowResize();
+        }
+
+        function onWindowResize() {
+            const rect = container.getBoundingClientRect();
+            const width = rect.width;
+            const height = rect.height;
+            
+            const aspectRatio = width / height;
+            
+            let viewHeight = SIMULATION_SIZE_Y;
+            let viewWidth = viewHeight * aspectRatio;
+
+            if (viewWidth < SIMULATION_SIZE_Y) {
+                viewWidth = SIMULATION_SIZE_Y;
+                viewHeight = viewWidth / aspectRatio;
+            }
+
+            camera.left = -viewWidth / 2;
+            camera.right = viewWidth / 2;
+            camera.top = viewHeight / 2;
+            camera.bottom = -viewHeight / 2;
+            
+            camera.updateProjectionMatrix();
+            renderer.setSize(width, height);
+            
+            // Reajustar el canvas de audio también si se hace responsive
+            const audioCanvas = document.getElementById('audioCanvas');
+            audioCanvas.width = document.getElementById('audio-analizador').clientWidth;
+        }
+
+        function updateLabels() {
+            const rect = container.getBoundingClientRect();
+            const width = rect.width;
+            const height = rect.height;
+
+            let posFreq = vectorFreq.clone().project(camera);
+            labelFreq.style.left = `${(posFreq.x * 0.5 + 0.5) * width}px`;
+            labelFreq.style.top = `${(-posFreq.y * 0.5 + 0.5) * height}px`;
+
+            let posDist = vectorDist.clone().project(camera);
+            labelDistancia.style.left = `${(posDist.x * 0.5 + 0.5) * width}px`;
+            labelDistancia.style.top = `${(-posDist.y * 0.5 + 0.5) * height - 30}px`;
+        }
+
+
+        function animate() {
+            requestAnimationFrame(animate);
+            updateLabels(); 
+            renderer.render(scene, camera);
+            drawAnalyser(); // Llama a la función de dibujo del analizador
+        }
         
-        // Parámetros del Canvas
-        const canvas = document.getElementById('subwooferCanvas');
-        const ctx = canvas.getContext('2d');
-        let WIDTH = 800;
-        let HEIGHT = 400;
-        const BAFLE_WIDTH = 30;
-        const BAFLE_HEIGHT = 45;
-        const PIXELS_PER_METER = 200;
-
-        // Variables de estado
-        let frecuenciaHz = parseFloat(document.getElementById('sliderFrecuencia').value);
-        let separacionMetros = parseFloat(document.getElementById('sliderSeparacion').value);
-        let LONGITUD_ONDA = VELOCIDAD_SONIDO / frecuenciaHz;
-
-        // FUNCIÓN PARA OBTENER LA DESCRIPCIÓN DEL RANGO
         function getRangeDescription(f) {
             if (f < 63) {
-                return "Sub Bajos (25 - 63 Hz): Frecuencias del bajo, bombos y algunos synths. (Subwoofers)";
+                return "Sub Bajos (25-63 Hz): A menudo se percibe como una vibración en lugar de un tono puro. La mayoría de la música generalmente no baja de los 30 Hz.";
             } else if (f >= 63 && f < 250) {
-                return "Bajos (63 - 250 Hz): Frecuencias del bombo, toms y es una zona de corte de muchos instrumentos. (Subwoofers/Woofers)";
+                return "Bajos (63-250 Hz): Una frecuencia que puede sentirse retumbante, pero también añade calidez y potencia. Frecuencia donde instrumentos como el bombo o las cuerdas más graves del bajo pueden tener su fundamental, proporcionando esa sensación de 'retumbo'.";
             } else if (f >= 250 && f <= 400) {
-                return "Medios Bajos (250 - 500 Hz): Se encuentra el cuerpo del Snare, normalmente un rango que necesita mucho control. (Woofers/Medios)";
-            } else {
-                 return "Frecuencia en el límite superior del rango de bajos.";
+                return "Medios Bajos (250-500 Hz): Frecuencia que da 'cuerpo' y calidez al sonido. Un exceso de esta frecuencia puede hacer que el audio suene apagado, mientras que una cantidad adecuada proporciona una base sólida para la mezcla. Fundamental para la sensación de ritmo y potencia.";
             }
+            return "";
         }
-
-        // ----------------------------------------------------
-        // FUNCIÓN PRINCIPAL DE DIBUJO
-        // ----------------------------------------------------
-        function drawPattern() {
-            ctx.clearRect(0, 0, WIDTH, HEIGHT);
-
-            // 1. DIBUJAR LA GRILLA (1m x 1m)
-            ctx.strokeStyle = '#3a3a3a';
-            ctx.lineWidth = 0.5;
-            for(let i = -2; i <= 2; i++) {
-                const xPos = WIDTH / 2 + i * PIXELS_PER_METER;
-                ctx.beginPath(); ctx.moveTo(xPos, 0); ctx.lineTo(xPos, HEIGHT); ctx.stroke();
-            }
-            for(let i = -2; i <= 2; i++) {
-                const yPos = HEIGHT / 2 + i * PIXELS_PER_METER;
-                ctx.beginPath(); ctx.moveTo(0, yPos); ctx.lineTo(WIDTH, yPos); ctx.stroke();
-            }
-
-            // 2. Coordenadas de los subwoofers
-            const sub1X = WIDTH / 2 - (separacionMetros / 2) * PIXELS_PER_METER;
-            const sub1Y = HEIGHT / 2;
-            const sub2X = WIDTH / 2 + (separacionMetros / 2) * PIXELS_PER_METER;
-
-            // 3. Iterar sobre cada pixel para calcular la fase (Interferencia)
-            for (let x = 0; x < WIDTH; x += 3) {
-                for (let y = 0; y < HEIGHT; y += 3) {
-                    
-                    const xMetros = (x - WIDTH / 2) / PIXELS_PER_METER;
-                    const yMetros = (y - HEIGHT / 2) / PIXELS_PER_METER;
-
-                    const r1 = Math.sqrt(Math.pow(xMetros + separacionMetros / 2, 2) + Math.pow(yMetros, 2));
-                    const r2 = Math.sqrt(Math.pow(xMetros - separacionMetros / 2, 2) + Math.pow(yMetros, 2));
-                    
-                    const deltaR = r2 - r1; 
-                    const faseDiferencia = (deltaR / LONGITUD_ONDA) * (2 * Math.PI);
-
-                    const intensidad = 2 * Math.abs(Math.cos(faseDiferencia / 2));
-                    
-                    let color;
-                    if (intensidad > 1.5) { color = `rgba(76, 175, 80, ${intensidad * 0.5})`; 
-                    } else if (intensidad < 0.5) { color = `rgba(255, 87, 51, ${1 - intensidad * 0.5})`; 
-                    } else { color = `rgba(255, 255, 255, 0.05)`; }
-
-                    ctx.fillStyle = color;
-                    ctx.fillRect(x, y, 3, 3);
-                }
-            }
-            
-            // 4. Dibujar los BAFLES (Rectángulos)
-            ctx.fillStyle = '#444444'; 
-            ctx.strokeStyle = '#ffffff';
-            ctx.lineWidth = 1;
-            
-            // Bafle 1
-            ctx.fillRect(sub1X - BAFLE_WIDTH / 2, sub1Y - BAFLE_HEIGHT / 2, BAFLE_WIDTH, BAFLE_HEIGHT);
-            ctx.strokeRect(sub1X - BAFLE_WIDTH / 2, sub1Y - BAFLE_HEIGHT / 2, BAFLE_WIDTH, BAFLE_HEIGHT);
-            
-            // Bafle 2
-            ctx.fillRect(sub2X - BAFLE_WIDTH / 2, sub1Y - BAFLE_HEIGHT / 2, BAFLE_WIDTH, BAFLE_HEIGHT);
-            ctx.strokeRect(sub2X - BAFLE_WIDTH / 2, sub1Y - BAFLE_HEIGHT / 2, BAFLE_WIDTH, BAFLE_HEIGHT);
-
-
-            // 5. Dibujar la línea de AUDIENCIA
-            ctx.strokeStyle = '#ffffff';
-            ctx.setLineDash([5, 5]);
-            ctx.beginPath();
-            ctx.moveTo(WIDTH / 2, 0);
-            ctx.lineTo(WIDTH / 2, HEIGHT);
-            ctx.stroke();
-            ctx.setLineDash([]);
-
-
-            // 6. DETALLES DE TEXTO EN EL CANVAS
-            ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 24px Segoe UI'; /* **Aumento de fuente** para mejor visibilidad */
-            ctx.textAlign = 'center';
-
-            // 6a. Frecuencia Elegida (Superior)
-            ctx.fillText(`${frecuenciaHz.toFixed(0)} Hz`, WIDTH / 2, 40);
-
-            // 6b. Separación de Bafles (Subwoofers)
-            ctx.font = 'bold 18px Segoe UI'; /* **Aumento de fuente** para separación */
-            const separacionTexto = `${separacionMetros.toFixed(2)} m`;
-            
-            // Dibujar línea de separación
-            ctx.strokeStyle = '#f0ad4e';
-            ctx.setLineDash([2, 4]);
-            ctx.beginPath();
-            ctx.moveTo(sub1X + BAFLE_WIDTH / 2, sub1Y - BAFLE_HEIGHT/2 - 5);
-            ctx.lineTo(sub2X - BAFLE_WIDTH / 2, sub1Y - BAFLE_HEIGHT/2 - 5);
-            ctx.stroke();
-            ctx.setLineDash([]);
-            
-            // Dibujar el texto centrado entre los subwoofers
-            ctx.textAlign = 'center';
-            ctx.fillText(separacionTexto, WIDTH / 2, sub1Y - BAFLE_HEIGHT/2 - 15);
-        }
-
-        // ----------------------------------------------------
-        // FUNCIONES DE CONTROL
-        // ----------------------------------------------------
-        function resizeCanvas() {
-            drawPattern();
-        }
-        window.addEventListener('resize', resizeCanvas);
-
 
         window.actualizarValores = function() {
-            frecuenciaHz = parseFloat(document.getElementById('sliderFrecuencia').value);
-            separacionMetros = parseFloat(document.getElementById('sliderSeparacion').value);
-            LONGITUD_ONDA = VELOCIDAD_SONIDO / frecuenciaHz;
+            const frecuenciaHz = parseFloat(document.getElementById('sliderFrecuencia').value);
+            const separacionMetros = parseFloat(document.getElementById('sliderSeparacion').value);
+            const LONGITUD_ONDA = VELOCIDAD_SONIDO / frecuenciaHz;
             
-            const coherenciaMax = LONGITUD_ONDA / 4;
-            const controlDirectividad = LONGITUD_ONDA / 2;
+            if (material) {
+                material.uniforms.u_lambda.value = LONGITUD_ONDA;
+                material.uniforms.u_separation.value = separacionMetros;
+            }
+            const offset = separacionMetros / 2;
+            if (sub1 && sub2) {
+                sub1.position.x = -offset;
+                sub2.position.x = offset;
+            }
 
+            labelFreq.textContent = `Frecuencia: ${frecuenciaHz.toFixed(0)} Hz`;
+            labelDistancia.textContent = `Separación: ${separacionMetros.toFixed(2)} Metros`;
+
+            const controlDirectividad = LONGITUD_ONDA / 2;
+            const coherenciaMax = LONGITUD_ONDA / 4;
             let comentarioSeparacion = '';
 
             if (separacionMetros < coherenciaMax * 1.1) {
@@ -285,16 +323,82 @@
                  comentarioSeparacion = " - **LOBING** Severo (Cancelaciones fuertes)";
             } 
             
-            // Actualizar la información en el panel (más concisa para móviles)
             document.getElementById('frecuencia-info').innerHTML = `Frecuencia: ${frecuenciaHz.toFixed(0)} Hz (L.O.: ${LONGITUD_ONDA.toFixed(2)} m) | Ideal: ${controlDirectividad.toFixed(2)} m`;
             document.getElementById('separacion-info').innerHTML = `Separación: ${separacionMetros.toFixed(2)} m ${comentarioSeparacion}`;
             document.getElementById('rango-description').innerHTML = getRangeDescription(frecuenciaHz);
-
-            drawPattern();
+        }
+        
+        // --- MÓDULO DE ANALIZADOR DE AUDIO (WEB AUDIO API) ---
+        let audioContext, analyser, frequencyData, audioCanvas, audioCtx;
+        
+        function initAudioAnalyser() {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            analyser = audioCtx.createAnalyser();
+            analyser.fftSize = 2048; // Calidad del análisis
+            frequencyData = new Uint8Array(analyser.frequencyBinCount);
+            
+            audioCanvas = document.getElementById('audioCanvas');
+            audioCtx = audioCanvas.getContext('2d');
+            
+            // 1. Solicitar acceso al micrófono
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ audio: true })
+                    .then(stream => {
+                        const source = audioCtx.createMediaStreamSource(stream);
+                        source.connect(analyser);
+                        // El analizador ya está conectado a la fuente, listo para dibujar.
+                    })
+                    .catch(err => {
+                        console.error('Error al acceder al micrófono:', err);
+                        const messageDiv = document.getElementById('audio-analizador');
+                        messageDiv.innerHTML = '<p style="color:red; font-size: 0.9em;">Error: Se requiere acceso al micrófono (o HTTPS).</p>';
+                    });
+            } else {
+                const messageDiv = document.getElementById('audio-analizador');
+                messageDiv.innerHTML = '<p style="color:red; font-size: 0.9em;">Tu navegador no soporta la API de Micrófono.</p>';
+            }
         }
 
-        // Ejecutar al cargar
+        function drawAnalyser() {
+            if (!analyser || !audioCanvas) return;
+            
+            analyser.getByteFrequencyData(frequencyData);
+            const canvasWidth = audioCanvas.width;
+            const canvasHeight = audioCanvas.height;
+            const ctx = audioCanvas.getContext('2d');
+            
+            // Limpiar el canvas
+            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+            
+            // Configurar el estilo de la barra
+            ctx.fillStyle = '#4CAF50'; // Color de las barras (Verde)
+            
+            // Frecuencias relevantes para graves (hasta 500 Hz, aproximadamente 1/4 de los datos)
+            const numBins = Math.floor(frequencyData.length / 4); 
+            const barWidth = (canvasWidth / numBins) * 0.9;
+            let x = 0;
+            
+            for (let i = 0; i < numBins; i++) {
+                const barHeight = frequencyData[i] / 255 * canvasHeight;
+                // Gradiente para un efecto más ameno
+                const gradient = ctx.createLinearGradient(0, canvasHeight, 0, 0);
+                gradient.addColorStop(1, '#4CAF50'); // Verde
+                gradient.addColorStop(0.5, '#FFD700'); // Amarillo
+                gradient.addColorStop(0, '#FF5733'); // Rojo
+                ctx.fillStyle = gradient;
+                
+                ctx.fillRect(x, canvasHeight - barHeight, barWidth, barHeight);
+                x += barWidth + 1;
+            }
+        }
+
+
+        // --- INICIO DE LA APLICACIÓN ---
+        initThree();
+        initAudioAnalyser();
+        window.onload = onWindowResize; // Asegurar que el canvas de audio se ajuste al inicio
         actualizarValores();
+        animate();
     </script>
 
 </body>

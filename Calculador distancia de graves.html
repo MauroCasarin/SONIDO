@@ -50,7 +50,7 @@
             border: 2px solid #555;
             border-radius: 8px;
         }
-
+        
         /* Estilos de las etiquetas de texto superpuestas */
         .scene-label {
             position: absolute;
@@ -64,15 +64,8 @@
             pointer-events: none;
             border: 1px solid #444;
         }
-        #label-freq {
-            font-size: 14px;
-            font-weight: bold;
-            color: #4CAF50;
-        }
-        #label-distancia {
-            font-size: 12px;
-            color: #f0ad4e;
-        }
+        #label-freq { font-size: 14px; font-weight: bold; color: #4CAF50; }
+        #label-distancia { font-size: 12px; color: #f0ad4e; }
         
         .control-group { margin-bottom: 2px; }
         .slider-container { width: 95%; margin: 0 auto 8px 0; position: relative; }
@@ -88,7 +81,22 @@
             font-size: 0.8em;
         }
         
-        /* Contenedor y estilo para la imagen de referencia */
+        /* Contenedor del Analizador de Audio */
+        #audio-analizador {
+            width: 95vw;
+            max-width: 800px;
+            margin: 10px auto;
+        }
+        #audioCanvas {
+            background-color: #2c2c2c;
+            border: 1px solid #444;
+            border-radius: 4px;
+            display: block;
+            width: 100%;
+            height: 100px;
+            margin-top: 5px;
+        }
+        
         #imagen-referencia {
             width: 95vw;
             max-width: 800px;
@@ -131,6 +139,11 @@
         <div id="label-freq" class="scene-label"></div>
         <div id="label-distancia" class="scene-label"></div>
     </div>
+    
+    <div id="audio-analizador">
+        <p style="font-size: 0.9em; margin-bottom: 3px;">Analizador de Micrófono (Solo para HTTPS)</p>
+        <canvas id="audioCanvas" width="800" height="100"></canvas>
+    </div>
 
     <div id="imagen-referencia">
         <h2 style="font-size: 1.2em; margin-bottom: 10px; color: #ffffff;">Rangos de Frecuencia Musical</h2>
@@ -141,23 +154,19 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     
     <script>
-        // --- VARIABLES GLOBALES ---
+        // --- MÓDULO DE WEBGL/THREE.JS (SIN CAMBIOS FUNCIONALES) ---
         let scene, camera, renderer, plane, material, sub1, sub2;
         const SIMULATION_SIZE_Y = 8; 
         const SEGMENTS = 256;
         const VELOCIDAD_SONIDO = 340; 
-        
-        // Elementos DOM para las etiquetas
         const container = document.getElementById('container');
         const labelFreq = document.getElementById('label-freq');
         const labelDistancia = document.getElementById('label-distancia');
-        
-        // Vectores para la proyección de coordenadas
         const vectorFreq = new THREE.Vector3(0, 0, SIMULATION_SIZE_Y / 2 * 0.875); 
         const vectorDist = new THREE.Vector3(0, 0, -0.5); 
 
-        // --- INICIALIZACIÓN DE THREE.JS ---
         function initThree() {
+            // ... (Código initThree omitido por ser igual) ...
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setClearColor(0x1e1e1e);
             container.appendChild(renderer.domElement);
@@ -188,11 +197,8 @@
                         float deltaR = r2 - r1;
                         float phase_diff = (deltaR / u_lambda) * 6.2831853;
                         float intensity = 2.0 * abs(cos(phase_diff / 2.0));
-                        
-                        // *** MÁXIMO CONTRASTE (power=4.0) ***
                         float power = pow(intensity / 2.0, 4.0); 
                         vec3 final_color = mix(u_red_color, u_green_color, power);
-                        
                         float border_fade = 1.0 - smoothstep(2.5, 4.0, length(pos));
                         final_color *= border_fade;
                         gl_FragColor = vec4(final_color, 1.0);
@@ -205,7 +211,6 @@
             plane.rotation.x = -Math.PI / 2;
             scene.add(plane);
             
-            // 4. Bafles 3D
             const bafleGeo = new THREE.BoxGeometry(0.3, 0.3, 0.3);
             const bafleMat = new THREE.MeshBasicMaterial({ color: 0x444444, wireframe: false }); 
             const bafleEdgeMat = new THREE.LineBasicMaterial({ color: 0xffffff }); 
@@ -249,9 +254,12 @@
             
             camera.updateProjectionMatrix();
             renderer.setSize(width, height);
+            
+            // Reajustar el canvas de audio también si se hace responsive
+            const audioCanvas = document.getElementById('audioCanvas');
+            audioCanvas.width = document.getElementById('audio-analizador').clientWidth;
         }
 
-        // --- FUNCIÓN DE ACTUALIZACIÓN DE ETIQUETAS DE TEXTO ---
         function updateLabels() {
             const rect = container.getBoundingClientRect();
             const width = rect.width;
@@ -267,14 +275,13 @@
         }
 
 
-        // --- BUCLE DE ANIMACIÓN ---
         function animate() {
             requestAnimationFrame(animate);
             updateLabels(); 
             renderer.render(scene, camera);
+            drawAnalyser(); // Llama a la función de dibujo del analizador
         }
         
-        // --- CÁLCULOS Y CONTROLES ---
         function getRangeDescription(f) {
             if (f < 63) {
                 return "Sub Bajos (25-63 Hz): A menudo se percibe como una vibración en lugar de un tono puro. La mayoría de la música generalmente no baja de los 30 Hz.";
@@ -291,7 +298,6 @@
             const separacionMetros = parseFloat(document.getElementById('sliderSeparacion').value);
             const LONGITUD_ONDA = VELOCIDAD_SONIDO / frecuenciaHz;
             
-            // 1. ACTUALIZAR SHADER y BAFLES
             if (material) {
                 material.uniforms.u_lambda.value = LONGITUD_ONDA;
                 material.uniforms.u_separation.value = separacionMetros;
@@ -302,11 +308,9 @@
                 sub2.position.x = offset;
             }
 
-            // 2. ACTUALIZAR ETIQUETAS DOM
             labelFreq.textContent = `Frecuencia: ${frecuenciaHz.toFixed(0)} Hz`;
             labelDistancia.textContent = `Separación: ${separacionMetros.toFixed(2)} Metros`;
 
-            // 3. ACTUALIZAR TEXTO EN EL PANEL (UI)
             const controlDirectividad = LONGITUD_ONDA / 2;
             const coherenciaMax = LONGITUD_ONDA / 4;
             let comentarioSeparacion = '';
@@ -323,9 +327,76 @@
             document.getElementById('separacion-info').innerHTML = `Separación: ${separacionMetros.toFixed(2)} m ${comentarioSeparacion}`;
             document.getElementById('rango-description').innerHTML = getRangeDescription(frecuenciaHz);
         }
+        
+        // --- MÓDULO DE ANALIZADOR DE AUDIO (WEB AUDIO API) ---
+        let audioContext, analyser, frequencyData, audioCanvas, audioCtx;
+        
+        function initAudioAnalyser() {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            analyser = audioCtx.createAnalyser();
+            analyser.fftSize = 2048; // Calidad del análisis
+            frequencyData = new Uint8Array(analyser.frequencyBinCount);
+            
+            audioCanvas = document.getElementById('audioCanvas');
+            audioCtx = audioCanvas.getContext('2d');
+            
+            // 1. Solicitar acceso al micrófono
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ audio: true })
+                    .then(stream => {
+                        const source = audioCtx.createMediaStreamSource(stream);
+                        source.connect(analyser);
+                        // El analizador ya está conectado a la fuente, listo para dibujar.
+                    })
+                    .catch(err => {
+                        console.error('Error al acceder al micrófono:', err);
+                        const messageDiv = document.getElementById('audio-analizador');
+                        messageDiv.innerHTML = '<p style="color:red; font-size: 0.9em;">Error: Se requiere acceso al micrófono (o HTTPS).</p>';
+                    });
+            } else {
+                const messageDiv = document.getElementById('audio-analizador');
+                messageDiv.innerHTML = '<p style="color:red; font-size: 0.9em;">Tu navegador no soporta la API de Micrófono.</p>';
+            }
+        }
+
+        function drawAnalyser() {
+            if (!analyser || !audioCanvas) return;
+            
+            analyser.getByteFrequencyData(frequencyData);
+            const canvasWidth = audioCanvas.width;
+            const canvasHeight = audioCanvas.height;
+            const ctx = audioCanvas.getContext('2d');
+            
+            // Limpiar el canvas
+            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+            
+            // Configurar el estilo de la barra
+            ctx.fillStyle = '#4CAF50'; // Color de las barras (Verde)
+            
+            // Frecuencias relevantes para graves (hasta 500 Hz, aproximadamente 1/4 de los datos)
+            const numBins = Math.floor(frequencyData.length / 4); 
+            const barWidth = (canvasWidth / numBins) * 0.9;
+            let x = 0;
+            
+            for (let i = 0; i < numBins; i++) {
+                const barHeight = frequencyData[i] / 255 * canvasHeight;
+                // Gradiente para un efecto más ameno
+                const gradient = ctx.createLinearGradient(0, canvasHeight, 0, 0);
+                gradient.addColorStop(1, '#4CAF50'); // Verde
+                gradient.addColorStop(0.5, '#FFD700'); // Amarillo
+                gradient.addColorStop(0, '#FF5733'); // Rojo
+                ctx.fillStyle = gradient;
+                
+                ctx.fillRect(x, canvasHeight - barHeight, barWidth, barHeight);
+                x += barWidth + 1;
+            }
+        }
+
 
         // --- INICIO DE LA APLICACIÓN ---
         initThree();
+        initAudioAnalyser();
+        window.onload = onWindowResize; // Asegurar que el canvas de audio se ajuste al inicio
         actualizarValores();
         animate();
     </script>
