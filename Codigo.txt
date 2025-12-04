@@ -90,13 +90,13 @@
             position: relative;
             width: 100%;
             height: 15px;
-            /* Degradado más enfocado en los graves para la escala logarítmica */
+            /* Degradado logarítmico: más espacio para bajos */
             background: linear-gradient(to right, 
-                #FF5733 0%, /* 20Hz (Sub Grave) */
-                #FFD700 30%, /* 200Hz (Grave) */
-                #4CAF50 50%, /* 1kHz (Medios) */
-                #1e90ff 75%, /* 5kHz (Medios Altos) */
-                #ffffff 100% /* 20kHz (Altos) */
+                #FF5733 0%, /* 20Hz */
+                #FFD700 20%, /* 100Hz */
+                #4CAF50 40%, /* 500Hz */
+                #1e90ff 65%, /* 5kHz */
+                #ffffff 100% /* 20kHz */
             );
             border-radius: 7px;
             border: 1px solid #444;
@@ -111,7 +111,7 @@
             border: 2px solid #1e90ff;
             border-radius: 3px;
             transform: translateX(-50%);
-            transition: left 0.1s ease-out; /* Suavidad visual en el movimiento */
+            transition: left 0.1s linear; /* Más suave que ease-out para un medidor */
         }
         #freq-ticks-labels {
             width: 100%;
@@ -144,7 +144,7 @@
             align-items: center;
             cursor: pointer;
             z-index: 20;
-            border-radius: 7px; /* Debe coincidir con la barra */
+            border-radius: 7px;
         }
         
         #imagen-referencia {
@@ -231,8 +231,8 @@
         const labelDistancia = document.getElementById('label-distancia');
         const vectorFreq = new THREE.Vector3(0, 0, SIMULATION_SIZE_Y / 2 * 0.875); 
         const vectorDist = new THREE.Vector3(0, 0, -0.5); 
-
-        // --- MÓDULO WEBGL (Sin cambios funcionales en init) ---
+        
+        // --- INICIALIZACIÓN DE THREE.JS (Omitido por ser idéntico) ---
         function initThree() {
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setClearColor(0x1e1e1e);
@@ -299,7 +299,6 @@
             onWindowResize();
         }
 
-        // ... (Funciones onWindowResize, updateLabels, animate, getRangeDescription, actualizarValores omitidas por ser iguales) ...
         function onWindowResize() {
             const rect = container.getBoundingClientRect();
             const width = rect.width;
@@ -363,15 +362,15 @@
             return "";
         }
         
-        // Nueva función para clasificar el rango de frecuencia (para la etiqueta inferior)
         function classifyFrequency(f) {
-            if (f < 20) return "INFRA SONIDO";
+            if (f < 20) return "INFRA SONIDO (No audible)";
             if (f < 60) return "SUB GRAVE (GOLPE PERCIBIDO)";
             if (f < 200) return "GRAVE (FUNDAMENTOS, BOMBO)";
             if (f < 500) return "MEDIO GRAVE (CUERPO/BARRO)";
             if (f < 2000) return "MEDIO (PRESENCIA VOCAL/INTRUMENTAL)";
             if (f < 8000) return "MEDIO ALTO (CLARIDAD, VOZ)";
-            return "ALTO (BRILLO, AIRE, SIBILANCIA)";
+            if (f <= 20000) return "ALTO (BRILLO, AIRE, SIBILANCIA)";
+            return "ULTRA SONIDO (No audible)";
         }
 
         window.actualizarValores = function() {
@@ -417,23 +416,17 @@
         let audioInitialized = false;
         let rangoLabel = null;
         
-        // Rango de Frecuencia a Analizar (Completo)
-        const MIN_FREQ = 20;
-        const MAX_FREQ = 20000;
-        
-        // Conversión logarítmica de Frecuencia a Porcentaje (0-100)
-        // Usamos una base logarítmica para que las frecuencias bajas tengan más espacio
-        function freqToPercent(f) {
-            const logMin = Math.log10(MIN_FREQ);
-            const logMax = Math.log10(MAX_FREQ);
-            const logF = Math.log10(f);
-            
-            if (f <= MIN_FREQ) return 0;
-            if (f >= MAX_FREQ) return 100;
-            
-            return (logF - logMin) / (logMax - logMin) * 100;
-        }
+        const MIN_FREQ_LOG = Math.log10(20); // 20 Hz
+        const MAX_FREQ_LOG = Math.log10(20000); // 20 kHz
+        const LOG_RANGE = MAX_FREQ_LOG - MIN_FREQ_LOG;
 
+        function freqToPercent(f) {
+            if (f < 20) return 0;
+            if (f > 20000) return 100;
+            
+            const logF = Math.log10(f);
+            return (logF - MIN_FREQ_LOG) / LOG_RANGE * 100;
+        }
 
         window.iniciarAudio = function() {
             if (audioInitialized) return;
@@ -449,8 +442,8 @@
             try {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 analyser = audioContext.createAnalyser();
-                analyser.fftSize = 1024; // Optimizada
-                analyser.smoothingTimeConstant = 0.92; // **MÁS LENTO** (Promedio)
+                analyser.fftSize = 1024; 
+                analyser.smoothingTimeConstant = 0.92; // Promedio más lento
                 frequencyData = new Uint8Array(analyser.frequencyBinCount);
                 
                 if (audioContext.state === 'suspended') { audioContext.resume(); }
@@ -487,10 +480,10 @@
             let maxVolume = 0;
             let dominantFreq = 0;
             
-            // Buscar la dominante en el rango de más potencia (30Hz a 1000Hz)
+            // Buscar la dominante en el rango de 30Hz a 1kHz para priorizar la potencia relevante (más allá es ruido)
             const powerMaxFreq = 1000; 
             const maxIndexPower = Math.min(frequencyData.length, Math.ceil(powerMaxFreq / binWidth)); 
-            const minIndex = Math.ceil(MIN_FREQ / binWidth);
+            const minIndex = Math.ceil(30 / binWidth);
 
             for (let i = minIndex; i < maxIndexPower; i++) {
                 if (frequencyData[i] > maxVolume) {
@@ -502,11 +495,9 @@
             const indicator = document.getElementById('freq-meter-indicator');
 
             if (dominantFreq > 0 && maxVolume > 50) { 
-                // Posición Logarítmica
                 const percent = freqToPercent(dominantFreq);
                 indicator.style.left = `${percent}%`;
                 
-                // Actualizar texto
                 dominantFreqElement.innerHTML = `Frecuencia Dominante: <span style="font-weight: bold; color:#4CAF50;">${dominantFreq.toFixed(1)} Hz</span>`;
                 rangoLabel.innerHTML = `Rango: <span style="font-weight: bold; color:#ccc;">${classifyFrequency(dominantFreq)}</span>`;
 

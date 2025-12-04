@@ -51,7 +51,6 @@
             border-radius: 8px;
         }
 
-        /* Estilos de las etiquetas de texto superpuestas */
         .scene-label {
             position: absolute;
             background-color: rgba(30, 30, 30, 0.8);
@@ -64,15 +63,8 @@
             pointer-events: none;
             border: 1px solid #444;
         }
-        #label-freq {
-            font-size: 14px;
-            font-weight: bold;
-            color: #4CAF50;
-        }
-        #label-distancia {
-            font-size: 12px;
-            color: #f0ad4e;
-        }
+        #label-freq { font-size: 14px; font-weight: bold; color: #4CAF50; }
+        #label-distancia { font-size: 12px; color: #f0ad4e; }
         
         .control-group { margin-bottom: 2px; }
         .slider-container { width: 95%; margin: 0 auto 8px 0; position: relative; }
@@ -88,7 +80,73 @@
             font-size: 0.8em;
         }
         
-        /* Contenedor y estilo para la imagen de referencia */
+        /* --- ESTILOS DEL MEDIDOR DE FRECUENCIA LOGARÍTMICO --- */
+        #audio-analizador {
+            width: 95vw;
+            max-width: 800px;
+            margin: 10px auto;
+        }
+        #freq-meter-bar {
+            position: relative;
+            width: 100%;
+            height: 15px;
+            /* Degradado más enfocado en los graves para la escala logarítmica */
+            background: linear-gradient(to right, 
+                #FF5733 0%, /* 20Hz (Sub Grave) */
+                #FFD700 30%, /* 200Hz (Grave) */
+                #4CAF50 50%, /* 1kHz (Medios) */
+                #1e90ff 75%, /* 5kHz (Medios Altos) */
+                #ffffff 100% /* 20kHz (Altos) */
+            );
+            border-radius: 7px;
+            border: 1px solid #444;
+            margin-top: 5px;
+        }
+        #freq-meter-indicator {
+            position: absolute;
+            top: -5px;
+            width: 20px;
+            height: 25px;
+            background-color: #ffffff;
+            border: 2px solid #1e90ff;
+            border-radius: 3px;
+            transform: translateX(-50%);
+            transition: left 0.1s ease-out; /* Suavidad visual en el movimiento */
+        }
+        #freq-ticks-labels {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75em;
+            margin-top: 5px;
+        }
+        
+        /* Etiqueta de Rango Abajo */
+        #rango-label {
+            font-size: 0.8em;
+            font-weight: bold;
+            color: #ccc;
+            margin-top: 5px;
+        }
+        
+        /* Overlay de inicio (requerido para desbloqueo de audio) */
+        #audio-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            font-size: 1.2em;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            z-index: 20;
+            border-radius: 7px; /* Debe coincidir con la barra */
+        }
+        
         #imagen-referencia {
             width: 95vw;
             max-width: 800px;
@@ -131,6 +189,28 @@
         <div id="label-freq" class="scene-label"></div>
         <div id="label-distancia" class="scene-label"></div>
     </div>
+    
+    <div id="audio-analizador">
+        <p style="font-size: 0.9em; margin-bottom: 3px;">Medidor de Frecuencia Ambiental (Logarítmico)</p>
+        <div style="position: relative; width: 100%; height: 25px;">
+            <div id="freq-meter-bar">
+                <div id="freq-meter-indicator"></div>
+            </div>
+            <div id="audio-overlay" onclick="iniciarAudio()">
+                Toca aquí para activar el micrófono y el análisis (HTTPS Requerido)
+            </div>
+        </div>
+        <div id="freq-ticks-labels">
+            <span>20 Hz</span>
+            <span>60 Hz</span>
+            <span>200 Hz</span>
+            <span>1 kHz</span>
+            <span>5 kHz</span>
+            <span>20 kHz</span>
+        </div>
+        <p id="dominante-freq" style="font-size: 0.9em; color: #1e90ff; margin-top: 5px;">Frecuencia Dominante: No iniciado</p>
+        <p id="rango-label">Rango: Esperando análisis...</p>
+    </div>
 
     <div id="imagen-referencia">
         <h2 style="font-size: 1.2em; margin-bottom: 10px; color: #ffffff;">Rangos de Frecuencia Musical</h2>
@@ -146,17 +226,13 @@
         const SIMULATION_SIZE_Y = 8; 
         const SEGMENTS = 256;
         const VELOCIDAD_SONIDO = 340; 
-        
-        // Elementos DOM para las etiquetas
         const container = document.getElementById('container');
         const labelFreq = document.getElementById('label-freq');
         const labelDistancia = document.getElementById('label-distancia');
-        
-        // Vectores para la proyección de coordenadas
         const vectorFreq = new THREE.Vector3(0, 0, SIMULATION_SIZE_Y / 2 * 0.875); 
         const vectorDist = new THREE.Vector3(0, 0, -0.5); 
 
-        // --- INICIALIZACIÓN DE THREE.JS ---
+        // --- MÓDULO WEBGL (Sin cambios funcionales en init) ---
         function initThree() {
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setClearColor(0x1e1e1e);
@@ -188,11 +264,8 @@
                         float deltaR = r2 - r1;
                         float phase_diff = (deltaR / u_lambda) * 6.2831853;
                         float intensity = 2.0 * abs(cos(phase_diff / 2.0));
-                        
-                        // *** MÁXIMO CONTRASTE (power=4.0) ***
                         float power = pow(intensity / 2.0, 4.0); 
                         vec3 final_color = mix(u_red_color, u_green_color, power);
-                        
                         float border_fade = 1.0 - smoothstep(2.5, 4.0, length(pos));
                         final_color *= border_fade;
                         gl_FragColor = vec4(final_color, 1.0);
@@ -205,7 +278,6 @@
             plane.rotation.x = -Math.PI / 2;
             scene.add(plane);
             
-            // 4. Bafles 3D
             const bafleGeo = new THREE.BoxGeometry(0.3, 0.3, 0.3);
             const bafleMat = new THREE.MeshBasicMaterial({ color: 0x444444, wireframe: false }); 
             const bafleEdgeMat = new THREE.LineBasicMaterial({ color: 0xffffff }); 
@@ -227,6 +299,7 @@
             onWindowResize();
         }
 
+        // ... (Funciones onWindowResize, updateLabels, animate, getRangeDescription, actualizarValores omitidas por ser iguales) ...
         function onWindowResize() {
             const rect = container.getBoundingClientRect();
             const width = rect.width;
@@ -249,9 +322,15 @@
             
             camera.updateProjectionMatrix();
             renderer.setSize(width, height);
+            
+            const audioContainer = document.getElementById('audio-analizador');
+            if (audioContainer) {
+                const audioOverlay = document.getElementById('audio-overlay');
+                const meterBar = document.getElementById('freq-meter-bar');
+                if (audioOverlay) audioOverlay.style.height = `${meterBar.offsetHeight}px`;
+            }
         }
 
-        // --- FUNCIÓN DE ACTUALIZACIÓN DE ETIQUETAS DE TEXTO ---
         function updateLabels() {
             const rect = container.getBoundingClientRect();
             const width = rect.width;
@@ -266,15 +345,13 @@
             labelDistancia.style.top = `${(-posDist.y * 0.5 + 0.5) * height - 30}px`;
         }
 
-
-        // --- BUCLE DE ANIMACIÓN ---
         function animate() {
             requestAnimationFrame(animate);
             updateLabels(); 
             renderer.render(scene, camera);
+            updateFrequencyMeter(); 
         }
         
-        // --- CÁLCULOS Y CONTROLES ---
         function getRangeDescription(f) {
             if (f < 63) {
                 return "Sub Bajos (25-63 Hz): A menudo se percibe como una vibración en lugar de un tono puro. La mayoría de la música generalmente no baja de los 30 Hz.";
@@ -285,13 +362,23 @@
             }
             return "";
         }
+        
+        // Nueva función para clasificar el rango de frecuencia (para la etiqueta inferior)
+        function classifyFrequency(f) {
+            if (f < 20) return "INFRA SONIDO";
+            if (f < 60) return "SUB GRAVE (GOLPE PERCIBIDO)";
+            if (f < 200) return "GRAVE (FUNDAMENTOS, BOMBO)";
+            if (f < 500) return "MEDIO GRAVE (CUERPO/BARRO)";
+            if (f < 2000) return "MEDIO (PRESENCIA VOCAL/INTRUMENTAL)";
+            if (f < 8000) return "MEDIO ALTO (CLARIDAD, VOZ)";
+            return "ALTO (BRILLO, AIRE, SIBILANCIA)";
+        }
 
         window.actualizarValores = function() {
             const frecuenciaHz = parseFloat(document.getElementById('sliderFrecuencia').value);
             const separacionMetros = parseFloat(document.getElementById('sliderSeparacion').value);
             const LONGITUD_ONDA = VELOCIDAD_SONIDO / frecuenciaHz;
             
-            // 1. ACTUALIZAR SHADER y BAFLES
             if (material) {
                 material.uniforms.u_lambda.value = LONGITUD_ONDA;
                 material.uniforms.u_separation.value = separacionMetros;
@@ -302,11 +389,9 @@
                 sub2.position.x = offset;
             }
 
-            // 2. ACTUALIZAR ETIQUETAS DOM
             labelFreq.textContent = `Frecuencia: ${frecuenciaHz.toFixed(0)} Hz`;
             labelDistancia.textContent = `Separación: ${separacionMetros.toFixed(2)} Metros`;
 
-            // 3. ACTUALIZAR TEXTO EN EL PANEL (UI)
             const controlDirectividad = LONGITUD_ONDA / 2;
             const coherenciaMax = LONGITUD_ONDA / 4;
             let comentarioSeparacion = '';
@@ -323,9 +408,119 @@
             document.getElementById('separacion-info').innerHTML = `Separación: ${separacionMetros.toFixed(2)} m ${comentarioSeparacion}`;
             document.getElementById('rango-description').innerHTML = getRangeDescription(frecuenciaHz);
         }
+        
+        // --- MÓDULO DE ANALIZADOR DE AUDIO (MEDIDOR LOGARÍTMICO) ---
+        let audioContext = null;
+        let analyser = null;
+        let frequencyData = null;
+        let dominantFreqElement = null;
+        let audioInitialized = false;
+        let rangoLabel = null;
+        
+        // Rango de Frecuencia a Analizar (Completo)
+        const MIN_FREQ = 20;
+        const MAX_FREQ = 20000;
+        
+        // Conversión logarítmica de Frecuencia a Porcentaje (0-100)
+        // Usamos una base logarítmica para que las frecuencias bajas tengan más espacio
+        function freqToPercent(f) {
+            const logMin = Math.log10(MIN_FREQ);
+            const logMax = Math.log10(MAX_FREQ);
+            const logF = Math.log10(f);
+            
+            if (f <= MIN_FREQ) return 0;
+            if (f >= MAX_FREQ) return 100;
+            
+            return (logF - logMin) / (logMax - logMin) * 100;
+        }
+
+
+        window.iniciarAudio = function() {
+            if (audioInitialized) return;
+            
+            dominantFreqElement = document.getElementById('dominante-freq');
+            rangoLabel = document.getElementById('rango-label');
+            
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                dominantFreqElement.innerHTML = '<span style="color:red;">Tu navegador no soporta la API de Micrófono.</span>';
+                return;
+            }
+
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 1024; // Optimizada
+                analyser.smoothingTimeConstant = 0.92; // **MÁS LENTO** (Promedio)
+                frequencyData = new Uint8Array(analyser.frequencyBinCount);
+                
+                if (audioContext.state === 'suspended') { audioContext.resume(); }
+                
+                navigator.mediaDevices.getUserMedia({ audio: true })
+                    .then(stream => {
+                        const source = audioContext.createMediaStreamSource(stream);
+                        source.connect(analyser);
+                        document.getElementById('audio-overlay').style.display = 'none'; 
+                        audioInitialized = true;
+                        dominantFreqElement.innerHTML = 'Frecuencia Dominante: <span style="font-weight: bold;">(Escuchando...)</span>';
+                        rangoLabel.innerHTML = 'Rango: <span style="font-weight: bold;">Analizando...</span>';
+                        onWindowResize();
+                    })
+                    .catch(err => {
+                        dominantFreqElement.innerHTML = '<span style="color:red;">Acceso denegado. (HTTPS Requerido)</span>';
+                        document.getElementById('audio-overlay').innerHTML = 'Acceso Denegado al Micrófono';
+                        document.getElementById('audio-overlay').style.cursor = 'default';
+                    });
+            } catch (e) {
+                 dominantFreqElement.innerHTML = '<span style="color:red;">Error de AudioContext.</span>';
+                 document.getElementById('audio-overlay').innerHTML = 'Error de AudioContext';
+            }
+        }
+
+        function updateFrequencyMeter() {
+            if (!analyser || !audioInitialized) return;
+            
+            analyser.getByteFrequencyData(frequencyData);
+            
+            const sampleRate = analyser.context.sampleRate;
+            const binWidth = sampleRate / analyser.fftSize;
+            
+            let maxVolume = 0;
+            let dominantFreq = 0;
+            
+            // Buscar la dominante en el rango de más potencia (30Hz a 1000Hz)
+            const powerMaxFreq = 1000; 
+            const maxIndexPower = Math.min(frequencyData.length, Math.ceil(powerMaxFreq / binWidth)); 
+            const minIndex = Math.ceil(MIN_FREQ / binWidth);
+
+            for (let i = minIndex; i < maxIndexPower; i++) {
+                if (frequencyData[i] > maxVolume) {
+                    maxVolume = frequencyData[i];
+                    dominantFreq = i * binWidth;
+                }
+            }
+            
+            const indicator = document.getElementById('freq-meter-indicator');
+
+            if (dominantFreq > 0 && maxVolume > 50) { 
+                // Posición Logarítmica
+                const percent = freqToPercent(dominantFreq);
+                indicator.style.left = `${percent}%`;
+                
+                // Actualizar texto
+                dominantFreqElement.innerHTML = `Frecuencia Dominante: <span style="font-weight: bold; color:#4CAF50;">${dominantFreq.toFixed(1)} Hz</span>`;
+                rangoLabel.innerHTML = `Rango: <span style="font-weight: bold; color:#ccc;">${classifyFrequency(dominantFreq)}</span>`;
+
+            } else {
+                indicator.style.left = `0%`;
+                 dominantFreqElement.innerHTML = `Frecuencia Dominante: <span style="font-weight: bold;">(Nivel bajo o silencioso)</span>`;
+                 rangoLabel.innerHTML = `Rango: <span style="font-weight: bold; color:#ccc;">(Esperando sonido...)</span>`;
+            }
+        }
+
 
         // --- INICIO DE LA APLICACIÓN ---
         initThree();
+        window.onload = onWindowResize;
         actualizarValores();
         animate();
     </script>
