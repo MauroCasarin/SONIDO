@@ -4,6 +4,7 @@
     <title>Calculador distancia de graves según Hz.</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
+        /* (Estilos CSS omitidos por ser iguales a la versión anterior) */
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #1e1e1e;
@@ -50,8 +51,7 @@
             border: 2px solid #555;
             border-radius: 8px;
         }
-        
-        /* Estilos de las etiquetas de texto superpuestas */
+
         .scene-label {
             position: absolute;
             background-color: rgba(30, 30, 30, 0.8);
@@ -143,6 +143,7 @@
     <div id="audio-analizador">
         <p style="font-size: 0.9em; margin-bottom: 3px;">Analizador de Micrófono (Solo para HTTPS)</p>
         <canvas id="audioCanvas" width="800" height="100"></canvas>
+        <p id="dominante-freq" style="font-size: 0.9em; color: #1e90ff; margin-top: 5px;">Frecuencia Ambiental Dominante: Esperando audio...</p>
     </div>
 
     <div id="imagen-referencia">
@@ -166,7 +167,6 @@
         const vectorDist = new THREE.Vector3(0, 0, -0.5); 
 
         function initThree() {
-            // ... (Código initThree omitido por ser igual) ...
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setClearColor(0x1e1e1e);
             container.appendChild(renderer.domElement);
@@ -255,9 +255,12 @@
             camera.updateProjectionMatrix();
             renderer.setSize(width, height);
             
-            // Reajustar el canvas de audio también si se hace responsive
-            const audioCanvas = document.getElementById('audioCanvas');
-            audioCanvas.width = document.getElementById('audio-analizador').clientWidth;
+            // Reajustar el canvas de audio también
+            const audioContainer = document.getElementById('audio-analizador');
+            if (audioContainer) {
+                const audioCanvas = document.getElementById('audioCanvas');
+                audioCanvas.width = audioContainer.clientWidth;
+            }
         }
 
         function updateLabels() {
@@ -274,14 +277,14 @@
             labelDistancia.style.top = `${(-posDist.y * 0.5 + 0.5) * height - 30}px`;
         }
 
-
         function animate() {
             requestAnimationFrame(animate);
             updateLabels(); 
             renderer.render(scene, camera);
-            drawAnalyser(); // Llama a la función de dibujo del analizador
+            drawAnalyser(); 
         }
         
+        // --- CÁLCULOS Y CONTROLES (Sin cambios) ---
         function getRangeDescription(f) {
             if (f < 63) {
                 return "Sub Bajos (25-63 Hz): A menudo se percibe como una vibración en lugar de un tono puro. La mayoría de la música generalmente no baja de los 30 Hz.";
@@ -329,33 +332,36 @@
         }
         
         // --- MÓDULO DE ANALIZADOR DE AUDIO (WEB AUDIO API) ---
-        let audioContext, analyser, frequencyData, audioCanvas, audioCtx;
+        let audioContext, analyser, frequencyData, audioCanvas, dominantFreqElement;
         
         function initAudioAnalyser() {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            analyser = audioCtx.createAnalyser();
-            analyser.fftSize = 2048; // Calidad del análisis
-            frequencyData = new Uint8Array(analyser.frequencyBinCount);
+            dominantFreqElement = document.getElementById('dominante-freq');
             
-            audioCanvas = document.getElementById('audioCanvas');
-            audioCtx = audioCanvas.getContext('2d');
-            
-            // 1. Solicitar acceso al micrófono
-            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                dominantFreqElement.innerHTML = '<span style="color:red;">Tu navegador no soporta la API de Micrófono.</span>';
+                return;
+            }
+
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 2048; 
+                analyser.smoothingTimeConstant = 0.85; // **ESTABILIZACIÓN CRÍTICA** (0.0 a 1.0)
+                frequencyData = new Uint8Array(analyser.frequencyBinCount);
+                
+                audioCanvas = document.getElementById('audioCanvas');
+                
+                // 1. Solicitar acceso al micrófono
                 navigator.mediaDevices.getUserMedia({ audio: true })
                     .then(stream => {
-                        const source = audioCtx.createMediaStreamSource(stream);
+                        const source = audioContext.createMediaStreamSource(stream);
                         source.connect(analyser);
-                        // El analizador ya está conectado a la fuente, listo para dibujar.
                     })
                     .catch(err => {
-                        console.error('Error al acceder al micrófono:', err);
-                        const messageDiv = document.getElementById('audio-analizador');
-                        messageDiv.innerHTML = '<p style="color:red; font-size: 0.9em;">Error: Se requiere acceso al micrófono (o HTTPS).</p>';
+                        dominantFreqElement.innerHTML = '<span style="color:red;">Acceso denegado al micrófono (se requiere permiso o HTTPS).</span>';
                     });
-            } else {
-                const messageDiv = document.getElementById('audio-analizador');
-                messageDiv.innerHTML = '<p style="color:red; font-size: 0.9em;">Tu navegador no soporta la API de Micrófono.</p>';
+            } catch (e) {
+                 dominantFreqElement.innerHTML = '<span style="color:red;">No se pudo iniciar el AudioContext.</span>';
             }
         }
 
@@ -370,25 +376,48 @@
             // Limpiar el canvas
             ctx.clearRect(0, 0, canvasWidth, canvasHeight);
             
-            // Configurar el estilo de la barra
-            ctx.fillStyle = '#4CAF50'; // Color de las barras (Verde)
+            const sampleRate = analyser.context.sampleRate;
             
-            // Frecuencias relevantes para graves (hasta 500 Hz, aproximadamente 1/4 de los datos)
-            const numBins = Math.floor(frequencyData.length / 4); 
-            const barWidth = (canvasWidth / numBins) * 0.9;
+            // 1. Detección de Frecuencia Dominante
+            let maxVolume = 0;
+            let dominantIndex = -1;
+            
+            // Analizar solo hasta 500 Hz (índice aproximado para graves y medio-graves)
+            const maxFreqToAnalyze = 500;
+            const binWidth = sampleRate / analyser.fftSize;
+            const maxIndex = Math.min(frequencyData.length, Math.ceil(maxFreqToAnalyze / binWidth)); 
+
+            for (let i = 0; i < maxIndex; i++) {
+                if (frequencyData[i] > maxVolume) {
+                    maxVolume = frequencyData[i];
+                    dominantIndex = i;
+                }
+            }
+            
+            // 2. Dibujo de Barras
+            const numBinsToDraw = maxIndex; 
+            const barWidth = (canvasWidth / numBinsToDraw) * 0.9;
             let x = 0;
             
-            for (let i = 0; i < numBins; i++) {
+            for (let i = 0; i < numBinsToDraw; i++) {
                 const barHeight = frequencyData[i] / 255 * canvasHeight;
-                // Gradiente para un efecto más ameno
-                const gradient = ctx.createLinearGradient(0, canvasHeight, 0, 0);
-                gradient.addColorStop(1, '#4CAF50'); // Verde
-                gradient.addColorStop(0.5, '#FFD700'); // Amarillo
-                gradient.addColorStop(0, '#FF5733'); // Rojo
-                ctx.fillStyle = gradient;
+                const freq = i * binWidth;
                 
+                // Estilo
+                const hue = i / numBinsToDraw * 120; // 0 (Rojo) a 120 (Verde)
+                ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
+                
+                // Dibujar
                 ctx.fillRect(x, canvasHeight - barHeight, barWidth, barHeight);
                 x += barWidth + 1;
+            }
+
+            // 3. Mostrar Frecuencia Dominante
+            if (dominantIndex > 0 && maxVolume > 50) { // Umbral de 50 para evitar ruido de fondo
+                const dominantFreq = dominantIndex * binWidth;
+                dominantFreqElement.innerHTML = `Frecuencia Ambiental Dominante (aprox.): <span style="font-weight: bold; color:#4CAF50;">${dominantFreq.toFixed(1)} Hz</span>`;
+            } else {
+                 dominantFreqElement.innerHTML = `Frecuencia Ambiental Dominante: <span style="font-weight: bold;">(Nivel bajo o silencioso)</span>`;
             }
         }
 
@@ -396,7 +425,7 @@
         // --- INICIO DE LA APLICACIÓN ---
         initThree();
         initAudioAnalyser();
-        window.onload = onWindowResize; // Asegurar que el canvas de audio se ajuste al inicio
+        window.onload = onWindowResize;
         actualizarValores();
         animate();
     </script>
