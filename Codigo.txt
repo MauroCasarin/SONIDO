@@ -16,6 +16,25 @@
             align-items: center;
             min-height: 100vh;
         }
+        
+        /* Contenedor del Logo */
+        #logo-container {
+            width: 95vw;
+            max-width: 800px;
+            text-align: center;
+            margin-top: 10px;
+        }
+        #logo-container img {
+            width: 50px;
+            height: auto;
+            cursor: pointer;
+            border-radius: 50%;
+            transition: transform 0.2s;
+        }
+        #logo-container img:hover {
+            transform: scale(1.1);
+        }
+        
         h1 {
             color: #4CAF50;
             padding-top: 5px;
@@ -116,20 +135,13 @@
             margin-top: 5px;
         }
         
-        /* Etiqueta de Rango Abajo */
-        #rango-label {
-            font-size: 0.8em;
-            font-weight: bold;
-            color: #ccc;
-            margin-top: 5px;
-        }
+        #rango-label { font-size: 0.8em; font-weight: bold; color: #ccc; margin-top: 5px; }
         #decibel-label {
             color: #FF5733; 
             font-size: 0.75em; 
-            margin-top: 2px; /* Margen reducido */
+            margin-top: 2px;
         }
 
-        /* Overlay de inicio (requerido para desbloqueo de audio) */
         #audio-overlay {
             position: absolute;
             top: 0;
@@ -162,6 +174,12 @@
     </style>
 </head>
 <body>
+    
+    <div id="logo-container">
+        <a href="https://www.instagram.com/3d_mc_3d/" target="_blank">
+            <img src="https://raw.githubusercontent.com/MauroCasarin/SONIDO/refs/heads/main/MC%2048%20N.png" alt="Logo MC 3D" />
+        </a>
+    </div>
 
     <div id="info-panel">
         <h1>Calculador distancia de graves según Hz.</h1>
@@ -373,7 +391,6 @@
             return "ULTRA SONIDO";
         }
 
-        // *** FUNCIÓN DE CLASIFICACIÓN DE DECIBELIOS SIMPLIFICADA ***
         function classifyDecibels(dB) {
             if (dB < 30) return "SILENCIO TOTAL";
             if (dB < 60) return "NORMAL";
@@ -384,14 +401,14 @@
             return "DOLOR SEVERO";
         }
 
-        // ... (Funciones de Actualización de Valores y Audio sin cambios en la lógica) ...
         window.actualizarValores = function() {
             const frecuenciaHz = parseFloat(document.getElementById('sliderFrecuencia').value);
             const separacionMetros = parseFloat(document.getElementById('sliderSeparacion').value);
             const LONGITUD_ONDA = VELOCIDAD_SONIDO / frecuenciaHz;
             
+            // *** CORRECCIÓN: Uso de LONGITUD_ONDA ***
             if (material) {
-                material.uniforms.u_lambda.value = LONGITUD_ONDA;
+                material.uniforms.u_lambda.value = LONGITUD_ONDA; 
                 material.uniforms.u_separation.value = separacionMetros;
             }
             const offset = separacionMetros / 2;
@@ -425,11 +442,13 @@
         let analyser = null;
         let frequencyData = null;
         let timeDomainData = null;
-        let dominantFreqElement = null;
-        let decibelLabel = null;
         let audioInitialized = false;
-        let rangoLabel = null;
         
+        // Asignación directa de elementos de DOM al cargar
+        const dominantFreqElement = document.getElementById('dominante-freq');
+        const rangoLabel = document.getElementById('rango-label');
+        const decibelLabel = document.getElementById('decibel-label');
+
         const MIN_FREQ = 20;
         const MAX_FREQ = 20000;
         const MIN_FREQ_LOG = Math.log10(MIN_FREQ);
@@ -456,10 +475,6 @@
 
         window.iniciarAudio = function() {
             if (audioInitialized) return;
-            
-            dominantFreqElement = document.getElementById('dominante-freq');
-            rangoLabel = document.getElementById('rango-label');
-            decibelLabel = document.getElementById('decibel-label');
             
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                 dominantFreqElement.innerHTML = '<span style="color:red;">Tu navegador no soporta la API de Micrófono.</span>';
@@ -548,11 +563,10 @@
             }
 
             // Actualización de Decibelios
-            if (approx_dB > 0) {
-                 decibelLabel.innerHTML = `**${approx_dB.toFixed(1)} dB** | ${classifyDecibels(approx_dB)}`;
-            } else {
-                 decibelLabel.innerHTML = `**< 30 dB** | SILENCIO TOTAL`;
-            }
+            const dBText = approx_dB > 0 ? `${approx_dB.toFixed(1)} dB` : `< 30 dB`;
+            const dBClass = classifyDecibels(approx_dB);
+            
+            decibelLabel.innerHTML = `**${dBText}** | ${dBClass}`;
         }
 
 
