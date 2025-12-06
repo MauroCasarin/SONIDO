@@ -15,6 +15,7 @@
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
+            overflow-x: hidden; /* Evitar scroll horizontal en pantallas pequeñas */
         }
         
         /* Contenedor del Logo */
@@ -23,6 +24,11 @@
             max-width: 800px;
             text-align: center;
             margin-top: 10px;
+            padding: 10px;
+            background-color: #2c2c2c;
+            border-radius: 8px;
+            border: 1px solid #1e90ff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
         }
         #logo-container img {
             width: 50px;
@@ -33,6 +39,11 @@
         }
         #logo-container img:hover {
             transform: scale(1.1);
+        }
+        #logo-container p {
+            font-size: 0.75em;
+            color: #aaa;
+            margin-top: 5px;
         }
         
         h1 {
@@ -45,13 +56,15 @@
         #info-panel {
             flex-shrink: 0;
             font-size: 0.95em;
-            padding: 8px;
+            padding: 15px;
             background-color: #2c2c2c;
             width: 95vw;
             max-width: 800px;
             margin: 10px auto 5px auto;
             border-radius: 8px;
             text-align: left;
+            border: 1px solid #1e90ff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
         }
         
         #container {
@@ -61,42 +74,66 @@
             margin: 5px auto 10px auto;
             min-height: 250px;
             position: relative; 
+            border-radius: 8px;
+            overflow: hidden; /* Asegura que el canvas no se desborde */
         }
         #container canvas {
             display: block;
             width: 100% !important;
             height: 100% !important;
-            border: 2px solid #555;
-            border-radius: 8px;
+            border: 2px solid #555; /* Será cubierto por el borde del contenedor */
+            border-radius: 8px; /* Será cubierto por el borde del contenedor */
         }
 
         .scene-label {
             position: absolute;
             background-color: rgba(30, 30, 30, 0.8);
             color: white;
-            padding: 2px 5px;
-            border-radius: 3px;
+            padding: 5px 10px;
+            border-radius: 5px;
             font-size: 12px;
             white-space: nowrap;
             transform: translate(-50%, -50%); 
             pointer-events: none;
             border: 1px solid #444;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            z-index: 10; /* Asegurar que las etiquetas estén por encima del canvas */
         }
         #label-freq { font-size: 14px; font-weight: bold; color: #4CAF50; }
         #label-distancia { font-size: 12px; color: #f0ad4e; }
         
-        .control-group { margin-bottom: 2px; }
-        .slider-container { width: 95%; margin: 0 auto 8px 0; position: relative; }
-        .slider-label { display: block; font-size: 0.85em; margin-bottom: 1px; font-weight: bold; color: #1e90ff; }
-        input[type=range] { width: 100%; height: 5px; background: #555; -webkit-appearance: none; border-radius: 5px; cursor: pointer; }
+        .control-group { margin-bottom: 10px; color: #ccc;}
+        .slider-container { width: 95%; margin: 0 auto 12px auto; position: relative; }
+        .slider-label { display: block; font-size: 0.85em; margin-bottom: 5px; font-weight: bold; color: #1e90ff; }
+        input[type=range] { 
+            width: 100%; height: 5px; background: #555; -webkit-appearance: none; border-radius: 5px; cursor: pointer;
+            background: linear-gradient(to right, #1e90ff, #00bfff); /* Degradado para el slider */
+            outline: none;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #ffffff;
+            border: 2px solid #1e90ff;
+            cursor: grab;
+            box-shadow: 0 0 5px rgba(0, 191, 255, 0.7);
+            transition: background 0.2s, transform 0.2s;
+        }
+        input[type=range]::-webkit-slider-thumb:active {
+            cursor: grabbing;
+            transform: scale(1.1);
+        }
         
         #rango-description {
             font-weight: bold;
             color: #f0ad4e;
-            margin-top: 5px;
-            padding: 4px;
+            margin-top: 15px;
+            padding-top: 10px;
             border-top: 1px solid #444;
             font-size: 0.8em;
+            line-height: 1.4;
         }
         
         /* --- ESTILOS DEL MEDIDOR DE FRECUENCIA LOGARÍTMICO --- */
@@ -104,6 +141,12 @@
             width: 95vw;
             max-width: 800px;
             margin: 10px auto;
+            padding: 15px;
+            background-color: #2c2c2c;
+            border-radius: 8px;
+            border: 1px solid #1e90ff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+            position: relative;
         }
         #freq-meter-bar {
             position: relative;
@@ -121,11 +164,12 @@
             top: -5px;
             width: 20px;
             height: 25px;
-            background-color: #ffffff;
-            border: 2px solid #1e90ff;
+            background-color: #ff00ff; /* Rosa fucsia */
+            border: 2px solid #ffffff;
             border-radius: 3px;
             transform: translateX(-50%);
             transition: left 0.1s linear;
+            box-shadow: 0 0 8px rgba(255, 0, 255, 0.7);
         }
         #freq-ticks-labels {
             width: 100%;
@@ -133,8 +177,10 @@
             justify-content: space-between;
             font-size: 0.75em;
             margin-top: 5px;
+            color: #aaa;
         }
         
+        #dominante-freq { font-size: 0.9em; color: #1e90ff; margin-top: 10px; }
         #rango-label { font-size: 0.8em; font-weight: bold; color: #ccc; margin-top: 5px; }
         #decibel-label {
             color: #FF5733; 
@@ -148,21 +194,36 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.7);
-            color: white;
-            font-size: 1.2em;
+            background-color: rgba(0, 0, 0, 0.85); /* Más oscuro */
+            color: #1e90ff; /* Color de texto más vibrante */
+            font-size: 1.1em;
+            font-weight: bold;
             display: flex;
             justify-content: center;
             align-items: center;
             cursor: pointer;
             z-index: 20;
-            border-radius: 7px;
+            border-radius: 8px;
+            transition: background-color 0.3s;
+        }
+        #audio-overlay:hover {
+            background-color: rgba(0, 0, 0, 0.7);
         }
         
         #imagen-referencia {
             width: 95vw;
             max-width: 800px;
             margin: 20px auto;
+            padding: 15px;
+            background-color: #2c2c2c;
+            border-radius: 8px;
+            border: 1px solid #444;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+        }
+        #imagen-referencia h2 {
+            font-size: 1.2em; 
+            margin-bottom: 10px; 
+            color: #ffffff;
         }
         #imagen-referencia img {
             width: 100%;
@@ -172,24 +233,15 @@
         }
 
     </style>
-<script type="importmap">
-{
-  "imports": {
-    "react": "https://aistudiocdn.com/react@^19.2.1",
-    "three": "https://aistudiocdn.com/three@^0.181.2",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.1/",
-    "clsx": "https://aistudiocdn.com/clsx@^2.1.1"
-  }
-}
-</script>
 <link rel="stylesheet" href="/index.css">
 </head>
 <body>
     
     <div id="logo-container">
-        <a href="https://www.instagram.com/3d_mc_3d/" target="_blank">
+        <a href="https://www.instagram.com/3d_mc_3d/" target="_blank" rel="noopener noreferrer">
             <img src="https://raw.githubusercontent.com/MauroCasarin/SONIDO/refs/heads/main/MC%2048%20N.png" alt="Logo MC 3D" />
         </a>
+        <p>Powered by MC 3D Audio</p>
     </div>
 
     <div id="info-panel">
@@ -210,7 +262,7 @@
         <div id="rango-description"></div>
 
         <p style="font-size: 0.75em; margin-top: 5px;">
-            **Leyenda:** <span style="color:#4CAF50; font-weight: bold;">Verde</span> = Refuerzo (Suma) | <span style="color:#FF5733; font-weight: bold;">Rojo</span> = Cancelación (Resta)
+            <span style="color:#4CAF50; font-weight: bold;">Verde</span> = Refuerzo (Suma) | <span style="color:#FF5733; font-weight: bold;">Rojo</span> = Cancelación (Resta)
         </p>
     </div>
 
@@ -243,7 +295,7 @@
     </div>
 
     <div id="imagen-referencia">
-        <h2 style="font-size: 1.2em; margin-bottom: 10px; color: #ffffff;">Rangos de Frecuencia Musical</h2>
+        <h2>Rangos de Frecuencia Musical</h2>
         <img src="https://maurocasarin.github.io/SONIDO/index_archivos/image005.jpg" alt="Gráfico de Rangos de Frecuencia para Mezcla de Sonido" />
     </div>
 
@@ -251,143 +303,22 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     
     <script>
-        // --- MÓDULO DE WEBGL/THREE.JS (VARIABLES Y FUNCIONES) ---
-        let scene, camera, renderer, plane, material, sub1, sub2;
+        // --- CONSTANTES ---
         const SIMULATION_SIZE_Y = 8; 
         const SEGMENTS = 256;
-        const VELOCIDAD_SONIDO = 340; 
-        const container = document.getElementById('container');
-        const labelFreq = document.getElementById('label-freq');
-        const labelDistancia = document.getElementById('label-distancia');
-        const vectorFreq = new THREE.Vector3(0, 0, SIMULATION_SIZE_Y / 2 * 0.875); 
-        const vectorDist = new THREE.Vector3(0, 0, -0.5); 
+        const VELOCIDAD_SONIDO = 340; // meters/second
 
-        function initThree() {
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setClearColor(0x1e1e1e);
-            container.appendChild(renderer.domElement);
+        const MIN_FREQ = 20;
+        const MAX_FREQ = 20000;
+        const MIN_FREQ_LOG = Math.log10(MIN_FREQ);
+        const MAX_FREQ_LOG = Math.log10(MAX_FREQ);
+        const LOG_RANGE = MAX_FREQ_LOG - MIN_FREQ_LOG;
+        const NOISE_THRESHOLD = 0.005;
 
-            scene = new THREE.Scene();
-            scene.add(new THREE.AmbientLight(0xffffff, 0.5));
-            camera = new THREE.OrthographicCamera();
-            camera.position.set(0, 5, 0); 
-            camera.lookAt(0, 0, 0);
+        const POWER_MAX_FREQ_LIMIT = 1000; // Max frequency for dominant freq calculation
+        const DOMINANT_FREQ_VOLUME_THRESHOLD = 50; // Min volume to consider a frequency dominant
 
-            const geometry = new THREE.PlaneGeometry(SIMULATION_SIZE_Y, SIMULATION_SIZE_Y, SEGMENTS, SEGMENTS);
-            material = new THREE.ShaderMaterial({
-                uniforms: {
-                    u_lambda: { value: 3.4 }, u_separation: { value: 0.85 }, u_size: { value: SIMULATION_SIZE_Y },
-                    u_red_color: { value: new THREE.Color(0xFF5733) }, u_green_color: { value: new THREE.Color(0x4CAF50) },
-                },
-                vertexShader: `
-                    varying vec2 vUv;
-                    void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }
-                `,
-                fragmentShader: `
-                    uniform float u_lambda; uniform float u_separation; uniform float u_size; uniform vec3 u_red_color; uniform vec3 u_green_color; varying vec2 vUv;
-                    void main() {
-                        vec2 pos = (vUv - 0.5) * u_size; 
-                        float sub_offset = u_separation / 2.0;
-                        float r1 = distance(pos, vec2(-sub_offset, 0.0));
-                        float r2 = distance(pos, vec2(sub_offset, 0.0));
-                        float deltaR = r2 - r1;
-                        float phase_diff = (deltaR / u_lambda) * 6.2831853;
-                        float intensity = 2.0 * abs(cos(phase_diff / 2.0));
-                        float power = pow(intensity / 2.0, 4.0); 
-
-                        // NUEVA LÓGICA DE COLOR PARA VERDE CLARO Y ROJO INTENSO
-                        // El verde se vuelve más claro a medida que power aumenta (refuerzo)
-                        // El rojo se vuelve más intenso a medida que power disminuye (cancelación)
-                        vec3 lighter_green = mix(u_green_color, vec3(1.0, 1.0, 1.0), power * 0.3); // Mezclar verde con blanco
-                        vec3 intense_red = mix(u_red_color, u_red_color * 1.5, 1.0 - power); // Intensificar rojo
-
-                        vec3 final_color = mix(intense_red, lighter_green, power);
-
-                        float border_fade = 1.0 - smoothstep(2.5, 4.0, length(pos));
-                        final_color *= border_fade;
-                        gl_FragColor = vec4(final_color, 1.0);
-                    }
-                `,
-                transparent: true, side: THREE.DoubleSide
-            });
-
-            plane = new THREE.Mesh(geometry, material);
-            plane.rotation.x = -Math.PI / 2;
-            scene.add(plane);
-            
-            const bafleGeo = new THREE.BoxGeometry(0.3, 0.3, 0.3);
-            const bafleMat = new THREE.MeshBasicMaterial({ color: 0x444444, wireframe: false }); 
-            const bafleEdgeMat = new THREE.LineBasicMaterial({ color: 0xffffff }); 
-            const coneGeo = new THREE.ConeGeometry(0.15, 0.15, 16);
-            const coneMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-            coneGeo.translate(0, 0.15, -0.15);
-            
-            sub1 = new THREE.Mesh(bafleGeo, bafleMat);
-            sub1.add(new THREE.LineSegments(new THREE.EdgesGeometry(bafleGeo), bafleEdgeMat));
-            sub1.add(new THREE.Mesh(coneGeo, coneMat));
-            scene.add(sub1);
-            
-            sub2 = new THREE.Mesh(bafleGeo, bafleMat);
-            sub2.add(new THREE.LineSegments(new THREE.EdgesGeometry(bafleGeo), bafleEdgeMat));
-            sub2.add(new THREE.Mesh(coneGeo, coneMat));
-            scene.add(sub2);
-            
-            window.addEventListener('resize', onWindowResize, false);
-            onWindowResize();
-        }
-
-        function onWindowResize() {
-            const rect = container.getBoundingClientRect();
-            const width = rect.width;
-            const height = rect.height;
-            
-            const aspectRatio = width / height;
-            
-            let viewHeight = SIMULATION_SIZE_Y;
-            let viewWidth = viewHeight * aspectRatio;
-
-            if (viewWidth < SIMULATION_SIZE_Y) {
-                viewWidth = SIMULATION_SIZE_Y;
-                viewHeight = viewWidth / aspectRatio;
-            }
-
-            camera.left = -viewWidth / 2;
-            camera.right = viewWidth / 2;
-            camera.top = viewHeight / 2;
-            camera.bottom = -viewHeight / 2;
-            
-            camera.updateProjectionMatrix();
-            renderer.setSize(width, height);
-            
-            const audioContainer = document.getElementById('audio-analizador');
-            if (audioContainer) {
-                const audioOverlay = document.getElementById('audio-overlay');
-                const meterBar = document.getElementById('freq-meter-bar');
-                if (audioOverlay) audioOverlay.style.height = `${meterBar.offsetHeight}px`;
-            }
-        }
-
-        function updateLabels() {
-            const rect = container.getBoundingClientRect();
-            const width = rect.width;
-            const height = rect.height;
-
-            let posFreq = vectorFreq.clone().project(camera);
-            labelFreq.style.left = `${(posFreq.x * 0.5 + 0.5) * width}px`;
-            labelFreq.style.top = `${(-posFreq.y * 0.5 + 0.5) * height}px`;
-
-            let posDist = vectorDist.clone().project(camera);
-            labelDistancia.style.left = `${(posDist.x * 0.5 + 0.5) * width}px`;
-            labelDistancia.style.top = `${(-posDist.y * 0.5 + 0.5) * height - 30}px`;
-        }
-
-        function animate() {
-            requestAnimationFrame(animate);
-            updateLabels(); 
-            renderer.render(scene, camera);
-            updateFrequencyMeter(); 
-        }
-        
+        // --- FUNCIONES DE UTILIDAD ---
         function getRangeDescription(f) {
             if (f < 63) {
                 return "Sub Bajos (25-63 Hz): A menudo se percibe como una vibración en lugar de un tono puro. La mayoría de la música generalmente no baja de los 30 Hz.";
@@ -420,12 +351,212 @@
             return "DOLOR SEVERO";
         }
 
+        function calculateRMS(data) {
+            let sumOfSquares = 0;
+            for (let i = 0; i < data.length; i++) {
+                // Normalize byte data from 0-255 to -1 to 1
+                const normalized = (data[i] / 128) - 1;
+                sumOfSquares += normalized * normalized;
+            }
+            const rmsValue = Math.sqrt(sumOfSquares / data.length);
+            return rmsValue > NOISE_THRESHOLD ? rmsValue : 0;
+        }
+
+        // --- THREE.JS / WEBGL ---
+        let scene, camera, renderer, plane, material, sub1, sub2;
+        const container = document.getElementById('container');
+        const labelFreq = document.getElementById('label-freq');
+        const labelDistancia = document.getElementById('label-distancia');
+        const vectorFreq = new THREE.Vector3(0, 0, SIMULATION_SIZE_Y / 2 * 0.875); 
+        const vectorDist = new THREE.Vector3(0, 0, -0.5); 
+        let startTime = performance.now(); // Para el uniforme de tiempo
+
+        function initThree() {
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setClearColor(0x1e1e1e);
+            container.appendChild(renderer.domElement);
+
+            scene = new THREE.Scene();
+            scene.add(new THREE.AmbientLight(0xffffff, 0.5)); // Luz ambiente para ver los objetos
+            camera = new THREE.OrthographicCamera();
+            camera.position.set(0, 5, 0); 
+            camera.lookAt(0, 0, 0);
+
+            const geometry = new THREE.PlaneGeometry(SIMULATION_SIZE_Y, SIMULATION_SIZE_Y, SEGMENTS, SEGMENTS);
+            material = new THREE.ShaderMaterial({
+                uniforms: {
+                    u_lambda: { value: 3.4 }, // Initial value, updated by props
+                    u_separation: { value: 0.85 }, // Initial value, updated by props
+                    u_size: { value: SIMULATION_SIZE_Y },
+                    u_red_color: { value: new THREE.Color(0xFF5733) }, // Original red
+                    u_green_color: { value: new THREE.Color(0x4CAF50) }, // Original green
+                    u_time: { value: 0.0 }, // Nuevo uniforme de tiempo para la animación
+                },
+                vertexShader: `
+                    varying vec2 vUv;
+                    void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }
+                `,
+                fragmentShader: `
+                    uniform float u_lambda;
+                    uniform float u_separation;
+                    uniform float u_size;
+                    uniform vec3 u_red_color;
+                    uniform vec3 u_green_color;
+                    uniform float u_time; // Uniforme para el tiempo
+                    varying vec2 vUv;
+
+                    void main() {
+                        vec2 pos = (vUv - 0.5) * u_size;
+                        float sub_offset = u_separation / 2.0;
+
+                        // Distancia a cada altavoz
+                        float r1 = distance(pos, vec2(-sub_offset, 0.0));
+                        float r2 = distance(pos, vec2(sub_offset, 0.0));
+
+                        // Diferencia de fase para el patrón de interferencia estático (color base)
+                        float deltaR = r2 - r1;
+                        float interference_phase_diff = (deltaR / u_lambda) * 6.2831853; // 2 * PI
+
+                        // Calculo del "power" de la interferencia estática (0=cancelación, 1=refuerzo)
+                        float intensity_static = 2.0 * abs(cos(interference_phase_diff / 2.0));
+                        float power_static = pow(intensity_static / 2.0, 4.0); // Potencia para mayor contraste
+
+                        // LÓGICA DE COLOR PARA VERDE CLARO Y ROJO INTENSO
+                        // El verde se vuelve más claro a medida que power_static aumenta (refuerzo)
+                        // El rojo se vuelve más intenso a medida que power_static disminuye (cancelación)
+                        vec3 lighter_green = mix(u_green_color, vec3(1.0, 1.0, 1.0), power_static * 0.3); // Mezclar verde con blanco
+                        vec3 intense_red = mix(u_red_color, u_red_color * 1.5, 1.0 - power_static); // Intensificar rojo
+
+                        vec3 base_color = mix(intense_red, lighter_green, power_static);
+
+
+                        // Ondas animadas saliendo de cada altavoz (más rápidas)
+                        float wave_speed = 15.0; // Velocidad de las ondas (más rápido)
+                        float wave_frequency = 4.0; // Frecuencia de las "crestas" de las ondas (más "puntos")
+                        float animated_wave1 = cos((r1 / u_lambda * wave_frequency * 6.2831853) - u_time * wave_speed);
+                        float animated_wave2 = cos((r2 / u_lambda * wave_frequency * 6.2831853) - u_time * wave_speed);
+
+                        // Combinar ambas ondas animadas para mostrar su interacción en el movimiento
+                        float combined_animated_wave = (animated_wave1 + animated_wave2) / 2.0; // De -1 a 1
+
+                        // Modulación de brillo/opacidad para crear el efecto de "puntos/curvas" animadas
+                        // Usamos smoothstep para hacer las "ondas" más suaves y visibles en las crestas
+                        float brightness_mod = smoothstep(0.6, 1.0, combined_animated_wave); // Hace las crestas más brillantes
+
+                        // La opacidad también se modula para que las ondas se desvanezcan un poco
+                        float final_alpha_mod = smoothstep(0.5, 1.0, combined_animated_wave);
+
+                        // Aplicar la modulación al color base y la opacidad final
+                        vec3 final_color_rgb = base_color * brightness_mod * 1.5; // Multiplicar por 1.5 para que las crestas sean más visibles
+                        float final_alpha = power_static * final_alpha_mod; // Opacidad influenciada por la interferencia y la onda animada
+
+                        // Degradado de borde para desvanecer el efecto lejos del centro
+                        float border_fade = 1.0 - smoothstep(2.5, 4.0, length(pos));
+                        final_color_rgb *= border_fade;
+                        final_alpha *= border_fade;
+
+                        gl_FragColor = vec4(final_color_rgb, final_alpha);
+                    }
+                `,
+                transparent: true, side: THREE.DoubleSide
+            });
+
+            plane = new THREE.Mesh(geometry, material);
+            plane.rotation.x = -Math.PI / 2;
+            scene.add(plane);
+            
+            // Speakers
+            const bafleGeo = new THREE.BoxGeometry(0.3, 0.3, 0.3);
+            const bafleMat = new THREE.MeshBasicMaterial({ color: 0x444444, wireframe: false }); 
+            const bafleEdgeMat = new THREE.LineBasicMaterial({ color: 0xffffff }); 
+            const coneGeo = new THREE.ConeGeometry(0.15, 0.15, 16);
+            const coneMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            coneGeo.translate(0, 0.15, -0.15); // Adjust cone position relative to box
+            
+            sub1 = new THREE.Mesh(bafleGeo, bafleMat);
+            sub1.add(new THREE.LineSegments(new THREE.EdgesGeometry(bafleGeo), bafleEdgeMat));
+            sub1.add(new THREE.Mesh(coneGeo, coneMat));
+            scene.add(sub1);
+            
+            sub2 = new THREE.Mesh(bafleGeo, bafleMat);
+            sub2.add(new THREE.LineSegments(new THREE.EdgesGeometry(bafleGeo), bafleEdgeMat));
+            sub2.add(new THREE.Mesh(coneGeo, coneMat));
+            scene.add(sub2);
+            
+            window.addEventListener('resize', onWindowResize, false);
+            onWindowResize(); // Llama una vez para establecer el tamaño inicial
+        }
+
+        function onWindowResize() {
+            const rect = container.getBoundingClientRect();
+            const width = rect.width;
+            const height = rect.height;
+            
+            const aspectRatio = width / height;
+            
+            let viewHeight = SIMULATION_SIZE_Y;
+            let viewWidth = viewHeight * aspectRatio;
+
+            // Ajustar el frustum para que se ajuste al contenedor mientras se mantiene la relación de aspecto
+            if (width > height) { // Si el contenedor es más ancho que alto
+                viewWidth = (SIMULATION_SIZE_Y / height) * width;
+                viewHeight = SIMULATION_SIZE_Y; // Mantener la altura del mundo constante
+            } else { // Si el contenedor es más alto que ancho o cuadrado
+                viewHeight = (SIMULATION_SIZE_Y / width) * height;
+                viewWidth = SIMULATION_SIZE_Y; // Mantener el ancho del mundo constante
+            }
+
+            camera.left = -viewWidth / 2;
+            camera.right = viewWidth / 2;
+            camera.top = viewHeight / 2;
+            camera.bottom = -viewHeight / 2;
+            
+            camera.updateProjectionMatrix();
+            renderer.setSize(width, height);
+            
+            const audioContainer = document.getElementById('audio-analizador');
+            if (audioContainer) {
+                const audioOverlay = document.getElementById('audio-overlay');
+                const meterBar = document.getElementById('freq-meter-bar');
+                if (audioOverlay && meterBar) { // Asegurarse de que ambos elementos existen
+                    audioOverlay.style.height = `${meterBar.offsetHeight + 10}px`; // Ajustar altura del overlay
+                    audioOverlay.style.top = `${meterBar.offsetTop - 5}px`; // Ajustar posición vertical
+                }
+            }
+        }
+
+        function updateLabels() {
+            const rect = container.getBoundingClientRect();
+            const width = rect.width;
+            const height = rect.height;
+
+            let posFreq = vectorFreq.clone().project(camera);
+            labelFreq.style.left = `${(posFreq.x * 0.5 + 0.5) * width}px`;
+            labelFreq.style.top = `${(-posFreq.y * 0.5 + 0.5) * height}px`;
+
+            let posDist = vectorDist.clone().project(camera);
+            labelDistancia.style.left = `${(posDist.x * 0.5 + 0.5) * width}px`;
+            labelDistancia.style.top = `${(-posDist.y * 0.5 + 0.5) * height - 30}px`;
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if (renderer && scene && camera && material) {
+                // Actualizar el uniforme de tiempo
+                const elapsedTime = (performance.now() - startTime) / 1000; // Segundos
+                material.uniforms.u_time.value = elapsedTime;
+
+                updateLabels(); 
+                renderer.render(scene, camera);
+                updateFrequencyMeter(); // Llama al actualizador del medidor de frecuencia
+            }
+        }
+        
         window.actualizarValores = function() {
             const frecuenciaHz = parseFloat(document.getElementById('sliderFrecuencia').value);
             const separacionMetros = parseFloat(document.getElementById('sliderSeparacion').value);
             const LONGITUD_ONDA = VELOCIDAD_SONIDO / frecuenciaHz;
             
-            // *** CORRECCIÓN: Uso de LONGITUD_ONDA ***
             if (material) {
                 material.uniforms.u_lambda.value = LONGITUD_ONDA; 
                 material.uniforms.u_separation.value = separacionMetros;
@@ -451,29 +582,23 @@
                  comentarioSeparacion = " - **LOBING** Severo (Cancelaciones fuertes)";
             } 
             
-            document.getElementById('frecuencia-info').innerHTML = `Frecuencia: ${frecuenciaHz.toFixed(0)} Hz (L.O.: ${LONGITUD_ONDA.toFixed(2)} m) | Ideal: ${controlDirectividad.toFixed(2)} m`;
-            document.getElementById('separacion-info').innerHTML = `Separación: ${separacionMetros.toFixed(2)} m ${comentarioSeparacion}`;
+            document.getElementById('frecuencia-info').innerHTML = `Frecuencia: <span style="font-weight: bold; color: #4CAF50;">${frecuenciaHz.toFixed(0)} Hz</span> (L.O.: ${LONGITUD_ONDA.toFixed(2)} m) | Ideal: ${controlDirectividad.toFixed(2)} m`;
+            document.getElementById('separacion-info').innerHTML = `Separación: <span style="font-weight: bold; color: #4CAF50;">${separacionMetros.toFixed(2)} m</span> <span style="color:#f0ad4e; font-weight: bold;">${comentarioSeparacion}</span>`;
             document.getElementById('rango-description').innerHTML = getRangeDescription(frecuenciaHz);
         }
         
-        // --- MÓDULO DE ANALIZADOR DE AUDIO (MEDIDOR LOGARÍTMICO Y DB) ---
+        // --- ANALIZADOR DE AUDIO ---
         let audioContext = null;
         let analyser = null;
         let frequencyData = null;
         let timeDomainData = null;
         let audioInitialized = false;
-        
-        // Asignación directa de elementos de DOM al cargar
+        let audioError = null; // Para almacenar mensajes de error del audio
+
         const dominantFreqElement = document.getElementById('dominante-freq');
         const rangoLabel = document.getElementById('rango-label');
         const decibelLabel = document.getElementById('decibel-label');
-
-        const MIN_FREQ = 20;
-        const MAX_FREQ = 20000;
-        const MIN_FREQ_LOG = Math.log10(MIN_FREQ);
-        const MAX_FREQ_LOG = Math.log10(MAX_FREQ);
-        const LOG_RANGE = MAX_FREQ_LOG - MIN_FREQ_LOG;
-        const NOISE_THRESHOLD = 0.005;
+        const audioOverlay = document.getElementById('audio-overlay');
 
         function freqToPercent(f) {
             if (f < MIN_FREQ) return 0;
@@ -483,20 +608,15 @@
             return (logF - MIN_FREQ_LOG) / LOG_RANGE * 100;
         }
 
-        function calculateRMS(data) {
-            let sumOfSquares = 0;
-            for (let i = 0; i < data.length; i++) {
-                const normalized = (data[i] / 128) - 1;
-                sumOfSquares += normalized * normalized;
-            }
-            return Math.sqrt(sumOfSquares / data.length);
-        }
-
         window.iniciarAudio = function() {
             if (audioInitialized) return;
-            
+            if (audioError) return; // Si ya hay un error, no intentar de nuevo
+
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                dominantFreqElement.innerHTML = '<span style="color:red;">Tu navegador no soporta la API de Micrófono.</span>';
+                audioError = 'Tu navegador no soporta la API de Micrófono.';
+                dominantFreqElement.innerHTML = `<span style="color:red;">${audioError}</span>`;
+                audioOverlay.textContent = audioError;
+                audioOverlay.style.cursor = 'default';
                 return;
             }
 
@@ -512,27 +632,69 @@
                 
                 navigator.mediaDevices.getUserMedia({ audio: true })
                     .then(stream => {
-                        const source = audioContext.createMediaStreamSource(stream);
-                        source.connect(analyser);
-                        document.getElementById('audio-overlay').style.display = 'none'; 
-                        audioInitialized = true;
-                        dominantFreqElement.innerHTML = 'Frecuencia Dominante: <span style="font-weight: bold;">(Escuchando...)</span>';
-                        rangoLabel.innerHTML = 'Rango: <span style="font-weight: bold;">Analizando...</span>';
-                        onWindowResize();
+                        try {
+                            if (!audioContext || !analyser) { // Comprobar si se desinicializó durante el then
+                                stream.getTracks().forEach(track => track.stop());
+                                return;
+                            }
+                            const source = audioContext.createMediaStreamSource(stream);
+                            source.connect(analyser);
+                            audioOverlay.style.display = 'none'; 
+                            audioInitialized = true;
+                            audioError = null; // Limpiar cualquier error previo
+                            onWindowResize(); // Reajustar el tamaño del overlay por si acaso
+                        } catch (innerError) {
+                            console.error('Error connecting audio stream:', innerError);
+                            audioError = 'Error al conectar el stream de audio.';
+                            dominantFreqElement.innerHTML = `<span style="color:red;">${audioError}</span>`;
+                            audioOverlay.textContent = audioError;
+                            audioOverlay.style.display = 'flex';
+                            audioOverlay.style.cursor = 'default';
+                            if (audioContext && audioContext.state !== 'closed') { audioContext.close().catch(console.error); }
+                            stream.getTracks().forEach(track => track.stop());
+                        }
                     })
                     .catch(err => {
-                        dominantFreqElement.innerHTML = '<span style="color:red;">Acceso denegado. (HTTPS Requerido)</span>';
-                        document.getElementById('audio-overlay').innerHTML = 'Acceso Denegado al Micrófono';
-                        document.getElementById('audio-overlay').style.cursor = 'default';
+                        console.error('Microphone access denied:', err);
+                        let errorMessage = 'Acceso denegado al micrófono.';
+                        if (window.location.protocol !== 'https:') {
+                            errorMessage += ' (HTTPS Requerido)';
+                        } else if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                            errorMessage += ' Por favor, permite el acceso en la configuración de tu navegador.';
+                        } else if (err.name === 'NotFoundError') {
+                            errorMessage += ' No se encontró un micrófono.';
+                        } else if (err.name === 'NotReadableError') {
+                            errorMessage += ' El micrófono está en uso o no disponible.';
+                        } else {
+                            errorMessage += ` Error desconocido: ${err.message}`;
+                        }
+                        audioError = errorMessage;
+                        dominantFreqElement.innerHTML = `<span style="color:red;">${audioError}</span>`;
+                        audioOverlay.textContent = audioError;
+                        audioOverlay.style.display = 'flex';
+                        audioOverlay.style.cursor = 'default';
+                        if (audioContext && audioContext.state !== 'closed') { audioContext.close().catch(console.error); }
                     });
             } catch (e) {
-                 dominantFreqElement.innerHTML = '<span style="color:red;">Error de AudioContext.</span>';
-                 document.getElementById('audio-overlay').innerHTML = 'Error de AudioContext';
+                 console.error('AudioContext error:', e);
+                 audioError = 'Error de AudioContext o configuración inicial.';
+                 dominantFreqElement.innerHTML = `<span style="color:red;">${audioError}</span>`;
+                 audioOverlay.textContent = audioError;
+                 audioOverlay.style.display = 'flex';
+                 audioOverlay.style.cursor = 'default';
+                 if (audioContext && audioContext.state !== 'closed') { audioContext.close().catch(console.error); }
             }
         }
 
         function updateFrequencyMeter() {
-            if (!analyser || !audioInitialized) return;
+            if (!analyser || !audioInitialized || audioError) {
+                if(audioError) {
+                    // Si hay un error, asegurar que el overlay esté visible y muestre el mensaje de error
+                    audioOverlay.style.display = 'flex';
+                    audioOverlay.textContent = audioError;
+                }
+                return;
+            };
             
             analyser.getByteFrequencyData(frequencyData);
             analyser.getByteTimeDomainData(timeDomainData); 
@@ -541,61 +703,58 @@
             const binWidth = sampleRate / analyser.fftSize;
             
             let maxVolume = 0;
-            let dominantFreq = 0;
+            let currentDominantFreq = 0;
             
-            const powerMaxFreq = 1000; 
-            const maxIndexPower = Math.min(frequencyData.length, Math.ceil(powerMaxFreq / binWidth)); 
-            const minIndex = Math.ceil(30 / binWidth);
+            // Límite de frecuencia para la detección de la dominante (ej. hasta 1kHz para bajos)
+            const maxIndexPower = Math.min(frequencyData.length, Math.ceil(POWER_MAX_FREQ_LIMIT / binWidth)); 
+            const minIndex = Math.ceil(30 / binWidth); // Comenzar el análisis desde 30 Hz
 
             for (let i = minIndex; i < maxIndexPower; i++) {
                 if (frequencyData[i] > maxVolume) {
                     maxVolume = frequencyData[i];
-                    dominantFreq = i * binWidth;
+                    currentDominantFreq = i * binWidth;
                 }
             }
             
-            // --- 2. CÁLCULO DE DECIBELIOS ---
             const rms = calculateRMS(timeDomainData);
             let approx_dB = 0;
 
             if (rms > NOISE_THRESHOLD) {
                 approx_dB = 20 * Math.log10(rms) + 93; 
-                if (approx_dB < 0) approx_dB = 0;
+                if (approx_dB < 0) approx_dB = 0; // Asegurar que no haya decibelios negativos
             } else {
                 approx_dB = 0;
             }
             
             const indicator = document.getElementById('freq-meter-indicator');
 
-            // --- 3. ACTUALIZACIÓN DE UI ---
-            if (dominantFreq > 0 && maxVolume > 50) { 
-                const percent = freqToPercent(dominantFreq);
+            if (currentDominantFreq > 0 && maxVolume > DOMINANT_FREQ_VOLUME_THRESHOLD) { 
+                const percent = freqToPercent(currentDominantFreq);
                 indicator.style.left = `${percent}%`;
                 
-                dominantFreqElement.innerHTML = `Frecuencia Dominante: <span style="font-weight: bold; color:#4CAF50;">${dominantFreq.toFixed(1)} Hz</span>`;
-                rangoLabel.innerHTML = `Rango: <span style="font-weight: bold; color:#ccc;">${classifyFrequency(dominantFreq)}</span>`;
+                dominantFreqElement.innerHTML = `Frecuencia Dominante: <span style="font-weight: bold; color:#4CAF50;">${currentDominantFreq.toFixed(1)} Hz</span>`;
+                rangoLabel.innerHTML = `Rango: <span style="font-weight: bold; color:#ccc;">${classifyFrequency(currentDominantFreq)}</span>`;
 
             } else {
-                indicator.style.left = `0%`;
-                 dominantFreqElement.innerHTML = `Frecuencia Dominante: <span style="font-weight: bold;">(Nivel bajo o silencioso)</span>`;
-                 rangoLabel.innerHTML = `Rango: <span style="font-weight: bold; color:#ccc;">(Esperando sonido...)</span>`;
+                indicator.style.left = `0%`; // Indicador al inicio si no hay sonido dominante
+                 dominantFreqElement.innerHTML = `Frecuencia Dominante: <span style="font-weight: bold; color:#aaa;">(Nivel bajo o silencioso)</span>`;
+                 rangoLabel.innerHTML = `Rango: <span style="font-weight: bold; color:#aaa;">(Esperando sonido...)</span>`;
             }
 
-            // Actualización de Decibelios
             const dBText = approx_dB > 0 ? `${approx_dB.toFixed(1)} dB` : `< 30 dB`;
             const dBClass = classifyDecibels(approx_dB);
             
-            decibelLabel.innerHTML = `**${dBText}** | ${dBClass}`;
+            decibelLabel.innerHTML = `<span style="font-weight: bold;">${dBText}</span> | ${dBClass}`;
         }
-
 
         // --- INICIO DE LA APLICACIÓN ---
         initThree();
-        window.onload = onWindowResize;
-        actualizarValores();
+        window.onload = () => {
+          onWindowResize(); // Para asegurar el tamaño inicial y del overlay
+          actualizarValores(); // Inicializar valores de la interfaz
+        };
         animate();
     </script>
-
 <script type="module" src="/index.tsx"></script>
 </body>
 </html>
