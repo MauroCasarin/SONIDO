@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
-import { Logo } from './components/Logo.tsx';
-import { InfoPanel } from './components/InfoPanel.tsx';
-import { AudioWaveVisualizer } from './components/AudioWaveVisualizer.tsx';
-import { AudioAnalyzerMeter } from './components/AudioAnalyzerMeter.tsx';
-import { ReferenceImage } from './components/ReferenceImage.tsx';
-import { VELOCIDAD_SONIDO } from './constants.ts';
+import { Logo } from './components/Logo.jsx';
+import { InfoPanel } from './components/InfoPanel.jsx';
+import { AudioWaveVisualizer } from './components/AudioWaveVisualizer.jsx';
+import { AudioAnalyzerMeter } from './components/AudioAnalyzerMeter.jsx';
+import { ReferenceImage } from './components/ReferenceImage.jsx';
+import { VELOCIDAD_SONIDO } from './constants.js';
 
-const App: React.FC = () => {
-  const [frecuenciaHz, setFrecuenciaHz] = useState<number>(100);
-  const [separacionMetros, setSeparacionMetros] = useState<number>(0.85);
+const App = () => {
+  const [frecuenciaHz, setFrecuenciaHz] = useState(100);
+  const [separacionMetros, setSeparacionMetros] = useState(0.85);
 
   const longitudOnda = VELOCIDAD_SONIDO / frecuenciaHz;
   const controlDirectividad = longitudOnda / 2;

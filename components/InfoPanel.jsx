@@ -1,17 +1,7 @@
 import React, { useCallback } from 'react';
-import { getRangeDescription } from '../utils/audioUtils.ts'; // Cambiado aquí
+import { getRangeDescription } from '../utils/audioUtils.js';
 
-interface InfoPanelProps {
-  frecuenciaHz: number;
-  setFrecuenciaHz: (value: number) => void;
-  separacionMetros: number;
-  setSeparacionMetros: (value: number) => void;
-  longitudOnda: number;
-  controlDirectividad: number;
-  comentarioSeparacion: string;
-}
-
-export const InfoPanel: React.FC<InfoPanelProps> = ({
+export const InfoPanel = ({
   frecuenciaHz,
   setFrecuenciaHz,
   separacionMetros,
@@ -20,11 +10,11 @@ export const InfoPanel: React.FC<InfoPanelProps> = ({
   controlDirectividad,
   comentarioSeparacion,
 }) => {
-  const handleFrecuenciaChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFrecuenciaChange = useCallback((event) => {
     setFrecuenciaHz(parseFloat(event.target.value));
   }, [setFrecuenciaHz]);
 
-  const handleSeparacionChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSeparacionChange = useCallback((event) => {
     setSeparacionMetros(parseFloat(event.target.value));
   }, [setSeparacionMetros]);
 

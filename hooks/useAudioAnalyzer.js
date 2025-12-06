@@ -8,31 +8,22 @@ import {
   NOISE_THRESHOLD,
   POWER_MAX_FREQ_LIMIT,
   DOMINANT_FREQ_VOLUME_THRESHOLD,
-} from '../constants.ts';
-import { calculateRMS } from '../utils/audioUtils.ts';
+} from '../constants.js';
+import { calculateRMS } from '../utils/audioUtils.js';
 
-interface AudioAnalyzerHook {
-  audioInitialized: boolean;
-  dominantFreq: number;
-  rms: number;
-  error: string | null;
-  iniciarAudio: () => void;
-  freqToPercent: (f: number) => number;
-}
+export const useAudioAnalyzer = () => {
+  const [audioInitialized, setAudioInitialized] = useState(false);
+  const [dominantFreq, setDominantFreq] = useState(0);
+  const [rms, setRms] = useState(0);
+  const [error, setError] = useState(null);
 
-export const useAudioAnalyzer = (): AudioAnalyzerHook => {
-  const [audioInitialized, setAudioInitialized] = useState<boolean>(false);
-  const [dominantFreq, setDominantFreq] = useState<number>(0);
-  const [rms, setRms] = useState<number>(0);
-  const [error, setError] = useState<string | null>(null);
+  const audioContextRef = useRef(null);
+  const analyserRef = useRef(null);
+  const frequencyDataRef = useRef(null);
+  const timeDomainDataRef = useRef(null);
+  const animationFrameRef = useRef(null);
 
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const analyserRef = useRef<AnalyserNode | null>(null);
-  const frequencyDataRef = useRef<Uint8Array | null>(null);
-  const timeDomainDataRef = useRef<Uint8Array | null>(null);
-  const animationFrameRef = useRef<number | null>(null);
-
-  const freqToPercent = useCallback((f: number): number => {
+  const freqToPercent = useCallback((f) => {
     if (f < MIN_FREQ) return 0;
     if (f > MAX_FREQ) return 100;
 

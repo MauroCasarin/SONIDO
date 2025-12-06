@@ -1,11 +1,11 @@
-import { NOISE_THRESHOLD } from '../constants.ts';
+import { NOISE_THRESHOLD } from '../constants.js';
 
 /**
  * Provides a descriptive text for a given frequency range.
  * @param f The frequency in Hz.
  * @returns A string describing the frequency range.
  */
-export function getRangeDescription(f: number): string {
+export function getRangeDescription(f) {
   if (f < 63) {
     return 'Sub Bajos (25-63 Hz): A menudo se percibe como una vibración en lugar de un tono puro. La mayoría de la música generalmente no baja de los 30 Hz.';
   } else if (f >= 63 && f < 250) {
@@ -21,7 +21,7 @@ export function getRangeDescription(f: number): string {
  * @param f The frequency in Hz.
  * @returns A string representing the frequency classification.
  */
-export function classifyFrequency(f: number): string {
+export function classifyFrequency(f) {
   if (f < 20) return 'INFRA SONIDO';
   if (f < 60) return 'SUB GRAVE';
   if (f < 200) return 'GRAVE';
@@ -37,7 +37,7 @@ export function classifyFrequency(f: number): string {
  * @param dB The decibel level.
  * @returns A string representing the decibel classification.
  */
-export function classifyDecibels(dB: number): string {
+export function classifyDecibels(dB) {
   if (dB < 30) return 'SILENCIO TOTAL';
   if (dB < 60) return 'NORMAL';
   if (dB < 75) return 'RUIDO MEDIO';
@@ -52,7 +52,7 @@ export function classifyDecibels(dB: number): string {
  * @param data A Uint8Array containing time domain data.
  * @returns The RMS value.
  */
-export function calculateRMS(data: Uint8Array): number {
+export function calculateRMS(data) {
   let sumOfSquares = 0;
   for (let i = 0; i < data.length; i++) {
     // Normalize byte data from 0-255 to -1 to 1
