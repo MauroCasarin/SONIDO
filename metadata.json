@@ -1,0 +1,7 @@
+{
+  "name": "Calculador de Graves",
+  "description": "Calcula y visualiza la longitud de onda de las frecuencias bajas y la separación ideal de los altavoces en función de los Hz, con análisis en tiempo real de la frecuencia ambiental mediante el micrófono. Presenta un diseño tecnológico para una experiencia de usuario mejorada.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
