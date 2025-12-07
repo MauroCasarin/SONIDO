@@ -16,6 +16,7 @@
             align-items: center;
             min-height: 100vh;
             overflow-x: hidden; /* Evitar scroll horizontal en pantallas pequeñas */
+            font-size: clamp(14px, 2.5vw, 16px); /* Base font size responsive */
         }
         
         /* Contenedor del Logo */
@@ -41,7 +42,7 @@
             transform: scale(1.1);
         }
         #logo-container p {
-            font-size: 0.75em;
+            font-size: 0.75em; /* Scales with body font size */
             color: #aaa;
             margin-top: 5px;
         }
@@ -49,13 +50,13 @@
         h1 {
             color: #4CAF50;
             padding-top: 5px;
-            font-size: 1.4em;
+            font-size: 1.4em; /* Scales with body font size */
             margin-bottom: 5px;
         }
         
         #info-panel {
             flex-shrink: 0;
-            font-size: 0.95em;
+            font-size: 0.95em; /* Scales with body font size, affecting its children */
             padding: 15px;
             background-color: #2c2c2c;
             width: 95vw;
@@ -91,7 +92,6 @@
             color: white;
             padding: 5px 10px;
             border-radius: 5px;
-            font-size: 12px;
             white-space: nowrap;
             transform: translate(-50%, -50%); 
             pointer-events: none;
@@ -99,12 +99,12 @@
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
             z-index: 10; /* Asegurar que las etiquetas estén por encima del canvas */
         }
-        #label-freq { font-size: 14px; font-weight: bold; color: #4CAF50; }
-        #label-distancia { font-size: 12px; color: #f0ad4e; }
+        #label-freq { font-size: 1.14em; /* Approx 16px if body is 14px */ font-weight: bold; color: #4CAF50; }
+        #label-distancia { font-size: 0.85em; /* Approx 12px if body is 14px */ color: #f0ad4e; }
         
         .control-group { margin-bottom: 10px; color: #ccc;}
         .slider-container { width: 95%; margin: 0 auto 12px auto; position: relative; }
-        .slider-label { display: block; font-size: 0.85em; margin-bottom: 5px; font-weight: bold; color: #1e90ff; }
+        .slider-label { display: block; font-size: 0.85em; /* Scales with body font size */ margin-bottom: 5px; font-weight: bold; color: #1e90ff; }
         input[type=range] { 
             width: 100%; height: 5px; background: #555; -webkit-appearance: none; border-radius: 5px; cursor: pointer;
             background: linear-gradient(to right, #1e90ff, #00bfff); /* Degradado para el slider */
@@ -132,12 +132,12 @@
             margin-top: 15px;
             padding-top: 10px;
             border-top: 1px solid #444;
-            font-size: 0.8em;
+            font-size: 0.8em; /* Scales with body font size */
             line-height: 1.4;
         }
         
-        /* --- ESTILOS DEL MEDIDOR DE FRECUENCIA LOGARÍTMICO --- */
-        #audio-analizador {
+        /* --- ESTILOS DEL ANALIZADOR DE ONDA DE TIEMPO --- */
+        #frequency-spectrum-analyzer {
             width: 95vw;
             max-width: 800px;
             margin: 10px auto;
@@ -148,47 +148,19 @@
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
             position: relative;
         }
-        #freq-meter-bar {
-            position: relative;
-            width: 100%;
-            height: 15px;
-            background: linear-gradient(to right, 
-                #FF5733 0%, #FFD700 20%, #4CAF50 40%, #1e90ff 65%, #ffffff 100%
-            );
-            border-radius: 7px;
-            border: 1px solid #444;
-            margin-top: 5px;
+        #frequency-spectrum-analyzer p { /* Estilo para el título del espectro */
+            color: #ffffff;
+            font-weight: bold;
+            font-size: 0.9em; /* Scales with body font size */
+            margin-bottom: 10px;
         }
-        #freq-meter-indicator {
-            position: absolute;
-            top: -5px;
-            width: 20px;
-            height: 25px;
-            background-color: #ff00ff; /* Rosa fucsia */
-            border: 2px solid #ffffff;
-            border-radius: 3px;
-            transform: translateX(-50%);
-            transition: left 0.1s linear;
-            box-shadow: 0 0 8px rgba(255, 0, 255, 0.7);
-        }
-        #freq-ticks-labels {
-            width: 100%;
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.75em;
-            margin-top: 5px;
-            color: #aaa;
-        }
-        
-        #dominante-freq { font-size: 0.9em; color: #1e90ff; margin-top: 10px; }
-        #rango-label { font-size: 0.8em; font-weight: bold; color: #ccc; margin-top: 5px; }
-        #decibel-label {
-            color: #FF5733; 
-            font-size: 0.75em; 
-            margin-top: 2px;
+        #frequency-spectrum-canvas {
+            background-color: #2a2a2a; /* Fondo del canvas para el espectro */
+            border-radius: 8px; /* Bordes redondeados para el canvas */
+            display: block; /* Eliminar espacio extra */
         }
 
-        #audio-overlay {
+        #spectrum-audio-overlay {
             position: absolute;
             top: 0;
             left: 0;
@@ -196,20 +168,26 @@
             height: 100%;
             background-color: rgba(0, 0, 0, 0.85); /* Más oscuro */
             color: #1e90ff; /* Color de texto más vibrante */
-            font-size: 1.1em;
+            font-size: 1.1em; /* Scales with body font size */
             font-weight: bold;
             display: flex;
             justify-content: center;
             align-items: center;
             cursor: pointer;
-            z-index: 20;
+            z-index: 21; /* Higher z-index */
             border-radius: 8px;
             transition: background-color 0.3s;
         }
-        #audio-overlay:hover {
+        #spectrum-audio-overlay:hover {
             background-color: rgba(0, 0, 0, 0.7);
         }
         
+        /* Bloque 'spectrum-freq-ticks-labels' eliminado según la solicitud del usuario. */
+        
+        #spectrum-dominant-freq { font-size: 0.9em; /* Scales with body font size */ color: #1e90ff; margin-top: 10px; }
+        #spectrum-rango-label { font-size: 0.8em; /* Scales with body font size */ font-weight: bold; color: #ccc; margin-top: 5px; }
+
+        /* --- IMAGEN DE REFERENCIA --- */
         #imagen-referencia {
             width: 95vw;
             max-width: 800px;
@@ -221,7 +199,7 @@
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
         }
         #imagen-referencia h2 {
-            font-size: 1.2em; 
+            font-size: 1.2em; /* Scales with body font size */
             margin-bottom: 10px; 
             color: #ffffff;
         }
@@ -241,7 +219,7 @@
         <a href="https://www.instagram.com/3d_mc_3d/" target="_blank" rel="noopener noreferrer">
             <img src="https://raw.githubusercontent.com/MauroCasarin/SONIDO/refs/heads/main/MC%2048%20N.png" alt="Logo MC 3D" />
         </a>
-        <p>Powered by MC 3D Audio</p>
+        <p>Powered by MC 3D</p>
     </div>
 
     <div id="info-panel">
@@ -271,27 +249,17 @@
         <div id="label-distancia" class="scene-label"></div>
     </div>
     
-    <div id="audio-analizador">
-        <p style="font-size: 0.9em; margin-bottom: 3px;">Medidor de Frecuencia Ambiental (Logarítmico)</p>
-        <div style="position: relative; width: 100%; height: 25px;">
-            <div id="freq-meter-bar">
-                <div id="freq-meter-indicator"></div>
-            </div>
-            <div id="audio-overlay" onclick="iniciarAudio()">
+    <div id="frequency-spectrum-analyzer">
+        <p style="font-size: 0.9em; margin-bottom: 3px;">Análisis de Onda en Tiempo Real</p>
+        <div style="position: relative; width: 100%; height: 180px; border: 1px solid #444; border-radius: 8px; overflow: hidden; background-color: #2a2a2a;">
+            <canvas id="frequency-spectrum-canvas" style="width: 100%; height: 100%; display: block;"></canvas>
+            <div id="spectrum-audio-overlay" onclick="iniciarAudio()">
                 Toca aquí para activar el micrófono y el análisis (HTTPS Requerido)
             </div>
         </div>
-        <div id="freq-ticks-labels">
-            <span>20 Hz</span>
-            <span>60 Hz</span>
-            <span>200 Hz</span>
-            <span>1 kHz</span>
-            <span>5 kHz</span>
-            <span>20 kHz</span>
-        </div>
-        <p id="dominante-freq" style="font-size: 0.9em; color: #1e90ff; margin-top: 5px;">Frecuencia Dominante: No iniciado</p>
-        <p id="rango-label">Rango: Esperando análisis...</p>
-        <p id="decibel-label">Decibelios (dB): No iniciado</p>
+        <!-- Bloque 'spectrum-freq-ticks-labels' eliminado según la solicitud del usuario. -->
+        <p id="spectrum-dominant-freq" style="font-size: 0.9em; color: #1e90ff; margin-top: 10px;">Frecuencia Predominante: No iniciado</p>
+        <p id="spectrum-rango-label" style="font-size: 0.8em; font-weight: bold; color: #ccc; margin-top: 5px;">Rango: Esperando análisis...</p>
     </div>
 
     <div id="imagen-referencia">
@@ -308,15 +276,9 @@
         const SEGMENTS = 256;
         const VELOCIDAD_SONIDO = 340; // meters/second
 
-        const MIN_FREQ = 20;
-        const MAX_FREQ = 20000;
-        const MIN_FREQ_LOG = Math.log10(MIN_FREQ);
-        const MAX_FREQ_LOG = Math.log10(MAX_FREQ);
-        const LOG_RANGE = MAX_FREQ_LOG - MIN_FREQ_LOG;
-        const NOISE_THRESHOLD = 0.005;
+        const DOMINANT_FREQ_SEARCH_LIMIT = 1000; // Max frequency to search for dominant (focus on bass/mid-bass)
+        const AUDIO_PRESENCE_THRESHOLD = 1000; // Sum of all frequency values to consider "sound" present
 
-        const POWER_MAX_FREQ_LIMIT = 1000; // Max frequency for dominant freq calculation
-        const DOMINANT_FREQ_VOLUME_THRESHOLD = 50; // Min volume to consider a frequency dominant
 
         // --- FUNCIONES DE UTILIDAD ---
         function getRangeDescription(f) {
@@ -341,26 +303,6 @@
             return "ULTRA SONIDO";
         }
 
-        function classifyDecibels(dB) {
-            if (dB < 30) return "SILENCIO TOTAL";
-            if (dB < 60) return "NORMAL";
-            if (dB < 75) return "RUIDO MEDIO";
-            if (dB < 90) return "RUIDO FUERTE";
-            if (dB < 105) return "MUY FUERTE (Riesgo)";
-            if (dB < 120) return "EXTREMO (Peligro)";
-            return "DOLOR SEVERO";
-        }
-
-        function calculateRMS(data) {
-            let sumOfSquares = 0;
-            for (let i = 0; i < data.length; i++) {
-                // Normalize byte data from 0-255 to -1 to 1
-                const normalized = (data[i] / 128) - 1;
-                sumOfSquares += normalized * normalized;
-            }
-            const rmsValue = Math.sqrt(sumOfSquares / data.length);
-            return rmsValue > NOISE_THRESHOLD ? rmsValue : 0;
-        }
 
         // --- THREE.JS / WEBGL ---
         let scene, camera, renderer, plane, material, sub1, sub2;
@@ -514,13 +456,16 @@
             camera.updateProjectionMatrix();
             renderer.setSize(width, height);
             
-            const audioContainer = document.getElementById('audio-analizador');
-            if (audioContainer) {
-                const audioOverlay = document.getElementById('audio-overlay');
-                const meterBar = document.getElementById('freq-meter-bar');
-                if (audioOverlay && meterBar) { // Asegurarse de que ambos elementos existen
-                    audioOverlay.style.height = `${meterBar.offsetHeight + 10}px`; // Ajustar altura del overlay
-                    audioOverlay.style.top = `${meterBar.offsetTop - 5}px`; // Ajustar posición vertical
+            // Ajustar el overlay del analizador de audio
+            const audioAnalyzerContainer = document.querySelector('#frequency-spectrum-analyzer > div'); 
+            const audioAnalyzerCanvasEl = document.getElementById('frequency-spectrum-canvas');
+            if (audioAnalyzerContainer && audioAnalyzerCanvasEl) {
+                const audioOverlay = document.getElementById('spectrum-audio-overlay');
+                if (audioOverlay) {
+                    audioOverlay.style.width = `${audioAnalyzerContainer.offsetWidth}px`;
+                    audioOverlay.style.height = `${audioAnalyzerContainer.offsetHeight}px`;
+                    audioAnalyzerCanvasEl.width = audioAnalyzerContainer.offsetWidth;
+                    audioAnalyzerCanvasEl.height = audioAnalyzerContainer.offsetHeight;
                 }
             }
         }
@@ -548,7 +493,7 @@
 
                 updateLabels(); 
                 renderer.render(scene, camera);
-                updateFrequencyMeter(); // Llama al actualizador del medidor de frecuencia
+                updateAudioVisualization(); 
             }
         }
         
@@ -587,69 +532,67 @@
             document.getElementById('rango-description').innerHTML = getRangeDescription(frecuenciaHz);
         }
         
-        // --- ANALIZADOR DE AUDIO ---
+        // --- ANALIZADOR DE AUDIO: Waveform y Frecuencia Predominante ---
         let audioContext = null;
         let analyser = null;
-        let frequencyData = null;
-        let timeDomainData = null;
+        let frequencyData = null; // Para la detección de frecuencia predominante
+        let timeDomainData = null; // Para la visualización de la onda de tiempo
         let audioInitialized = false;
         let audioError = null; // Para almacenar mensajes de error del audio
 
-        const dominantFreqElement = document.getElementById('dominante-freq');
-        const rangoLabel = document.getElementById('rango-label');
-        const decibelLabel = document.getElementById('decibel-label');
-        const audioOverlay = document.getElementById('audio-overlay');
-
-        function freqToPercent(f) {
-            if (f < MIN_FREQ) return 0;
-            if (f > MAX_FREQ) return 100;
-            
-            const logF = Math.log10(f);
-            return (logF - MIN_FREQ_LOG) / LOG_RANGE * 100;
-        }
+        let audioAnalyzerCanvas = null;
+        let audioAnalyzerCtx = null;
+        const spectrumDominantFreqElement = document.getElementById('spectrum-dominant-freq');
+        const spectrumRangoLabel = document.getElementById('spectrum-rango-label');
+        const spectrumAudioOverlay = document.getElementById('spectrum-audio-overlay');
 
         window.iniciarAudio = function() {
             if (audioInitialized) return;
             if (audioError) return; // Si ya hay un error, no intentar de nuevo
 
+            // Inicializar canvas y contexto aquí para asegurar que estén listos.
+            audioAnalyzerCanvas = document.getElementById('frequency-spectrum-canvas');
+            audioAnalyzerCtx = audioAnalyzerCanvas.getContext('2d');
+            onWindowResize(); // Asegurar que el canvas tenga el tamaño correcto antes de dibujar
+
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                 audioError = 'Tu navegador no soporta la API de Micrófono.';
-                dominantFreqElement.innerHTML = `<span style="color:red;">${audioError}</span>`;
-                audioOverlay.textContent = audioError;
-                audioOverlay.style.cursor = 'default';
+                spectrumDominantFreqElement.innerHTML = `<span style="color:red;">${audioError}</span>`;
+                spectrumAudioOverlay.textContent = audioError;
+                spectrumAudioOverlay.style.cursor = 'default';
                 return;
             }
 
             try {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 analyser = audioContext.createAnalyser();
-                analyser.fftSize = 1024; 
-                analyser.smoothingTimeConstant = 0.92;
+                analyser.fftSize = 2048; // Mayor FFT size para más resolución en el espectro y waveform
+                analyser.smoothingTimeConstant = 0.95; // Más suavizado para una onda más estable y lenta
                 frequencyData = new Uint8Array(analyser.frequencyBinCount);
-                timeDomainData = new Uint8Array(analyser.fftSize); 
+                timeDomainData = new Uint8Array(analyser.fftSize); // Se usará para la visualización de la onda
                 
                 if (audioContext.state === 'suspended') { audioContext.resume(); }
                 
                 navigator.mediaDevices.getUserMedia({ audio: true })
                     .then(stream => {
                         try {
-                            if (!audioContext || !analyser) { // Comprobar si se desinicializó durante el then
+                            if (!audioContext || !analyser) { 
                                 stream.getTracks().forEach(track => track.stop());
                                 return;
                             }
                             const source = audioContext.createMediaStreamSource(stream);
                             source.connect(analyser);
-                            audioOverlay.style.display = 'none'; 
+                            spectrumAudioOverlay.style.display = 'none'; 
                             audioInitialized = true;
                             audioError = null; // Limpiar cualquier error previo
-                            onWindowResize(); // Reajustar el tamaño del overlay por si acaso
+                            onWindowResize(); // Reajustar el tamaño del overlay y canvas por si acaso
                         } catch (innerError) {
                             console.error('Error connecting audio stream:', innerError);
                             audioError = 'Error al conectar el stream de audio.';
-                            dominantFreqElement.innerHTML = `<span style="color:red;">${audioError}</span>`;
-                            audioOverlay.textContent = audioError;
-                            audioOverlay.style.display = 'flex';
-                            audioOverlay.style.cursor = 'default';
+                            spectrumDominantFreqElement.innerHTML = `<span style="color:red;">${audioError}</span>`;
+                            spectrumAudioOverlay.textContent = audioError;
+                            spectrumAudioOverlay.style.display = 'flex';
+                            spectrumAudioOverlay.style.cursor = 'default';
                             if (audioContext && audioContext.state !== 'closed') { audioContext.close().catch(console.error); }
                             stream.getTracks().forEach(track => track.stop());
                         }
@@ -669,88 +612,139 @@
                             errorMessage += ` Error desconocido: ${err.message}`;
                         }
                         audioError = errorMessage;
-                        dominantFreqElement.innerHTML = `<span style="color:red;">${audioError}</span>`;
-                        audioOverlay.textContent = audioError;
-                        audioOverlay.style.display = 'flex';
-                        audioOverlay.style.cursor = 'default';
+                        spectrumDominantFreqElement.innerHTML = `<span style="color:red;">${audioError}</span>`;
+                        spectrumAudioOverlay.textContent = audioError;
+                        spectrumAudioOverlay.style.display = 'flex';
+                        spectrumAudioOverlay.style.cursor = 'default';
                         if (audioContext && audioContext.state !== 'closed') { audioContext.close().catch(console.error); }
                     });
             } catch (e) {
                  console.error('AudioContext error:', e);
                  audioError = 'Error de AudioContext o configuración inicial.';
-                 dominantFreqElement.innerHTML = `<span style="color:red;">${audioError}</span>`;
-                 audioOverlay.textContent = audioError;
-                 audioOverlay.style.display = 'flex';
-                 audioOverlay.style.cursor = 'default';
+                 spectrumDominantFreqElement.innerHTML = `<span style="color:red;">${audioError}</span>`;
+                 spectrumAudioOverlay.textContent = audioError;
+                 spectrumAudioOverlay.style.display = 'flex';
+                 spectrumAudioOverlay.style.cursor = 'default';
                  if (audioContext && audioContext.state !== 'closed') { audioContext.close().catch(console.error); }
             }
         }
 
-        function updateFrequencyMeter() {
+        function updateAudioVisualization() {
             if (!analyser || !audioInitialized || audioError) {
                 if(audioError) {
-                    // Si hay un error, asegurar que el overlay esté visible y muestre el mensaje de error
-                    audioOverlay.style.display = 'flex';
-                    audioOverlay.textContent = audioError;
+                    spectrumAudioOverlay.style.display = 'flex';
+                    spectrumAudioOverlay.textContent = audioError;
                 }
                 return;
             };
             
-            analyser.getByteFrequencyData(frequencyData);
-            analyser.getByteTimeDomainData(timeDomainData); 
+            // Asegurar que el canvas tenga el tamaño correcto antes de dibujar
+            if (audioAnalyzerCanvas.width === 0 || audioAnalyzerCanvas.height === 0) {
+                 onWindowResize();
+            }
+
+            // --- Parte de la Visualización de Onda de Tiempo ---
+            analyser.getByteTimeDomainData(timeDomainData);
+            audioAnalyzerCtx.clearRect(0, 0, audioAnalyzerCanvas.width, audioAnalyzerCanvas.height);
             
-            const sampleRate = analyser.context.sampleRate;
-            const binWidth = sampleRate / analyser.fftSize;
+            audioAnalyzerCtx.lineWidth = 1;
+            audioAnalyzerCtx.strokeStyle = 'rgba(68, 68, 68, 0.7)'; // Color de las líneas de la cuadrícula, más sutil
+            
+            // Dibujar cuadrícula horizontal (líneas punteadas)
+            const horizontalLines = 4; // 2 arriba, 2 abajo del centro
+            for (let i = 1; i <= horizontalLines / 2; i++) {
+                const y_up = audioAnalyzerCanvas.height / 2 - (audioAnalyzerCanvas.height / horizontalLines) * i;
+                const y_down = audioAnalyzerCanvas.height / 2 + (audioAnalyzerCanvas.height / horizontalLines) * i;
+                audioAnalyzerCtx.setLineDash([2, 2]); // Líneas punteadas
+                audioAnalyzerCtx.beginPath();
+                audioAnalyzerCtx.moveTo(0, y_up);
+                audioAnalyzerCtx.lineTo(audioAnalyzerCanvas.width, y_up);
+                audioAnalyzerCtx.stroke();
+                audioAnalyzerCtx.beginPath();
+                audioAnalyzerCtx.moveTo(0, y_down);
+                audioAnalyzerCtx.lineTo(audioAnalyzerCanvas.width, y_down);
+                audioAnalyzerCtx.stroke();
+            }
+
+            // Dibujar cuadrícula vertical (líneas punteadas)
+            const verticalLines = 6;
+            for (let i = 1; i < verticalLines; i++) {
+                const x_pos = (audioAnalyzerCanvas.width / verticalLines) * i;
+                audioAnalyzerCtx.setLineDash([2, 2]); // Líneas punteadas
+                audioAnalyzerCtx.beginPath();
+                audioAnalyzerCtx.moveTo(x_pos, 0);
+                audioAnalyzerCtx.lineTo(x_pos, audioAnalyzerCanvas.height);
+                audioAnalyzerCtx.stroke();
+            }
+
+            // Dibujar línea central (representando 0 amplitud)
+            audioAnalyzerCtx.setLineDash([]); // Línea sólida
+            audioAnalyzerCtx.strokeStyle = '#cccccc'; // Color de la línea central
+            audioAnalyzerCtx.lineWidth = 1;
+            audioAnalyzerCtx.beginPath();
+            audioAnalyzerCtx.moveTo(0, audioAnalyzerCanvas.height / 2);
+            audioAnalyzerCtx.lineTo(audioAnalyzerCanvas.width, audioAnalyzerCanvas.height / 2);
+            audioAnalyzerCtx.stroke();
+
+            // *** Las etiquetas de Decibelios / Amplitud se han eliminado según la solicitud del usuario. ***
+
+            // Dibujar la forma de onda
+            audioAnalyzerCtx.lineWidth = 2; // Línea más gruesa para la onda
+            audioAnalyzerCtx.strokeStyle = '#1e90ff'; // Color de la onda
+            audioAnalyzerCtx.beginPath();
+
+            const sliceWidth = audioAnalyzerCanvas.width * 1.0 / timeDomainData.length;
+            let x = 0;
+
+            for (let i = 0; i < timeDomainData.length; i++) {
+                const v = timeDomainData[i] / 128.0; // Normalizar a 0-2 (1 es el centro)
+                const y = v * audioAnalyzerCanvas.height / 2; // Mapear a la altura del canvas (centrado)
+
+                if (i === 0) {
+                    audioAnalyzerCtx.moveTo(x, y);
+                } else {
+                    audioAnalyzerCtx.lineTo(x, y);
+                }
+                x += sliceWidth;
+            }
+            audioAnalyzerCtx.lineTo(audioAnalyzerCanvas.width, audioAnalyzerCanvas.height / 2); // Asegurar que la línea termine en el borde
+            audioAnalyzerCtx.stroke();
+
+            // --- Parte de Detección de Frecuencia Predominante (usa frequencyData) ---
+            analyser.getByteFrequencyData(frequencyData); // Re-obtener datos de frecuencia para el análisis
             
             let maxVolume = 0;
             let currentDominantFreq = 0;
-            
-            // Límite de frecuencia para la detección de la dominante (ej. hasta 1kHz para bajos)
-            const maxIndexPower = Math.min(frequencyData.length, Math.ceil(POWER_MAX_FREQ_LIMIT / binWidth)); 
-            const minIndex = Math.ceil(30 / binWidth); // Comenzar el análisis desde 30 Hz
+            let totalPower = 0; // Suma de todos los valores de frecuencia para detectar presencia de audio
+            const sampleRate = analyser.context.sampleRate;
+            const binWidth = sampleRate / analyser.fftSize;
 
-            for (let i = minIndex; i < maxIndexPower; i++) {
-                if (frequencyData[i] > maxVolume) {
-                    maxVolume = frequencyData[i];
-                    currentDominantFreq = i * binWidth;
+            for (let i = 0; i < analyser.frequencyBinCount; i++) {
+                const value = frequencyData[i];
+                const freq = i * binWidth;
+                totalPower += value;
+
+                // Detección de frecuencia predominante dentro de un rango específico
+                if (freq >= 30 && freq <= DOMINANT_FREQ_SEARCH_LIMIT && value > maxVolume) { 
+                    maxVolume = value;
+                    currentDominantFreq = freq;
                 }
             }
-            
-            const rms = calculateRMS(timeDomainData);
-            let approx_dB = 0;
 
-            if (rms > NOISE_THRESHOLD) {
-                approx_dB = 20 * Math.log10(rms) + 93; 
-                if (approx_dB < 0) approx_dB = 0; // Asegurar que no haya decibelios negativos
+            // Actualizar UI para frecuencia predominante
+            if (totalPower > AUDIO_PRESENCE_THRESHOLD) { // Solo si hay suficiente señal de audio
+                spectrumDominantFreqElement.innerHTML = `Frecuencia Predominante: <span style="font-weight: bold; color:#4CAF50;">${currentDominantFreq.toFixed(1)} Hz</span>`;
+                spectrumRangoLabel.innerHTML = `Rango: <span style="font-weight: bold; color:#ccc;">${classifyFrequency(currentDominantFreq)}</span>`;
             } else {
-                approx_dB = 0;
+                spectrumDominantFreqElement.innerHTML = `Frecuencia Predominante: <span style="font-weight: bold; color:#aaa;">(Nivel bajo o silencioso)</span>`;
+                spectrumRangoLabel.innerHTML = `Rango: <span style="font-weight: bold; color:#aaa;">(Esperando sonido...)</span>`;
             }
-            
-            const indicator = document.getElementById('freq-meter-indicator');
-
-            if (currentDominantFreq > 0 && maxVolume > DOMINANT_FREQ_VOLUME_THRESHOLD) { 
-                const percent = freqToPercent(currentDominantFreq);
-                indicator.style.left = `${percent}%`;
-                
-                dominantFreqElement.innerHTML = `Frecuencia Dominante: <span style="font-weight: bold; color:#4CAF50;">${currentDominantFreq.toFixed(1)} Hz</span>`;
-                rangoLabel.innerHTML = `Rango: <span style="font-weight: bold; color:#ccc;">${classifyFrequency(currentDominantFreq)}</span>`;
-
-            } else {
-                indicator.style.left = `0%`; // Indicador al inicio si no hay sonido dominante
-                 dominantFreqElement.innerHTML = `Frecuencia Dominante: <span style="font-weight: bold; color:#aaa;">(Nivel bajo o silencioso)</span>`;
-                 rangoLabel.innerHTML = `Rango: <span style="font-weight: bold; color:#aaa;">(Esperando sonido...)</span>`;
-            }
-
-            const dBText = approx_dB > 0 ? `${approx_dB.toFixed(1)} dB` : `< 30 dB`;
-            const dBClass = classifyDecibels(approx_dB);
-            
-            decibelLabel.innerHTML = `<span style="font-weight: bold;">${dBText}</span> | ${dBClass}`;
         }
 
         // --- INICIO DE LA APLICACIÓN ---
         initThree();
         window.onload = () => {
-          onWindowResize(); // Para asegurar el tamaño inicial y del overlay
+          onWindowResize(); // Para asegurar el tamaño inicial y del overlay de Three.js y Spectrum
           actualizarValores(); // Inicializar valores de la interfaz
         };
         animate();
