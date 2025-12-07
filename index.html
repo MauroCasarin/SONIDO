@@ -4,6 +4,7 @@
     <title>Calculador distancia de graves según Hz.</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
+        /* --- Estilos Generales y Reseteo --- */
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #1e1e1e;
@@ -15,21 +16,21 @@
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
-            overflow-x: hidden; /* Evitar scroll horizontal en pantallas pequeñas */
-            font-size: clamp(14px, 2.5vw, 16px); /* Base font size responsive */
+            overflow-x: hidden; /* Previene el scroll horizontal */
+            font-size: clamp(14px, 2.5vw, 16px); /* Tamaño de fuente base responsivo */
         }
         
-        /* Contenedor del Logo */
+        /* --- Contenedor del Logo --- */
         #logo-container {
             width: 95vw;
             max-width: 800px;
-            text-align: center;
             margin-top: 10px;
             padding: 10px;
             background-color: #2c2c2c;
             border-radius: 8px;
             border: 1px solid #1e90ff;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+            text-align: center;
         }
         #logo-container img {
             width: 50px;
@@ -42,7 +43,7 @@
             transform: scale(1.1);
         }
         #logo-container p {
-            font-size: 0.75em; /* Scales with body font size */
+            font-size: 0.75em;
             color: #aaa;
             margin-top: 5px;
         }
@@ -50,64 +51,48 @@
         h1 {
             color: #4CAF50;
             padding-top: 5px;
-            font-size: 1.4em; /* Scales with body font size */
+            font-size: 1.4em;
             margin-bottom: 5px;
         }
         
+        /* --- Panel de Información y Controles --- */
         #info-panel {
             flex-shrink: 0;
-            font-size: 0.95em; /* Scales with body font size, affecting its children */
+            font-size: 0.95em;
             padding: 15px;
             background-color: #2c2c2c;
             width: 95vw;
             max-width: 800px;
             margin: 10px auto 5px auto;
             border-radius: 8px;
-            text-align: left;
             border: 1px solid #1e90ff;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+            text-align: left;
         }
         
-        #container {
-            flex-grow: 1;
-            width: 95vw;
-            max-width: 800px;
-            margin: 5px auto 10px auto;
-            min-height: 250px;
-            position: relative; 
-            border-radius: 8px;
-            overflow: hidden; /* Asegura que el canvas no se desborde */
+        .control-group {
+            margin-bottom: 10px;
+            color: #ccc;
         }
-        #container canvas {
+        .slider-container {
+            width: 95%;
+            margin: 0 auto 12px auto;
+            position: relative;
+        }
+        .slider-label {
             display: block;
-            width: 100% !important;
-            height: 100% !important;
-            border: 2px solid #555; /* Será cubierto por el borde del contenedor */
-            border-radius: 8px; /* Será cubierto por el borde del contenedor */
+            font-size: 0.85em;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #1e90ff;
         }
-
-        .scene-label {
-            position: absolute;
-            background-color: rgba(30, 30, 30, 0.8);
-            color: white;
-            padding: 5px 10px;
-            border-radius: 5px;
-            white-space: nowrap;
-            transform: translate(-50%, -50%); 
-            pointer-events: none;
-            border: 1px solid #444;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-            z-index: 10; /* Asegurar que las etiquetas estén por encima del canvas */
-        }
-        #label-freq { font-size: 1.14em; /* Approx 16px if body is 14px */ font-weight: bold; color: #4CAF50; }
-        #label-distancia { font-size: 0.85em; /* Approx 12px if body is 14px */ color: #f0ad4e; }
-        
-        .control-group { margin-bottom: 10px; color: #ccc;}
-        .slider-container { width: 95%; margin: 0 auto 12px auto; position: relative; }
-        .slider-label { display: block; font-size: 0.85em; /* Scales with body font size */ margin-bottom: 5px; font-weight: bold; color: #1e90ff; }
         input[type=range] { 
-            width: 100%; height: 5px; background: #555; -webkit-appearance: none; border-radius: 5px; cursor: pointer;
+            width: 100%;
+            height: 5px;
             background: linear-gradient(to right, #1e90ff, #00bfff); /* Degradado para el slider */
+            -webkit-appearance: none;
+            border-radius: 5px;
+            cursor: pointer;
             outline: none;
         }
         input[type=range]::-webkit-slider-thumb {
@@ -132,11 +117,54 @@
             margin-top: 15px;
             padding-top: 10px;
             border-top: 1px solid #444;
-            font-size: 0.8em; /* Scales with body font size */
+            font-size: 0.8em;
             line-height: 1.4;
         }
         
-        /* --- ESTILOS DEL ANALIZADOR DE ONDA DE TIEMPO --- */
+        /* --- Contenedor 3D (Three.js) --- */
+        #container {
+            flex-grow: 1;
+            width: 95vw;
+            max-width: 800px;
+            margin: 5px auto 10px auto;
+            min-height: 250px;
+            position: relative; 
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #555; /* Borde del contenedor, no del canvas */
+        }
+        #container canvas {
+            display: block;
+            width: 100% !important;
+            height: 100% !important;
+            border-radius: 8px;
+        }
+
+        /* --- Etiquetas en Escena 3D --- */
+        .scene-label {
+            position: absolute;
+            background-color: rgba(30, 30, 30, 0.8);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            white-space: nowrap;
+            transform: translate(-50%, -50%); /* Centra la etiqueta en su posición */
+            pointer-events: none; /* No interfiere con eventos del ratón */
+            border: 1px solid #444;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            z-index: 10;
+        }
+        #label-freq {
+            font-size: 1.14em;
+            font-weight: bold;
+            color: #4CAF50;
+        }
+        #label-distancia {
+            font-size: 0.85em;
+            color: #f0ad4e;
+        }
+        
+        /* --- Analizador de Onda en Tiempo Real --- */
         #frequency-spectrum-analyzer {
             width: 95vw;
             max-width: 800px;
@@ -148,16 +176,16 @@
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
             position: relative;
         }
-        #frequency-spectrum-analyzer p { /* Estilo para el título del espectro */
+        #frequency-spectrum-analyzer p {
             color: #ffffff;
             font-weight: bold;
-            font-size: 0.9em; /* Scales with body font size */
+            font-size: 0.9em;
             margin-bottom: 10px;
         }
         #frequency-spectrum-canvas {
-            background-color: #2a2a2a; /* Fondo del canvas para el espectro */
-            border-radius: 8px; /* Bordes redondeados para el canvas */
-            display: block; /* Eliminar espacio extra */
+            background-color: #2a2a2a;
+            border-radius: 8px;
+            display: block;
         }
 
         #spectrum-audio-overlay {
@@ -166,15 +194,15 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.85); /* Más oscuro */
-            color: #1e90ff; /* Color de texto más vibrante */
-            font-size: 1.1em; /* Scales with body font size */
+            background-color: rgba(0, 0, 0, 0.85);
+            color: #1e90ff;
+            font-size: 1.1em;
             font-weight: bold;
             display: flex;
             justify-content: center;
             align-items: center;
             cursor: pointer;
-            z-index: 21; /* Higher z-index */
+            z-index: 21;
             border-radius: 8px;
             transition: background-color 0.3s;
         }
@@ -182,12 +210,19 @@
             background-color: rgba(0, 0, 0, 0.7);
         }
         
-        /* Bloque 'spectrum-freq-ticks-labels' eliminado según la solicitud del usuario. */
-        
-        #spectrum-dominant-freq { font-size: 0.9em; /* Scales with body font size */ color: #1e90ff; margin-top: 10px; }
-        #spectrum-rango-label { font-size: 0.8em; /* Scales with body font size */ font-weight: bold; color: #ccc; margin-top: 5px; }
+        #spectrum-dominant-freq {
+            font-size: 0.9em;
+            color: #1e90ff;
+            margin-top: 10px;
+        }
+        #spectrum-rango-label {
+            font-size: 0.8em;
+            font-weight: bold;
+            color: #ccc;
+            margin-top: 5px;
+        }
 
-        /* --- IMAGEN DE REFERENCIA --- */
+        /* --- Imagen de Referencia --- */
         #imagen-referencia {
             width: 95vw;
             max-width: 800px;
@@ -199,7 +234,7 @@
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
         }
         #imagen-referencia h2 {
-            font-size: 1.2em; /* Scales with body font size */
+            font-size: 1.2em;
             margin-bottom: 10px; 
             color: #ffffff;
         }
@@ -257,7 +292,6 @@
                 Toca aquí para activar el micrófono y el análisis (HTTPS Requerido)
             </div>
         </div>
-        <!-- Bloque 'spectrum-freq-ticks-labels' eliminado según la solicitud del usuario. -->
         <p id="spectrum-dominant-freq" style="font-size: 0.9em; color: #1e90ff; margin-top: 10px;">Frecuencia Predominante: No iniciado</p>
         <p id="spectrum-rango-label" style="font-size: 0.8em; font-weight: bold; color: #ccc; margin-top: 5px;">Rango: Esperando análisis...</p>
     </div>
@@ -267,20 +301,25 @@
         <img src="https://raw.githubusercontent.com/MauroCasarin/SONIDO/refs/heads/main/image005.jpg" alt="Gráfico de Rangos de Frecuencia para Mezcla de Sonido" />
     </div>
 
-    <!-- Carga de la librería Three.js (la necesitamos para WebGL) -->
+    <!-- Carga de la librería Three.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     
     <script>
-        // --- CONSTANTES ---
-        const SIMULATION_SIZE_Y = 8; 
-        const SEGMENTS = 256;
-        const VELOCIDAD_SONIDO = 340; // meters/second
+        // --- CONSTANTES GLOBALES ---
+        const SIMULATION_SIZE_Y = 8; // Altura visual fija de la simulación 3D en unidades Three.js
+        const SEGMENTS = 256; // Número de segmentos para la geometría del plano de onda
+        const VELOCIDAD_SONIDO = 340; // Velocidad del sonido en metros/segundo
 
-        const DOMINANT_FREQ_SEARCH_LIMIT = 1000; // Max frequency to search for dominant (focus on bass/mid-bass)
-        const AUDIO_PRESENCE_THRESHOLD = 1000; // Sum of all frequency values to consider "sound" present
-
+        // Constantes para el analizador de audio
+        const DOMINANT_FREQ_SEARCH_LIMIT = 1000; // Límite superior para buscar la frecuencia dominante (foco en graves/medios-graves)
+        const AUDIO_PRESENCE_THRESHOLD = 1000; // Umbral para considerar que hay "sonido" presente en el micrófono
 
         // --- FUNCIONES DE UTILIDAD ---
+        /**
+         * Retorna una descripción textual del rango de frecuencia dado.
+         * @param {number} f Frecuencia en Hz.
+         * @returns {string} Descripción del rango.
+         */
         function getRangeDescription(f) {
             if (f < 63) {
                 return "Sub Bajos (25-63 Hz): A menudo se percibe como una vibración en lugar de un tono puro. La mayoría de la música generalmente no baja de los 30 Hz.";
@@ -292,6 +331,11 @@
             return "";
         }
         
+        /**
+         * Clasifica una frecuencia en un rango audible.
+         * @param {number} f Frecuencia en Hz.
+         * @returns {string} Clasificación del rango audible.
+         */
         function classifyFrequency(f) {
             if (f < 20) return "INFRA SONIDO";
             if (f < 60) return "SUB GRAVE";
@@ -303,36 +347,44 @@
             return "ULTRA SONIDO";
         }
 
-
-        // --- THREE.JS / WEBGL ---
+        // --- VARIABLES Y CONFIGURACIÓN DE THREE.JS / WEBGL ---
         let scene, camera, renderer, plane, material, sub1, sub2;
         const container = document.getElementById('container');
         const labelFreq = document.getElementById('label-freq');
         const labelDistancia = document.getElementById('label-distancia');
-        const vectorFreq = new THREE.Vector3(0, 0, SIMULATION_SIZE_Y / 2 * 0.875); 
-        const vectorDist = new THREE.Vector3(0, 0, -0.5); 
-        let startTime = performance.now(); // Para el uniforme de tiempo
 
+        // Posiciones 3D para las etiquetas de texto en la escena
+        // Ajustadas para que "Separación" esté a la izquierda y "Frecuencia" a la derecha, en la parte superior.
+        const vectorDistPos = new THREE.Vector3(-SIMULATION_SIZE_Y / 4, 0, SIMULATION_SIZE_Y / 2 * 0.90); // Izquierda
+        const vectorFreqPos = new THREE.Vector3(SIMULATION_SIZE_Y / 4, 0, SIMULATION_SIZE_Y / 2 * 0.90);  // Derecha
+        
+        let startTime = performance.now(); // Para el uniforme de tiempo del shader
+
+        /**
+         * Inicializa la escena de Three.js, cámara, renderizador y objetos 3D.
+         */
         function initThree() {
             renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setClearColor(0x1e1e1e);
+            renderer.setClearColor(0x1e1e1e); // Fondo oscuro
             container.appendChild(renderer.domElement);
 
             scene = new THREE.Scene();
-            scene.add(new THREE.AmbientLight(0xffffff, 0.5)); // Luz ambiente para ver los objetos
+            scene.add(new THREE.AmbientLight(0xffffff, 0.5)); // Luz ambiente
+            
+            // Configuración inicial de la cámara ortográfica
             camera = new THREE.OrthographicCamera();
-            camera.position.set(0, 5, 0); 
-            camera.lookAt(0, 0, 0);
+            camera.position.set(0, 5, 0); // Posición de la cámara
+            camera.lookAt(0, 0, 0); // Apuntando al centro de la escena
 
-            const geometry = new THREE.PlaneGeometry(SIMULATION_SIZE_Y, SIMULATION_SIZE_Y, SEGMENTS, SEGMENTS);
+            // Shader para el plano de interferencia
             material = new THREE.ShaderMaterial({
                 uniforms: {
-                    u_lambda: { value: 3.4 }, // Initial value, updated by props
-                    u_separation: { value: 0.85 }, // Initial value, updated by props
-                    u_size: { value: SIMULATION_SIZE_Y },
-                    u_red_color: { value: new THREE.Color(0xFF5733) }, // Original red
-                    u_green_color: { value: new THREE.Color(0x4CAF50) }, // Original green
-                    u_time: { value: 0.0 }, // Nuevo uniforme de tiempo para la animación
+                    u_lambda: { value: 3.4 },          // Longitud de onda (inicial)
+                    u_separation: { value: 0.85 },     // Separación de los subwoofers (inicial)
+                    u_size: { value: SIMULATION_SIZE_Y }, // Tamaño del plano de simulación
+                    u_red_color: { value: new THREE.Color(0xFF5733) }, // Color para cancelaciones
+                    u_green_color: { value: new THREE.Color(0x4CAF50) }, // Color para refuerzos
+                    u_time: { value: 0.0 },            // Tiempo para animar las ondas
                 },
                 vertexShader: `
                     varying vec2 vUv;
@@ -344,76 +396,74 @@
                     uniform float u_size;
                     uniform vec3 u_red_color;
                     uniform vec3 u_green_color;
-                    uniform float u_time; // Uniforme para el tiempo
+                    uniform float u_time;
                     varying vec2 vUv;
 
                     void main() {
-                        vec2 pos = (vUv - 0.5) * u_size;
+                        vec2 pos_xz = (vUv - 0.5) * u_size; // Convertir UV a coordenadas XZ del mundo
+
                         float sub_offset = u_separation / 2.0;
 
-                        // Distancia a cada altavoz
-                        float r1 = distance(pos, vec2(-sub_offset, 0.0));
-                        float r2 = distance(pos, vec2(sub_offset, 0.0));
+                        // Distancia desde cada "subwoofer" al punto actual
+                        float r1 = distance(pos_xz, vec2(-sub_offset, 0.0));
+                        float r2 = distance(pos_xz, vec2(sub_offset, 0.0));
 
-                        // Diferencia de fase para el patrón de interferencia estático (color base)
+                        // Diferencia de fase estática para el patrón de interferencia
                         float deltaR = r2 - r1;
-                        float interference_phase_diff = (deltaR / u_lambda) * 6.2831853; // 2 * PI
+                        float interference_phase_diff = (deltaR / u_lambda) * 6.2831853; // 2*PI
 
-                        // Calculo del "power" de la interferencia estática (0=cancelación, 1=refuerzo)
+                        // Intensidad estática del patrón de interferencia (0 a 2, donde 2 es refuerzo máximo)
                         float intensity_static = 2.0 * abs(cos(interference_phase_diff / 2.0));
-                        float power_static = pow(intensity_static / 2.0, 4.0); // Potencia para mayor contraste
+                        // Potencia normalizada del patrón de interferencia (0 a 1)
+                        float power_static = pow(intensity_static / 2.0, 4.0); // Exponente para hacer los picos más definidos
 
-                        // LÓGICA DE COLOR PARA VERDE CLARO Y ROJO INTENSO
-                        // El verde se vuelve más claro a medida que power_static aumenta (refuerzo)
-                        // El rojo se vuelve más intenso a medida que power_static disminuye (cancelación)
-                        vec3 lighter_green = mix(u_green_color, vec3(1.0, 1.0, 1.0), power_static * 0.3); // Mezclar verde con blanco
-                        vec3 intense_red = mix(u_red_color, u_red_color * 1.5, 1.0 - power_static); // Intensificar rojo
+                        // Colores basados en el patrón de interferencia
+                        vec3 lighter_green = mix(u_green_color, vec3(1.0, 1.0, 1.0), power_static * 0.3); // Verde más brillante en refuerzo
+                        vec3 intense_red = mix(u_red_color, u_red_color * 1.5, 1.0 - power_static);     // Rojo más intenso en cancelación
+                        vec3 base_color = mix(intense_red, lighter_green, power_static);               // Mezcla entre rojo y verde
 
-                        vec3 base_color = mix(intense_red, lighter_green, power_static);
-
-
-                        // Ondas animadas saliendo de cada altavoz (más rápidas)
-                        float wave_speed = 15.0; // Velocidad de las ondas (más rápido)
-                        float wave_frequency = 4.0; // Frecuencia de las "crestas" de las ondas (más "puntos")
+                        // Ondas animadas para simular propagación
+                        float wave_speed = 15.0;
+                        float wave_frequency = 4.0; // Multiplicador para la frecuencia visual de la onda
                         float animated_wave1 = cos((r1 / u_lambda * wave_frequency * 6.2831853) - u_time * wave_speed);
                         float animated_wave2 = cos((r2 / u_lambda * wave_frequency * 6.2831853) - u_time * wave_speed);
 
-                        // Combinar ambas ondas animadas para mostrar su interacción en el movimiento
-                        float combined_animated_wave = (animated_wave1 + animated_wave2) / 2.0; // De -1 a 1
+                        float combined_animated_wave = (animated_wave1 + animated_wave2) / 2.0;
 
-                        // Modulación de brillo/opacidad para crear el efecto de "puntos/curvas" animadas
-                        // Usamos smoothstep para hacer las "ondas" más suaves y visibles en las crestas
-                        float brightness_mod = smoothstep(0.6, 1.0, combined_animated_wave); // Hace las crestas más brillantes
+                        // El efecto de rebote del escenario ha sido eliminado.
+                        // combined_animated_wave permanece sin modificar por el escenario.
 
-                        // La opacidad también se modula para que las ondas se desvanezcan un poco
+                        // Modular el brillo y el alfa basado en la onda animada
+                        float brightness_mod = smoothstep(0.6, 1.0, combined_animated_wave);
                         float final_alpha_mod = smoothstep(0.5, 1.0, combined_animated_wave);
 
-                        // Aplicar la modulación al color base y la opacidad final
-                        vec3 final_color_rgb = base_color * brightness_mod * 1.5; // Multiplicar por 1.5 para que las crestas sean más visibles
-                        float final_alpha = power_static * final_alpha_mod; // Opacidad influenciada por la interferencia y la onda animada
+                        // Calcular el color final y el alfa
+                        vec3 final_color_rgb = base_color * brightness_mod * 1.5;
+                        float final_alpha = power_static * final_alpha_mod;
 
-                        // Degradado de borde para desvanecer el efecto lejos del centro
-                        float border_fade = 1.0 - smoothstep(2.5, 4.0, length(pos));
+                        // Efecto de desvanecimiento en los bordes para un look más suave
+                        float border_fade = 1.0 - smoothstep(2.5, 4.0, length(pos_xz));
                         final_color_rgb *= border_fade;
                         final_alpha *= border_fade;
 
                         gl_FragColor = vec4(final_color_rgb, final_alpha);
                     }
                 `,
-                transparent: true, side: THREE.DoubleSide
+                transparent: true, // Habilitar transparencia
+                side: THREE.DoubleSide // Renderizar ambos lados del plano
             });
 
-            plane = new THREE.Mesh(geometry, material);
-            plane.rotation.x = -Math.PI / 2;
+            plane = new THREE.Mesh(new THREE.PlaneGeometry(SIMULATION_SIZE_Y, SIMULATION_SIZE_Y, SEGMENTS, SEGMENTS), material);
+            plane.rotation.x = -Math.PI / 2; // Orientar el plano horizontalmente
             scene.add(plane);
             
-            // Speakers
+            // Subwoofers (cajas y conos)
             const bafleGeo = new THREE.BoxGeometry(0.3, 0.3, 0.3);
             const bafleMat = new THREE.MeshBasicMaterial({ color: 0x444444, wireframe: false }); 
             const bafleEdgeMat = new THREE.LineBasicMaterial({ color: 0xffffff }); 
             const coneGeo = new THREE.ConeGeometry(0.15, 0.15, 16);
             const coneMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-            coneGeo.translate(0, 0.15, -0.15); // Adjust cone position relative to box
+            coneGeo.translate(0, 0.15, -0.15); // Ajustar la posición del cono respecto a la caja
             
             sub1 = new THREE.Mesh(bafleGeo, bafleMat);
             sub1.add(new THREE.LineSegments(new THREE.EdgesGeometry(bafleGeo), bafleEdgeMat));
@@ -425,78 +475,84 @@
             sub2.add(new THREE.Mesh(coneGeo, coneMat));
             scene.add(sub2);
             
+            // Listeners para redimensionamiento de ventana
             window.addEventListener('resize', onWindowResize, false);
-            onWindowResize(); // Llama una vez para establecer el tamaño inicial
+
+            // Llamar a onWindowResize una vez para configurar el renderizador y la cámara inicialmente
+            onWindowResize();
         }
 
+        /**
+         * Ajusta el tamaño del renderizador y la proyección de la cámara cuando la ventana cambia de tamaño.
+         */
         function onWindowResize() {
             const rect = container.getBoundingClientRect();
             const width = rect.width;
             const height = rect.height;
             
-            const aspectRatio = width / height;
-            
-            let viewHeight = SIMULATION_SIZE_Y;
-            let viewWidth = viewHeight * aspectRatio;
-
-            // Ajustar el frustum para que se ajuste al contenedor mientras se mantiene la relación de aspecto
-            if (width > height) { // Si el contenedor es más ancho que alto
-                viewWidth = (SIMULATION_SIZE_Y / height) * width;
-                viewHeight = SIMULATION_SIZE_Y; // Mantener la altura del mundo constante
-            } else { // Si el contenedor es más alto que ancho o cuadrado
-                viewHeight = (SIMULATION_SIZE_Y / width) * height;
-                viewWidth = SIMULATION_SIZE_Y; // Mantener el ancho del mundo constante
-            }
-
-            camera.left = -viewWidth / 2;
-            camera.right = viewWidth / 2;
-            camera.top = viewHeight / 2;
-            camera.bottom = -viewHeight / 2;
-            
-            camera.updateProjectionMatrix();
             renderer.setSize(width, height);
+
+            // Ajustar la cámara ortográfica para mantener el aspecto y la altura de la simulación
+            const aspect = width / height;
+            const sceneHeight = SIMULATION_SIZE_Y; // La altura fija de nuestra simulación en unidades Three.js
             
-            // Ajustar el overlay del analizador de audio
+            camera.left = -sceneHeight * aspect / 2;
+            camera.right = sceneHeight * aspect / 2;
+            camera.top = sceneHeight / 2;
+            camera.bottom = -sceneHeight / 2;
+            camera.updateProjectionMatrix();
+            
+            // Asegurarse de que el canvas del analizador de audio también se redimensione
             const audioAnalyzerContainer = document.querySelector('#frequency-spectrum-analyzer > div'); 
             const audioAnalyzerCanvasEl = document.getElementById('frequency-spectrum-canvas');
             if (audioAnalyzerContainer && audioAnalyzerCanvasEl) {
+                audioAnalyzerCanvasEl.width = audioAnalyzerContainer.offsetWidth;
+                audioAnalyzerCanvasEl.height = audioAnalyzerContainer.offsetHeight;
                 const audioOverlay = document.getElementById('spectrum-audio-overlay');
                 if (audioOverlay) {
                     audioOverlay.style.width = `${audioAnalyzerContainer.offsetWidth}px`;
                     audioOverlay.style.height = `${audioAnalyzerContainer.offsetHeight}px`;
-                    audioAnalyzerCanvasEl.width = audioAnalyzerContainer.offsetWidth;
-                    audioAnalyzerCanvasEl.height = audioAnalyzerContainer.offsetHeight;
                 }
             }
         }
 
+        /**
+         * Actualiza las posiciones en pantalla de las etiquetas de frecuencia y distancia.
+         */
         function updateLabels() {
             const rect = container.getBoundingClientRect();
             const width = rect.width;
             const height = rect.height;
 
-            let posFreq = vectorFreq.clone().project(camera);
+            // Proyectar la posición 3D de la etiqueta de frecuencia a coordenadas de pantalla
+            let posFreq = vectorFreqPos.clone().project(camera);
             labelFreq.style.left = `${(posFreq.x * 0.5 + 0.5) * width}px`;
             labelFreq.style.top = `${(-posFreq.y * 0.5 + 0.5) * height}px`;
 
-            let posDist = vectorDist.clone().project(camera);
+            // Proyectar la posición 3D de la etiqueta de distancia a coordenadas de pantalla
+            let posDist = vectorDistPos.clone().project(camera);
             labelDistancia.style.left = `${(posDist.x * 0.5 + 0.5) * width}px`;
-            labelDistancia.style.top = `${(-posDist.y * 0.5 + 0.5) * height - 30}px`;
+            labelDistancia.style.top = `${(-posDist.y * 0.5 + 0.5) * height}px`;
         }
 
+        /**
+         * Bucle principal de animación de Three.js.
+         */
         function animate() {
             requestAnimationFrame(animate);
             if (renderer && scene && camera && material) {
-                // Actualizar el uniforme de tiempo
-                const elapsedTime = (performance.now() - startTime) / 1000; // Segundos
+                const elapsedTime = (performance.now() - startTime) / 1000;
                 material.uniforms.u_time.value = elapsedTime;
-
-                updateLabels(); 
-                renderer.render(scene, camera);
-                updateAudioVisualization(); 
+                
+                updateLabels(); // Actualizar la posición de las etiquetas HTML
+                renderer.render(scene, camera); // Renderizar la escena 3D
+                updateAudioVisualization(); // Actualizar la visualización del analizador de audio
             }
         }
         
+        /**
+         * Actualiza los valores de los uniformes del shader y la información mostrada en el panel de control.
+         */
         window.actualizarValores = function() {
             const frecuenciaHz = parseFloat(document.getElementById('sliderFrecuencia').value);
             const separacionMetros = parseFloat(document.getElementById('sliderSeparacion').value);
@@ -506,15 +562,19 @@
                 material.uniforms.u_lambda.value = LONGITUD_ONDA; 
                 material.uniforms.u_separation.value = separacionMetros;
             }
+
+            // Mover los subwoofers 3D
             const offset = separacionMetros / 2;
             if (sub1 && sub2) {
                 sub1.position.x = -offset;
                 sub2.position.x = offset;
             }
 
-            labelFreq.textContent = `Frecuencia: ${frecuenciaHz.toFixed(0)} Hz`;
-            labelDistancia.textContent = `Separación: ${separacionMetros.toFixed(2)} Metros`;
+            // Actualizar texto de las etiquetas HTML 3D de forma concisa
+            labelFreq.textContent = `${frecuenciaHz.toFixed(0)} Hz`;
+            labelDistancia.textContent = `${separacionMetros.toFixed(2)} Metros`;
 
+            // Calcular y mostrar información de control de directividad y coherencia
             const controlDirectividad = LONGITUD_ONDA / 2;
             const coherenciaMax = LONGITUD_ONDA / 4;
             let comentarioSeparacion = '';
@@ -535,10 +595,10 @@
         // --- ANALIZADOR DE AUDIO: Waveform y Frecuencia Predominante ---
         let audioContext = null;
         let analyser = null;
-        let frequencyData = null; // Para la detección de frecuencia predominante
-        let timeDomainData = null; // Para la visualización de la onda de tiempo
+        let frequencyData = null;
+        let timeDomainData = null;
         let audioInitialized = false;
-        let audioError = null; // Para almacenar mensajes de error del audio
+        let audioError = null;
 
         let audioAnalyzerCanvas = null;
         let audioAnalyzerCtx = null;
@@ -546,15 +606,17 @@
         const spectrumRangoLabel = document.getElementById('spectrum-rango-label');
         const spectrumAudioOverlay = document.getElementById('spectrum-audio-overlay');
 
+        /**
+         * Inicializa el AudioContext y solicita acceso al micrófono.
+         */
         window.iniciarAudio = function() {
-            if (audioInitialized) return;
-            if (audioError) return; // Si ya hay un error, no intentar de nuevo
+            if (audioInitialized || audioError) return;
 
-            // Inicializar canvas y contexto aquí para asegurar que estén listos.
             audioAnalyzerCanvas = document.getElementById('frequency-spectrum-canvas');
             audioAnalyzerCtx = audioAnalyzerCanvas.getContext('2d');
             onWindowResize(); // Asegurar que el canvas tenga el tamaño correcto antes de dibujar
 
+            // Verificar compatibilidad del navegador
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                 audioError = 'Tu navegador no soporta la API de Micrófono.';
                 spectrumDominantFreqElement.innerHTML = `<span style="color:red;">${audioError}</span>`;
@@ -566,39 +628,41 @@
             try {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 analyser = audioContext.createAnalyser();
-                analyser.fftSize = 2048; // Mayor FFT size para más resolución en el espectro y waveform
-                analyser.smoothingTimeConstant = 0.95; // Más suavizado para una onda más estable y lenta
-                frequencyData = new Uint8Array(analyser.frequencyBinCount);
-                timeDomainData = new Uint8Array(analyser.fftSize); // Se usará para la visualización de la onda
+                analyser.fftSize = 2048; // Número de muestras para FFT
+                analyser.smoothingTimeConstant = 0.95; // Suavizado de los datos de frecuencia
+                frequencyData = new Uint8Array(analyser.frequencyBinCount); // Array para datos de frecuencia
+                timeDomainData = new Uint8Array(analyser.fftSize); // Array para datos de tiempo
                 
+                // Reanudar el AudioContext si está suspendido (necesario para la interacción del usuario)
                 if (audioContext.state === 'suspended') { audioContext.resume(); }
                 
+                // Solicitar acceso al micrófono
                 navigator.mediaDevices.getUserMedia({ audio: true })
                     .then(stream => {
                         try {
                             if (!audioContext || !analyser) { 
-                                stream.getTracks().forEach(track => track.stop());
+                                stream.getTracks().forEach(track => track.stop()); // Detener stream si AudioContext no existe
                                 return;
                             }
                             const source = audioContext.createMediaStreamSource(stream);
-                            source.connect(analyser);
-                            spectrumAudioOverlay.style.display = 'none'; 
+                            source.connect(analyser); // Conectar el micrófono al analizador
+                            spectrumAudioOverlay.style.display = 'none'; // Ocultar overlay
                             audioInitialized = true;
-                            audioError = null; // Limpiar cualquier error previo
-                            onWindowResize(); // Reajustar el tamaño del overlay y canvas por si acaso
+                            audioError = null;
+                            onWindowResize(); // Re-ajustar canvas después de ocultar el overlay
                         } catch (innerError) {
-                            console.error('Error connecting audio stream:', innerError);
+                            console.error('Error al conectar el stream de audio:', innerError);
                             audioError = 'Error al conectar el stream de audio.';
                             spectrumDominantFreqElement.innerHTML = `<span style="color:red;">${audioError}</span>`;
                             spectrumAudioOverlay.textContent = audioError;
                             spectrumAudioOverlay.style.display = 'flex';
                             spectrumAudioOverlay.style.cursor = 'default';
                             if (audioContext && audioContext.state !== 'closed') { audioContext.close().catch(console.error); }
-                            stream.getTracks().forEach(track => track.stop());
+                            stream.getTracks().forEach(track => track.stop()); // Detener el stream si hay error
                         }
                     })
                     .catch(err => {
-                        console.error('Microphone access denied:', err);
+                        console.error('Acceso denegado al micrófono:', err);
                         let errorMessage = 'Acceso denegado al micrófono.';
                         if (window.location.protocol !== 'https:') {
                             errorMessage += ' (HTTPS Requerido)';
@@ -613,13 +677,13 @@
                         }
                         audioError = errorMessage;
                         spectrumDominantFreqElement.innerHTML = `<span style="color:red;">${audioError}</span>`;
-                        spectrumAudioOverlay.textContent = audioError;
+                        spectrumAudioOverlay.textContent = errorMessage;
                         spectrumAudioOverlay.style.display = 'flex';
                         spectrumAudioOverlay.style.cursor = 'default';
                         if (audioContext && audioContext.state !== 'closed') { audioContext.close().catch(console.error); }
                     });
             } catch (e) {
-                 console.error('AudioContext error:', e);
+                 console.error('Error de AudioContext:', e);
                  audioError = 'Error de AudioContext o configuración inicial.';
                  spectrumDominantFreqElement.innerHTML = `<span style="color:red;">${audioError}</span>`;
                  spectrumAudioOverlay.textContent = audioError;
@@ -629,6 +693,9 @@
             }
         }
 
+        /**
+         * Dibuja la visualización de la forma de onda y detecta la frecuencia predominante.
+         */
         function updateAudioVisualization() {
             if (!analyser || !audioInitialized || audioError) {
                 if(audioError) {
@@ -636,60 +703,47 @@
                     spectrumAudioOverlay.textContent = audioError;
                 }
                 return;
-            };
+            }
             
-            // Asegurar que el canvas tenga el tamaño correcto antes de dibujar
+            // Asegurar que el canvas tenga el tamaño correcto
             if (audioAnalyzerCanvas.width === 0 || audioAnalyzerCanvas.height === 0) {
                  onWindowResize();
             }
 
-            // --- Parte de la Visualización de Onda de Tiempo ---
-            analyser.getByteTimeDomainData(timeDomainData);
+            // Limpiar el canvas antes de dibujar
             audioAnalyzerCtx.clearRect(0, 0, audioAnalyzerCanvas.width, audioAnalyzerCanvas.height);
             
+            // --- Dibujar cuadrícula y línea central ---
             audioAnalyzerCtx.lineWidth = 1;
-            audioAnalyzerCtx.strokeStyle = 'rgba(68, 68, 68, 0.7)'; // Color de las líneas de la cuadrícula, más sutil
+            audioAnalyzerCtx.strokeStyle = 'rgba(68, 68, 68, 0.7)';
+            audioAnalyzerCtx.setLineDash([2, 2]); // Líneas punteadas
             
-            // Dibujar cuadrícula horizontal (líneas punteadas)
-            const horizontalLines = 4; // 2 arriba, 2 abajo del centro
+            const horizontalLines = 4; // Número de secciones horizontales
             for (let i = 1; i <= horizontalLines / 2; i++) {
-                const y_up = audioAnalyzerCanvas.height / 2 - (audioAnalyzerCanvas.height / horizontalLines) * i;
-                const y_down = audioAnalyzerCanvas.height / 2 + (audioAnalyzerCanvas.height / horizontalLines) * i;
-                audioAnalyzerCtx.setLineDash([2, 2]); // Líneas punteadas
-                audioAnalyzerCtx.beginPath();
-                audioAnalyzerCtx.moveTo(0, y_up);
-                audioAnalyzerCtx.lineTo(audioAnalyzerCanvas.width, y_up);
-                audioAnalyzerCtx.stroke();
-                audioAnalyzerCtx.beginPath();
-                audioAnalyzerCtx.moveTo(0, y_down);
-                audioAnalyzerCtx.lineTo(audioAnalyzerCanvas.width, y_down);
-                audioAnalyzerCtx.stroke();
+                const y_offset = (audioAnalyzerCanvas.height / horizontalLines) * i;
+                const y_up = audioAnalyzerCanvas.height / 2 - y_offset;
+                const y_down = audioAnalyzerCanvas.height / 2 + y_offset;
+                
+                audioAnalyzerCtx.beginPath(); audioAnalyzerCtx.moveTo(0, y_up); audioAnalyzerCtx.lineTo(audioAnalyzerCanvas.width, y_up); audioAnalyzerCtx.stroke();
+                audioAnalyzerCtx.beginPath(); audioAnalyzerCtx.moveTo(0, y_down); audioAnalyzerCtx.lineTo(audioAnalyzerCanvas.width, y_down); audioAnalyzerCtx.stroke();
             }
-
-            // Dibujar cuadrícula vertical (líneas punteadas)
-            const verticalLines = 6;
+            const verticalLines = 6; // Número de secciones verticales
             for (let i = 1; i < verticalLines; i++) {
                 const x_pos = (audioAnalyzerCanvas.width / verticalLines) * i;
-                audioAnalyzerCtx.setLineDash([2, 2]); // Líneas punteadas
-                audioAnalyzerCtx.beginPath();
-                audioAnalyzerCtx.moveTo(x_pos, 0);
-                audioAnalyzerCtx.lineTo(x_pos, audioAnalyzerCanvas.height);
-                audioAnalyzerCtx.stroke();
+                audioAnalyzerCtx.beginPath(); audioAnalyzerCtx.moveTo(x_pos, 0); audioAnalyzerCtx.lineTo(x_pos, audioAnalyzerCanvas.height); audioAnalyzerCtx.stroke();
             }
-
-            // Dibujar línea central (representando 0 amplitud)
-            audioAnalyzerCtx.setLineDash([]); // Línea sólida
-            audioAnalyzerCtx.strokeStyle = '#cccccc'; // Color de la línea central
+            
+            audioAnalyzerCtx.setLineDash([]); // Restablecer a líneas sólidas
+            audioAnalyzerCtx.strokeStyle = '#cccccc'; // Color para la línea central
             audioAnalyzerCtx.lineWidth = 1;
             audioAnalyzerCtx.beginPath();
             audioAnalyzerCtx.moveTo(0, audioAnalyzerCanvas.height / 2);
             audioAnalyzerCtx.lineTo(audioAnalyzerCanvas.width, audioAnalyzerCanvas.height / 2);
             audioAnalyzerCtx.stroke();
 
-            // *** Las etiquetas de Decibelios / Amplitud se han eliminado según la solicitud del usuario. ***
-
-            // Dibujar la forma de onda
-            audioAnalyzerCtx.lineWidth = 2; // Línea más gruesa para la onda
+            // --- Dibujar la forma de onda del tiempo ---
+            analyser.getByteTimeDomainData(timeDomainData); // Obtener datos de la forma de onda
+            audioAnalyzerCtx.lineWidth = 2;
             audioAnalyzerCtx.strokeStyle = '#1e90ff'; // Color de la onda
             audioAnalyzerCtx.beginPath();
 
@@ -697,8 +751,8 @@
             let x = 0;
 
             for (let i = 0; i < timeDomainData.length; i++) {
-                const v = timeDomainData[i] / 128.0; // Normalizar a 0-2 (1 es el centro)
-                const y = v * audioAnalyzerCanvas.height / 2; // Mapear a la altura del canvas (centrado)
+                let v = timeDomainData[i] / 128.0; // Normalizar a 0-2 (128 es el centro)
+                let y = v * audioAnalyzerCanvas.height / 2; // Escalar a la altura del canvas
 
                 if (i === 0) {
                     audioAnalyzerCtx.moveTo(x, y);
@@ -707,32 +761,32 @@
                 }
                 x += sliceWidth;
             }
-            audioAnalyzerCtx.lineTo(audioAnalyzerCanvas.width, audioAnalyzerCanvas.height / 2); // Asegurar que la línea termine en el borde
+            audioAnalyzerCtx.lineTo(audioAnalyzerCanvas.width, audioAnalyzerCanvas.height / 2); // Cerrar la línea en el centro al final
             audioAnalyzerCtx.stroke();
 
-            // --- Parte de Detección de Frecuencia Predominante (usa frequencyData) ---
-            analyser.getByteFrequencyData(frequencyData); // Re-obtener datos de frecuencia para el análisis
+            // --- Detección de Frecuencia Predominante ---
+            analyser.getByteFrequencyData(frequencyData); // Obtener datos del espectro de frecuencia
             
             let maxVolume = 0;
             let currentDominantFreq = 0;
-            let totalPower = 0; // Suma de todos los valores de frecuencia para detectar presencia de audio
+            let totalPower = 0;
             const sampleRate = analyser.context.sampleRate;
-            const binWidth = sampleRate / analyser.fftSize;
+            const binWidth = sampleRate / analyser.fftSize; // Ancho de cada "banda" de frecuencia
 
             for (let i = 0; i < analyser.frequencyBinCount; i++) {
                 const value = frequencyData[i];
                 const freq = i * binWidth;
-                totalPower += value;
+                totalPower += value; // Suma total de la potencia de todas las frecuencias
 
-                // Detección de frecuencia predominante dentro de un rango específico
+                // Buscar la frecuencia con mayor volumen dentro de un rango específico
                 if (freq >= 30 && freq <= DOMINANT_FREQ_SEARCH_LIMIT && value > maxVolume) { 
                     maxVolume = value;
                     currentDominantFreq = freq;
                 }
             }
 
-            // Actualizar UI para frecuencia predominante
-            if (totalPower > AUDIO_PRESENCE_THRESHOLD) { // Solo si hay suficiente señal de audio
+            // Actualizar el texto de la frecuencia dominante solo si hay suficiente volumen
+            if (totalPower > AUDIO_PRESENCE_THRESHOLD) {
                 spectrumDominantFreqElement.innerHTML = `Frecuencia Predominante: <span style="font-weight: bold; color:#4CAF50;">${currentDominantFreq.toFixed(1)} Hz</span>`;
                 spectrumRangoLabel.innerHTML = `Rango: <span style="font-weight: bold; color:#ccc;">${classifyFrequency(currentDominantFreq)}</span>`;
             } else {
@@ -742,12 +796,11 @@
         }
 
         // --- INICIO DE LA APLICACIÓN ---
-        initThree();
+        initThree(); // Inicializar Three.js
         window.onload = () => {
-          onWindowResize(); // Para asegurar el tamaño inicial y del overlay de Three.js y Spectrum
-          actualizarValores(); // Inicializar valores de la interfaz
+          actualizarValores(); // Establecer valores iniciales de los sliders y actualizar la UI
         };
-        animate();
+        animate(); // Iniciar el bucle de animación
     </script>
 <script type="module" src="/index.tsx"></script>
 </body>
