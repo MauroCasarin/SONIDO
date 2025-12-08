@@ -163,6 +163,17 @@
             font-size: 0.85em;
             color: #f0ad4e;
         }
+
+        #interactive-label { /* Estilo específico para la etiqueta interactiva */
+            background-color: rgba(0, 191, 255, 0.8); /* Azul claro */
+            color: white;
+            border: 1px solid #1e90ff;
+            font-size: 0.8em;
+            font-weight: bold;
+            display: none; /* Inicialmente oculto */
+            padding: 7px 12px;
+            z-index: 11; /* Ligeramente superior a las otras etiquetas */
+        }
         
         /* --- Analizador de Onda en Tiempo Real --- */
         #frequency-spectrum-analyzer {
@@ -173,7 +184,8 @@
             background-color: #2c2c2c;
             border-radius: 8px;
             border: 1px solid #1e90ff;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+            /* Enhanced box-shadow for a tech-inspired glow */
+            box-shadow: 0 0 20px rgba(30, 144, 255, 0.4), 0 4px 8px rgba(0, 0, 0, 0.4);
             position: relative;
         }
         #frequency-spectrum-analyzer p {
@@ -194,8 +206,8 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.85);
-            color: #1e90ff;
+            background-color: rgba(0, 0, 0, 0.95); /* Slightly more opaque */
+            color: #00bfff; /* Brighter blue for tech theme */
             font-size: 1.1em;
             font-weight: bold;
             display: flex;
@@ -204,10 +216,14 @@
             cursor: pointer;
             z-index: 21;
             border-radius: 8px;
-            transition: background-color 0.3s;
+            border: 2px solid #00bfff; /* Matching brighter blue border */
+            text-shadow: 0 0 10px rgba(0, 191, 255, 0.8); /* Glow effect for text */
+            transition: background-color 0.3s, color 0.3s, text-shadow 0.3s;
         }
         #spectrum-audio-overlay:hover {
-            background-color: rgba(0, 0, 0, 0.7);
+            background-color: rgba(0, 0, 0, 0.8); /* Slightly less opaque on hover */
+            color: white; /* White text on hover for stronger contrast */
+            text-shadow: none; /* Remove glow on hover for a subtle change */
         }
         
         #spectrum-dominant-freq {
@@ -271,6 +287,14 @@
         <div class="slider-container">
             <input type="range" id="sliderSeparacion" min="0.1" max="4.0" step="0.05" value="0.85" oninput="actualizarValores()">
         </div>
+
+        <div class="control-group">
+            <span id="zoom-info">Zoom 3D: 1.00x</span>
+            <label for="sliderZoom" class="slider-label">Control de Zoom 3D [0.5x - 2.0x]:</label>
+            <div class="slider-container">
+                <input type="range" id="sliderZoom" min="0.5" max="2.0" step="0.05" value="1.0" oninput="actualizarZoom()">
+            </div>
+        </div>
         
         <div id="rango-description"></div>
 
@@ -282,11 +306,12 @@
     <div id="container">
         <div id="label-freq" class="scene-label"></div>
         <div id="label-distancia" class="scene-label"></div>
+        <div id="interactive-label" class="scene-label"></div> <!-- Nueva etiqueta interactiva -->
     </div>
     
     <div id="frequency-spectrum-analyzer">
         <p style="font-size: 0.9em; margin-bottom: 3px;">Análisis de Onda en Tiempo Real</p>
-        <div style="position: relative; width: 100%; height: 180px; border: 1px solid #444; border-radius: 8px; overflow: hidden; background-color: #2a2a2a;">
+        <div style="position: relative; width: 100%; height: 180px; border: 2px solid #00bfff; border-radius: 8px; overflow: hidden; background-color: #2a2a2a; box-shadow: inset 0 0 15px rgba(0, 191, 255, 0.3);">
             <canvas id="frequency-spectrum-canvas" style="width: 100%; height: 100%; display: block;"></canvas>
             <div id="spectrum-audio-overlay" onclick="iniciarAudio()">
                 Toca aquí para activar el micrófono y el análisis (HTTPS Requerido)
@@ -306,9 +331,11 @@
     
     <script>
         // --- CONSTANTES GLOBALES ---
-        const SIMULATION_SIZE_Y = 8; // Altura visual fija de la simulación 3D en unidades Three.js
+        const SIMULATION_SIZE_Y = 20; // Altura visual fija de la simulación 3D en unidades Three.js (AUMENTADO de 8 a 20)
         const SEGMENTS = 256; // Número de segmentos para la geometría del plano de onda
         const VELOCIDAD_SONIDO = 340; // Velocidad del sonido en metros/segundo
+        const SPEAKER_HEIGHT = 5.0; // Altura de los bafles por encima del plano (Y=0), ajustada para el 20% superior, AUMENTADA a 5.0
+        const LABEL_BASE_Y = 1.25; // Altura base para las etiquetas, por encima del plano (Y=0) (AUMENTADO de 0.5 a 1.25)
 
         // Constantes para el analizador de audio
         const DOMINANT_FREQ_SEARCH_LIMIT = 1000; // Límite superior para buscar la frecuencia dominante (foco en graves/medios-graves)
@@ -349,16 +376,24 @@
 
         // --- VARIABLES Y CONFIGURACIÓN DE THREE.JS / WEBGL ---
         let scene, camera, renderer, plane, material, sub1, sub2;
+        let ambientLight, directionalLight; // Declarar luces
         const container = document.getElementById('container');
         const labelFreq = document.getElementById('label-freq');
         const labelDistancia = document.getElementById('label-distancia');
+        
+        // Raycasting para interactividad
+        let raycaster;
+        let mouse;
+        let interactiveLabel;
+        let interactiveLabelTimeout;
+        let clickMarker; // Nuevo marcador 3D para el clic
 
-        // Posiciones 3D para las etiquetas de texto en la escena
-        // Ajustadas para que "Separación" esté a la izquierda y "Frecuencia" a la derecha, en la parte superior.
-        const vectorDistPos = new THREE.Vector3(-SIMULATION_SIZE_Y / 4, 0, SIMULATION_SIZE_Y / 2 * 0.90); // Izquierda
-        const vectorFreqPos = new THREE.Vector3(SIMULATION_SIZE_Y / 4, 0, SIMULATION_SIZE_Y / 2 * 0.90);  // Derecha
+        // Posiciones 3D para las etiquetas de texto en la escena (AJUSTADAS para no superponerse y estar al frente)
+        const vectorDistPos = new THREE.Vector3(-4, LABEL_BASE_Y, 7); // Izquierda, al frente
+        const vectorFreqPos = new THREE.Vector3(4, LABEL_BASE_Y, 7);  // Derecha, al frente
         
         let startTime = performance.now(); // Para el uniforme de tiempo del shader
+        let currentZoomLevel = 1.0; // Nivel de zoom actual, por defecto 1x
 
         /**
          * Inicializa la escena de Three.js, cámara, renderizador y objetos 3D.
@@ -366,15 +401,39 @@
         function initThree() {
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setClearColor(0x1e1e1e); // Fondo oscuro
+            renderer.shadowMap.enabled = true; // Habilitar mapas de sombras
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Sombras suaves
             container.appendChild(renderer.domElement);
 
             scene = new THREE.Scene();
-            scene.add(new THREE.AmbientLight(0xffffff, 0.5)); // Luz ambiente
             
-            // Configuración inicial de la cámara ortográfica
+            // Luz ambiente (AJUSTADA de 0.5 a 0.3)
+            ambientLight = new THREE.AmbientLight(0xffffff, 0.3); 
+            scene.add(ambientLight);
+
+            // Luz direccional (simula el sol)
+            directionalLight = new THREE.DirectionalLight(0xffffff, 0.7);
+            directionalLight.position.set(SIMULATION_SIZE_Y / 2, SPEAKER_HEIGHT * 2.5, SIMULATION_SIZE_Y / 4);
+            directionalLight.castShadow = true;
+            
+            // Configuración de la cámara de sombra de la luz direccional
+            directionalLight.shadow.mapSize.width = 1024;
+            directionalLight.shadow.mapSize.height = 1024;
+            directionalLight.shadow.camera.left = -SIMULATION_SIZE_Y / 2;
+            directionalLight.shadow.camera.right = SIMULATION_SIZE_Y / 2;
+            directionalLight.shadow.camera.top = SIMULATION_SIZE_Y / 2;
+            directionalLight.shadow.camera.bottom = -SIMULATION_SIZE_Y / 2;
+            directionalLight.shadow.camera.near = 0.5;
+            directionalLight.shadow.camera.far = SPEAKER_HEIGHT * 3;
+            directionalLight.target.position.set(0, SPEAKER_HEIGHT / 2, 0); // Apuntar al centro de los bafles
+            scene.add(directionalLight);
+            scene.add(directionalLight.target); // Añadir el target a la escena
+
+
+            // Configuración inicial de la cámara ortográfica (AJUSTADA para SIMULATION_SIZE_Y = 20)
             camera = new THREE.OrthographicCamera();
-            camera.position.set(0, 5, 0); // Posición de la cámara
-            camera.lookAt(0, 0, 0); // Apuntando al centro de la escena
+            camera.position.set(0, 5 + SPEAKER_HEIGHT * 0.8, 0); // Más arriba para ver los bafles (0, 9, 0)
+            camera.lookAt(0, SPEAKER_HEIGHT / 2, 0); // Mirar entre el plano y la altura de los bafles (0, 2.5, 0)
 
             // Shader para el plano de interferencia
             material = new THREE.ShaderMaterial({
@@ -385,6 +444,7 @@
                     u_red_color: { value: new THREE.Color(0xFF5733) }, // Color para cancelaciones
                     u_green_color: { value: new THREE.Color(0x4CAF50) }, // Color para refuerzos
                     u_time: { value: 0.0 },            // Tiempo para animar las ondas
+                    u_speaker_height: { value: SPEAKER_HEIGHT }, // Altura de los bafles en el shader
                 },
                 vertexShader: `
                     varying vec2 vUv;
@@ -397,16 +457,24 @@
                     uniform vec3 u_red_color;
                     uniform vec3 u_green_color;
                     uniform float u_time;
+                    uniform float u_speaker_height; // Uniform para la altura de los bafles
                     varying vec2 vUv;
 
                     void main() {
-                        vec2 pos_xz = (vUv - 0.5) * u_size; // Convertir UV a coordenadas XZ del mundo
+                        vec2 pos_xz_plane = (vUv - 0.5) * u_size; // Coordenadas XZ del punto en el plano (Y=0)
 
                         float sub_offset = u_separation / 2.0;
 
-                        // Distancia desde cada "subwoofer" al punto actual
-                        float r1 = distance(pos_xz, vec2(-sub_offset, 0.0));
-                        float r2 = distance(pos_xz, vec2(sub_offset, 0.0));
+                        // Definir las posiciones 3D de los altavoces
+                        vec3 speaker1_pos_3d = vec3(-sub_offset, u_speaker_height, 0.0);
+                        vec3 speaker2_pos_3d = vec3(sub_offset, u_speaker_height, 0.0);
+
+                        // Definir la posición 3D del punto en el plano
+                        vec3 point_on_plane_3d = vec3(pos_xz_plane.x, 0.0, pos_xz_plane.y);
+
+                        // Calcular la distancia 3D desde cada altavoz al punto en el plano
+                        float r1 = distance(point_on_plane_3d, speaker1_pos_3d);
+                        float r2 = distance(point_on_plane_3d, speaker2_pos_3d);
 
                         // Diferencia de fase estática para el patrón de interferencia
                         float deltaR = r2 - r1;
@@ -415,7 +483,7 @@
                         // Intensidad estática del patrón de interferencia (0 a 2, donde 2 es refuerzo máximo)
                         float intensity_static = 2.0 * abs(cos(interference_phase_diff / 2.0));
                         // Potencia normalizada del patrón de interferencia (0 a 1)
-                        float power_static = pow(intensity_static / 2.0, 4.0); // Exponente para hacer los picos más definidos
+                        float power_static = pow(intensity_static / 2.0, 2.0); // Exponente para picos más amplios
 
                         // Colores basados en el patrón de interferencia
                         vec3 lighter_green = mix(u_green_color, vec3(1.0, 1.0, 1.0), power_static * 0.3); // Verde más brillante en refuerzo
@@ -424,25 +492,22 @@
 
                         // Ondas animadas para simular propagación
                         float wave_speed = 15.0;
-                        float wave_frequency = 4.0; // Multiplicador para la frecuencia visual de la onda
+                        float wave_frequency = 0.4; // Multiplicador para la frecuencia visual de la onda (REDUCIDO de 0.6 a 0.4 para ondas aún más grandes)
                         float animated_wave1 = cos((r1 / u_lambda * wave_frequency * 6.2831853) - u_time * wave_speed);
                         float animated_wave2 = cos((r2 / u_lambda * wave_frequency * 6.2831853) - u_time * wave_speed);
 
                         float combined_animated_wave = (animated_wave1 + animated_wave2) / 2.0;
 
-                        // El efecto de rebote del escenario ha sido eliminado.
-                        // combined_animated_wave permanece sin modificar por el escenario.
+                        // Modular el brillo y el alfa basado en la onda animada (AJUSTADO para mayor cobertura y brillo)
+                        float brightness_mod = smoothstep(-0.7, 1.0, combined_animated_wave); // Umbral inferior para visibilidad ampliado
+                        float final_alpha_mod = smoothstep(-0.9, 1.0, combined_animated_wave); // Umbral inferior para visibilidad ampliado
 
-                        // Modular el brillo y el alfa basado en la onda animada
-                        float brightness_mod = smoothstep(0.6, 1.0, combined_animated_wave);
-                        float final_alpha_mod = smoothstep(0.5, 1.0, combined_animated_wave);
-
-                        // Calcular el color final y el alfa
-                        vec3 final_color_rgb = base_color * brightness_mod * 1.5;
+                        // Calcular el color final y el alfa (Multiplicador de brillo aumentado)
+                        vec3 final_color_rgb = base_color * brightness_mod * 2.5; 
                         float final_alpha = power_static * final_alpha_mod;
 
-                        // Efecto de desvanecimiento en los bordes para un look más suave
-                        float border_fade = 1.0 - smoothstep(2.5, 4.0, length(pos_xz));
+                        // Efecto de desvanecimiento en los bordes para un look más suave (AJUSTADO de (3.8, 4.0) a (9.8, 10.0))
+                        float border_fade = 1.0 - smoothstep(9.8, 10.0, length(pos_xz_plane)); 
                         final_color_rgb *= border_fade;
                         final_alpha *= border_fade;
 
@@ -455,26 +520,47 @@
 
             plane = new THREE.Mesh(new THREE.PlaneGeometry(SIMULATION_SIZE_Y, SIMULATION_SIZE_Y, SEGMENTS, SEGMENTS), material);
             plane.rotation.x = -Math.PI / 2; // Orientar el plano horizontalmente
+            plane.receiveShadow = true; // El plano recibe sombras
             scene.add(plane);
             
-            // Subwoofers (cajas y conos)
-            const bafleGeo = new THREE.BoxGeometry(0.3, 0.3, 0.3);
-            const bafleMat = new THREE.MeshBasicMaterial({ color: 0x444444, wireframe: false }); 
+            // Subwoofers (cajas y conos) (AJUSTADOS para SIMULATION_SIZE_Y = 20)
+            const bafleGeo = new THREE.BoxGeometry(1.5, 1.5, 1.5); // AUMENTADO de 0.6 a 1.5
+            // MATERIAL AJUSTADO para soportar sombras (MeshPhongMaterial o MeshLambertMaterial)
+            const bafleMat = new THREE.MeshPhongMaterial({ color: 0x444444 }); 
             const bafleEdgeMat = new THREE.LineBasicMaterial({ color: 0xffffff }); 
-            const coneGeo = new THREE.ConeGeometry(0.15, 0.15, 16);
-            const coneMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-            coneGeo.translate(0, 0.15, -0.15); // Ajustar la posición del cono respecto a la caja
+            const coneGeo = new THREE.ConeGeometry(0.75, 0.75, 16); // AUMENTADO de 0.3 a 0.75
+            // MATERIAL AJUSTADO para soportar sombras
+            const coneMat = new THREE.MeshPhongMaterial({ color: 0xffffff });
+            coneGeo.translate(0, 0.375, -0.75); // Ajustado para el nuevo tamaño del bafle (1.5/2 = 0.75 de profundidad, 0.75/2 = 0.375 de offset Y)
             
             sub1 = new THREE.Mesh(bafleGeo, bafleMat);
             sub1.add(new THREE.LineSegments(new THREE.EdgesGeometry(bafleGeo), bafleEdgeMat));
             sub1.add(new THREE.Mesh(coneGeo, coneMat));
+            sub1.position.y = SPEAKER_HEIGHT; // Elevar bafle 1
+            sub1.castShadow = true; // El subwoofer 1 proyecta sombras
             scene.add(sub1);
             
             sub2 = new THREE.Mesh(bafleGeo, bafleMat);
             sub2.add(new THREE.LineSegments(new THREE.EdgesGeometry(bafleGeo), bafleEdgeMat));
             sub2.add(new THREE.Mesh(coneGeo, coneMat));
+            sub2.position.y = SPEAKER_HEIGHT; // Elevar bafle 2
+            sub2.castShadow = true; // El subwoofer 2 proyecta sombras
             scene.add(sub2);
             
+            // Inicializar Raycaster e interactividad
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+            interactiveLabel = document.getElementById('interactive-label');
+
+            // Inicializar marcador 3D para el clic (AJUSTADO para SIMULATION_SIZE_Y = 20)
+            const markerGeometry = new THREE.SphereGeometry(0.2, 16, 16); // AUMENTADO de 0.08 a 0.2
+            const markerMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 }); // Amarillo brillante
+            clickMarker = new THREE.Mesh(markerGeometry, markerMaterial);
+            clickMarker.visible = false; // Oculto inicialmente
+            scene.add(clickMarker);
+
+            renderer.domElement.addEventListener('mousedown', onMouseDown, false);
+
             // Listeners para redimensionamiento de ventana
             window.addEventListener('resize', onWindowResize, false);
 
@@ -494,12 +580,15 @@
 
             // Ajustar la cámara ortográfica para mantener el aspecto y la altura de la simulación
             const aspect = width / height;
-            const sceneHeight = SIMULATION_SIZE_Y; // La altura fija de nuestra simulación en unidades Three.js
-            
-            camera.left = -sceneHeight * aspect / 2;
-            camera.right = sceneHeight * aspect / 2;
-            camera.top = sceneHeight / 2;
-            camera.bottom = -sceneHeight / 2;
+            // viewHeight se calcula para que los speakers (en Y=SPEAKER_HEIGHT) estén al 20% desde el top visible
+            // y el plano (en Y=0) sea visible, incluyendo SIMULATION_SIZE_Y en su extensión
+            // El zoom se aplica aquí
+            const viewHeight = (SIMULATION_SIZE_Y / 0.4) / currentZoomLevel; 
+
+            camera.left = -viewHeight * aspect / 2;
+            camera.right = viewHeight * aspect / 2;
+            camera.top = viewHeight / 2;
+            camera.bottom = -viewHeight / 2;
             camera.updateProjectionMatrix();
             
             // Asegurarse de que el canvas del analizador de audio también se redimensione
@@ -510,6 +599,7 @@
                 audioAnalyzerCanvasEl.height = audioAnalyzerContainer.offsetHeight;
                 const audioOverlay = document.getElementById('spectrum-audio-overlay');
                 if (audioOverlay) {
+                    // Update overlay size dynamically
                     audioOverlay.style.width = `${audioAnalyzerContainer.offsetWidth}px`;
                     audioOverlay.style.height = `${audioAnalyzerContainer.offsetHeight}px`;
                 }
@@ -534,6 +624,99 @@
             labelDistancia.style.left = `${(posDist.x * 0.5 + 0.5) * width}px`;
             labelDistancia.style.top = `${(-posDist.y * 0.5 + 0.5) * height}px`;
         }
+
+        /**
+         * Maneja el evento mousedown para detectar clics en el plano 3D.
+         * @param {MouseEvent} event
+         */
+        function onMouseDown(event) {
+            event.preventDefault();
+
+            const rect = renderer.domElement.getBoundingClientRect();
+            mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+            mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+
+            const intersects = raycaster.intersectObject(plane);
+
+            if (intersects.length > 0) {
+                const intersectPoint = intersects[0].point;
+                showInteractiveLabel(intersectPoint);
+            } else {
+                // Si no se hizo clic en el plano, ocultar la etiqueta interactiva y el marcador
+                if (interactiveLabelTimeout) clearTimeout(interactiveLabelTimeout);
+                interactiveLabel.style.display = 'none';
+                clickMarker.visible = false;
+            }
+        }
+
+        /**
+         * Muestra una etiqueta interactiva con información de la onda en un punto 3D.
+         * @param {THREE.Vector3} point El punto 3D donde se hizo clic.
+         */
+        function showInteractiveLabel(point) {
+            const separation = material.uniforms.u_separation.value;
+            const lambda = material.uniforms.u_lambda.value;
+            const speakerHeight = material.uniforms.u_speaker_height.value;
+            
+            const subOffset = separation / 2;
+
+            // Distancia desde cada "subwoofer" al punto actual (el punto ya está en el plano XZ)
+            // Recalcular distancias 3D como en el shader
+            const pointOnPlane3D = new THREE.Vector3(point.x, point.y, point.z); // point.y debería ser 0 para el plano
+            const speaker1Pos3D = new THREE.Vector3(-subOffset, speakerHeight, 0);
+            const speaker2Pos3D = new THREE.Vector3(subOffset, speakerHeight, 0);
+
+            const r1 = pointOnPlane3D.distanceTo(speaker1Pos3D);
+            const r2 = pointOnPlane3D.distanceTo(speaker2Pos3D);
+
+            // Diferencia de fase estática para el patrón de interferencia
+            const deltaR = r2 - r1;
+            const interferencePhaseDiff = (deltaR / lambda) * (2 * Math.PI);
+
+            // Intensidad estática del patrón de interferencia (0 a 2, donde 2 es refuerzo máximo)
+            const intensityStatic = 2 * Math.abs(Math.cos(interferencePhaseDiff / 2));
+            // Potencia normalizada del patrón de interferencia (0 a 1)
+            const powerStatic = Math.pow(intensityStatic / 2, 2.0); // Usar la misma lógica del shader (modificada)
+
+            let interpretation = "";
+            if (powerStatic > 0.95) {
+                interpretation = "Refuerzo Fuerte";
+            } else if (powerStatic > 0.6) {
+                interpretation = "Refuerzo Moderado";
+            } else if (powerStatic < 0.05) {
+                interpretation = "Cancelación Fuerte";
+            } else if (powerStatic < 0.3) {
+                interpretation = "Cancelación Moderada";
+            } else {
+                interpretation = "Zona de Transición";
+            }
+
+            interactiveLabel.textContent = `Intensidad: ${(powerStatic * 100).toFixed(0)}% (${interpretation})`;
+            
+            // Proyectar la posición 3D del punto de clic a coordenadas de pantalla
+            const screenPosition = point.clone().project(camera);
+            const rect = container.getBoundingClientRect();
+            const width = rect.width;
+            const height = rect.height;
+
+            interactiveLabel.style.left = `${(screenPosition.x * 0.5 + 0.5) * width}px`;
+            interactiveLabel.style.top = `${(-screenPosition.y * 0.5 + 0.5) * height}px`;
+            interactiveLabel.style.display = 'block';
+
+            // Posicionar y mostrar el marcador 3D (AJUSTADO para SIMULATION_SIZE_Y = 20)
+            clickMarker.position.copy(point);
+            clickMarker.position.y = 0.05; // Asegurarse de que esté ligeramente por encima del plano (AUMENTADO de 0.01 a 0.05)
+            clickMarker.visible = true;
+
+            if (interactiveLabelTimeout) clearTimeout(interactiveLabelTimeout);
+            interactiveLabelTimeout = setTimeout(() => {
+                interactiveLabel.style.display = 'none';
+                clickMarker.visible = false; // Ocultar también el marcador 3D
+            }, 3000); // Ocultar después de 3 segundos
+        }
+
 
         /**
          * Bucle principal de animación de Three.js.
@@ -590,6 +773,15 @@
             document.getElementById('frecuencia-info').innerHTML = `Frecuencia: <span style="font-weight: bold; color: #4CAF50;">${frecuenciaHz.toFixed(0)} Hz</span> (L.O.: ${LONGITUD_ONDA.toFixed(2)} m) | Ideal: ${controlDirectividad.toFixed(2)} m`;
             document.getElementById('separacion-info').innerHTML = `Separación: <span style="font-weight: bold; color: #4CAF50;">${separacionMetros.toFixed(2)} m</span> <span style="color:#f0ad4e; font-weight: bold;">${comentarioSeparacion}</span>`;
             document.getElementById('rango-description').innerHTML = getRangeDescription(frecuenciaHz);
+        }
+
+        /**
+         * Actualiza el nivel de zoom de la cámara 3D.
+         */
+        window.actualizarZoom = function() {
+            currentZoomLevel = parseFloat(document.getElementById('sliderZoom').value);
+            document.getElementById('zoom-info').textContent = `Zoom 3D: ${currentZoomLevel.toFixed(2)}x`;
+            onWindowResize(); // Re-calcular la proyección de la cámara con el nuevo zoom
         }
         
         // --- ANALIZADOR DE AUDIO: Waveform y Frecuencia Predominante ---
@@ -799,6 +991,7 @@
         initThree(); // Inicializar Three.js
         window.onload = () => {
           actualizarValores(); // Establecer valores iniciales de los sliders y actualizar la UI
+          actualizarZoom(); // Establecer el zoom inicial
         };
         animate(); // Iniciar el bucle de animación
     </script>
