@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simulador de Arreglos Acústicos - MC Audio</title>
+    <title>Simulador de Arreglos de Sonido Graves - MC Audio</title>
     <style>
         :root {
             --bg-dark: #09090b; /* Zinc 950 */
@@ -137,6 +137,12 @@
 
         .slider-row {
             margin-bottom: 8px;
+            transition: opacity 0.3s;
+        }
+        
+        .slider-row.disabled {
+            opacity: 0.3;
+            pointer-events: none;
         }
 
         .slider-label {
@@ -218,6 +224,17 @@
             background: var(--danger);
             color: white;
         }
+        
+        button.magic {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            border: none;
+            box-shadow: 0 0 10px rgba(124, 58, 237, 0.3);
+        }
+        button.magic:hover {
+             box-shadow: 0 0 15px rgba(124, 58, 237, 0.5);
+             filter: brightness(1.1);
+        }
 
         /* POLARIDAD */
         .polarity-grid {
@@ -242,19 +259,38 @@
         .pol-btn.normal { background: #27272a; color: #71717a; border: 1px solid #3f3f46; }
         .pol-btn.inverted { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid var(--danger); }
 
-        /* OVERLAYS */
+        /* HUD & OVERLAYS */
         .hud-panel {
             position: absolute;
             top: 20px;
-            right: 20px;
+            left: 20px;
             background: rgba(9, 9, 11, 0.9);
             border: 1px solid rgba(255,255,255,0.1);
             backdrop-filter: blur(10px);
             padding: 15px;
             border-radius: 8px;
-            width: 210px;
+            width: 200px;
             pointer-events: none;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .legend-panel {
+            position: absolute;
+            top: 50%;
+            right: 20px;
+            transform: translateY(-50%);
+            background: rgba(9, 9, 11, 0.85);
+            border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            padding: 10px;
+            border-radius: 8px;
+            width: 70px;
+            pointer-events: none;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 10px;
         }
 
         .hud-row {
@@ -272,30 +308,47 @@
         .status-warn { color: var(--warning); }
         .status-danger { color: var(--danger); }
 
-        .legend-gradient {
-            height: 6px;
-            background: linear-gradient(90deg, #000 0%, #0000ff 25%, #00ffff 50%, #ffffff 75%, #ff0000 100%);
-            border-radius: 3px;
-            margin-top: 10px;
+        /* Vertical Legend Bar */
+        .color-bar {
+            width: 12px;
+            height: 200px;
+            background: linear-gradient(to top, 
+                #000 0%,     /* Silencio */
+                #0000ff 25%, /* Azul -12dB */
+                #00ff00 50%, /* Verde -6dB */
+                #ffff00 75%, /* Amarillo 0dB */
+                #ff0000 90%, /* Rojo +6dB */
+                #ffffff 100% /* Blanco +12dB */
+            );
+            border-radius: 4px;
+            border: 1px solid #333;
         }
-        .legend-labels {
+        
+        .legend-text {
             display: flex;
+            flex-direction: column;
             justify-content: space-between;
+            height: 200px;
             font-size: 9px;
-            color: #52525b;
-            margin-top: 4px;
+            font-weight: bold;
+            color: #a1a1aa;
+            text-align: right;
+            padding-top: 2px;
+            padding-bottom: 2px;
         }
 
         /* FOOTER */
         footer {
-            height: 24px;
+            height: 30px;
             background: #000;
             border-top: 1px solid var(--border);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 10px;
-            color: #3f3f46;
+            font-size: 11px;
+            color: #52525b;
+            font-weight: 500;
+            letter-spacing: 0.5px;
         }
 
     </style>
@@ -310,10 +363,9 @@
             </a>
             <h1>
                 SIMULADOR DE ARREGLOS
-                <span>SISTEMAS ACÚSTICOS</span>
+                <span>DE SONIDO GRAVES</span>
             </h1>
         </div>
-        <div style="font-size:10px; color:#555; font-weight:bold;">MOTOR: VANILLA JS</div>
     </header>
 
     <div id="main-layout">
@@ -333,20 +385,21 @@
                     <input type="range" id="input-freq" min="20" max="200" value="60">
                 </div>
 
-                <div class="slider-row">
+                <div class="slider-row" id="row-count">
+                    <div class="slider-label">
+                        <span>Cant. Bafles (N)</span>
+                        <span class="slider-val" id="disp-count">4</span>
+                    </div>
+                    <!-- Permite bajar a 1 -->
+                    <input type="range" id="input-count" min="1" max="16" step="1" value="4">
+                </div>
+
+                <div class="slider-row" id="row-dist">
                     <div class="slider-label">
                         <span>Separación</span>
                         <span class="slider-val" id="disp-dist">1.00 m</span>
                     </div>
                     <input type="range" id="input-dist" min="0.2" max="4.0" step="0.01" value="1.00">
-                </div>
-
-                <div class="slider-row">
-                    <div class="slider-label">
-                        <span>Cant. Bafles (N)</span>
-                        <span class="slider-val" id="disp-count">4</span>
-                    </div>
-                    <input type="range" id="input-count" min="2" max="16" step="1" value="4">
                 </div>
 
                 <div class="slider-row">
@@ -367,6 +420,19 @@
                     <button id="btn-end" style="flex:1" onclick="app.setMode('endfire')">END-FIRE</button>
                 </div>
 
+                <button id="btn-lr" style="width:100%; margin-top:8px;" onclick="app.toggleLR()">
+                    MODO: MONO CENTRAL
+                </button>
+                
+                <!-- Margin Slider -->
+                <div class="slider-row" style="margin-top:12px">
+                    <div class="slider-label">
+                        <span>Margen Lateral (L/R)</span>
+                        <span class="slider-val" id="disp-lat-margin">0.5 m</span>
+                    </div>
+                    <input type="range" id="input-lat-margin" min="0" max="5.0" step="0.1" value="0.5">
+                </div>
+
                 <div style="margin-top:12px; margin-bottom:6px; font-size:9px; font-weight:bold; color:#52525b;">PRESETS AUTOMÁTICOS (λ/4)</div>
                 <div class="btn-grid">
                     <button onclick="app.applyPreset(40)">40Hz</button>
@@ -381,21 +447,72 @@
                 </div>
             </div>
 
+            <!-- Optimization & Mic -->
+            <div class="control-group">
+                <div class="group-title">MICRÓFONO & OPTIMIZACIÓN</div>
+                <div style="font-size:10px; color:#a1a1aa; margin-bottom:8px;">
+                    Posiciona el micrófono y pulsa para enfocar los retardos en ese punto.
+                </div>
+                <button class="magic" style="width:100%; padding:10px;" onclick="app.autoOptimize()">
+                    ✨ AUTO-OPTIMIZAR (FOCUS)
+                </button>
+                <div id="opt-status" style="display:none; text-align:center; color:#a3e635; font-size:10px; margin-top:5px; font-weight:bold;">
+                    SISTEMA OPTIMIZADO A MIC
+                </div>
+            </div>
+
+            <!-- Stage Control -->
+            <div class="control-group">
+                <div class="group-title">ESCENARIO (REFLEXIÓN)</div>
+                <div class="slider-row">
+                    <div class="slider-label">
+                        <span>Ancho</span>
+                        <span class="slider-val" id="disp-stg-w">10.0 m</span>
+                    </div>
+                    <input type="range" id="input-stg-w" min="2" max="30" step="0.5" value="10">
+                </div>
+                <div class="slider-row">
+                    <div class="slider-label">
+                        <span>Profundidad</span>
+                        <span class="slider-val" id="disp-stg-d">6.0 m</span>
+                    </div>
+                    <input type="range" id="input-stg-d" min="2" max="15" step="0.5" value="6">
+                </div>
+                <div class="slider-row">
+                    <div class="slider-label">
+                        <span>Posición X (Centro)</span>
+                        <span class="slider-val" id="disp-stg-x">0.0 m</span>
+                    </div>
+                    <input type="range" id="input-stg-x" min="-10" max="10" step="0.5" value="0">
+                </div>
+                <div class="slider-row">
+                    <div class="slider-label">
+                        <span>Distancia Array (d)</span>
+                        <span class="slider-val" id="disp-stg-gap" style="color:var(--warning)">--</span>
+                    </div>
+                    <input type="range" id="input-stg-gap" min="0" max="10" step="0.1" value="1.0">
+                </div>
+                
+                <button style="width:100%; margin-top:8px; border-color:var(--success); color:var(--success);" onclick="app.optimizeStageDist()">
+                    PEGAR AL ESCENARIO
+                </button>
+            </div>
+
             <!-- Audience Zones -->
             <div class="control-group">
                 <div class="group-title">ZONAS DE PÚBLICO</div>
-                <div style="font-size:10px; color:#555; margin-bottom:8px;">
-                    Dibuja zonas para calcular cobertura (±3dB).
-                </div>
                 <div class="btn-row">
                     <button onclick="app.addZone()" style="flex:2; color:var(--success); border-color:rgba(34,197,94,0.3);">+ AÑADIR ZONA</button>
                     <button onclick="app.clearZones()" class="danger" style="flex:1;">BORRAR</button>
+                </div>
+                <div style="font-size:9px; color:#555; margin-top:6px;">
+                    Haz clic en una zona para ver Análisis de Pérdida.
                 </div>
             </div>
 
             <!-- Polarity -->
             <div class="control-group">
-                <div class="group-title">MATRIZ DE POLARIDAD</div>
+                <div class="group-title">MATRIZ DE POLARIDAD (POR LADO)</div>
                 <div id="polarity-container" class="polarity-grid">
                     <!-- Generated by JS -->
                 </div>
@@ -411,8 +528,8 @@
         <div id="viewport">
             <canvas id="simCanvas" width="800" height="600"></canvas>
             
-            <!-- HUD OVERLAY -->
-            <div class="hud-panel">
+            <!-- HUD OVERLAY (Left) -->
+            <div class="hud-panel" style="top:20px; left:20px;">
                 <div class="hud-row">
                     <span class="hud-label">Velocidad Sonido:</span>
                     <span class="hud-value" id="hud-speed">--</span>
@@ -430,6 +547,10 @@
                     <span class="hud-label">Retardo E.F.:</span>
                     <span class="hud-value" id="hud-delay" style="color:var(--warning)">0.00 ms</span>
                 </div>
+                <div class="hud-row">
+                    <span class="hud-label">Interf. Rebote:</span>
+                    <span class="hud-value" id="hud-bounce" style="color:#aaa;">--</span>
+                </div>
                 
                 <div style="height:1px; background:#333; margin:8px 0;"></div>
                 <div class="hud-row">
@@ -437,20 +558,26 @@
                     <span class="hud-value" id="hud-coverage">--</span>
                 </div>
                 <div style="font-size:9px; color:#555; text-align:right;">(±3dB del Máx)</div>
+            </div>
 
-                <div class="legend-gradient"></div>
-                <div class="legend-labels">
-                    <span>-INF</span>
-                    <span>0dB</span>
-                    <span>CLIP</span>
+            <!-- COLOR LEGEND (Right) -->
+            <div class="legend-panel">
+                <div class="legend-text">
+                    <span style="color:#fff;">+12dB<br>(Pegada)</span>
+                    <span style="color:#ff0000;">+6dB</span>
+                    <span style="color:#ffff00;">0dB</span>
+                    <span style="color:#00ff00;">-6dB</span>
+                    <span style="color:#0000ff;">-12dB</span>
+                    <span style="color:#444;">SILENCIO</span>
                 </div>
+                <div class="color-bar"></div>
             </div>
         </div>
 
     </div>
 
     <footer>
-        SIN LIBRERÍAS EXTERNAS • 100% VANILLA JS/HTML5
+        Creado por Mauro Casarin
     </footer>
 
     <script>
@@ -468,22 +595,35 @@
                 count: 4,
                 temp: 20,
                 mode: 'broadside', // 'broadside' | 'endfire'
+                lrMode: false,     // Single vs Stereo L/R
+                stageGap: 1.0,     // Distance from array back to stage front
+                lateralMargin: 0.5, // Lateral safety margin for L/R
                 polarities: new Array(16).fill(false),
+                isOptimized: false, // Flag for beam focusing
+                customPhases: [],   // Stores calculated phases for optimization
+                viewGain: 1.0,      // Dynamic gain for visualization
                 view: {
                     scale: 30, // Pixels per meter
                     x: 0,      // Offset X
-                    y: 0,      // Offset Y
+                    y: 150,    // Offset Y (Shifted down to show audience up)
                     dragging: false,
                     lastX: 0,
                     lastY: 0,
-                    dragType: null, // 'view', 'mic', 'zone', 'zone-resize'
+                    dragType: null, 
                     dragIndex: -1
                 },
                 mic: {
-                    x: 0, // World X (meters)
-                    y: 2, // World Y (meters)
+                    x: 0, 
+                    y: -5, // Audience is negative Y
                 },
-                zones: [], // Array of {x, y, w, h} in meters
+                stage: {
+                    w: 10,
+                    h: 6, // Depth
+                    x: 0, // Center X
+                    y: 2, // Front Face Y (Positive Y is down/stage area)
+                },
+                zones: [],
+                selectedZoneIndex: -1, 
                 coverageStats: 0
             };
 
@@ -494,13 +634,26 @@
                     freq: document.getElementById('input-freq'),
                     dist: document.getElementById('input-dist'),
                     count: document.getElementById('input-count'),
-                    temp: document.getElementById('input-temp')
+                    temp: document.getElementById('input-temp'),
+                    stgW: document.getElementById('input-stg-w'),
+                    stgD: document.getElementById('input-stg-d'),
+                    stgX: document.getElementById('input-stg-x'),
+                    stgGap: document.getElementById('input-stg-gap'),
+                    latMargin: document.getElementById('input-lat-margin')
                 },
                 displays: {
                     freq: document.getElementById('disp-freq'),
                     dist: document.getElementById('disp-dist'),
                     count: document.getElementById('disp-count'),
-                    temp: document.getElementById('disp-temp')
+                    temp: document.getElementById('disp-temp'),
+                    stgW: document.getElementById('disp-stg-w'),
+                    stgD: document.getElementById('disp-stg-d'),
+                    stgX: document.getElementById('disp-stg-x'),
+                    stgGap: document.getElementById('disp-stg-gap'),
+                    latMargin: document.getElementById('disp-lat-margin')
+                },
+                rows: {
+                    dist: document.getElementById('row-dist')
                 },
                 hud: {
                     speed: document.getElementById('hud-speed'),
@@ -508,13 +661,16 @@
                     status: document.getElementById('hud-status'),
                     delay: document.getElementById('hud-delay'),
                     delayRow: document.getElementById('row-delay'),
-                    coverage: document.getElementById('hud-coverage')
+                    coverage: document.getElementById('hud-coverage'),
+                    bounce: document.getElementById('hud-bounce')
                 },
                 btns: {
                     broad: document.getElementById('btn-broad'),
-                    end: document.getElementById('btn-end')
+                    end: document.getElementById('btn-end'),
+                    lr: document.getElementById('btn-lr')
                 },
-                polContainer: document.getElementById('polarity-container')
+                polContainer: document.getElementById('polarity-container'),
+                optStatus: document.getElementById('opt-status')
             };
 
             const ctx = els.canvas.getContext('2d', { alpha: false });
@@ -523,8 +679,21 @@
             window.app = {
                 setMode: (m) => {
                     state.mode = m;
+                    state.isOptimized = false;
+                    resetGain();
+                    els.optStatus.style.display = 'none';
                     els.btns.broad.className = m === 'broadside' ? 'active' : '';
                     els.btns.end.className = m === 'endfire' ? 'active' : '';
+                    updateUI();
+                    requestAnimationFrame(draw);
+                },
+                toggleLR: () => {
+                    state.lrMode = !state.lrMode;
+                    state.isOptimized = false; // Reset opt on config change
+                    resetGain();
+                    els.optStatus.style.display = 'none';
+                    els.btns.lr.innerText = state.lrMode ? "MODO: STEREO L/R" : "MODO: MONO CENTRAL";
+                    els.btns.lr.className = state.lrMode ? 'active' : '';
                     updateUI();
                     requestAnimationFrame(draw);
                 },
@@ -535,20 +704,19 @@
                 },
                 applyPreset: (hz) => {
                     state.freq = hz;
+                    state.isOptimized = false;
+                    resetGain();
+                    els.optStatus.style.display = 'none';
                     els.inputs.freq.value = hz;
-                    // Auto λ/4 spacing
                     const v = 331.3 * Math.sqrt(1 + state.temp / 273.15);
                     let optimal = (v / hz) / 4;
-                    // Clamp
                     optimal = Math.min(4.0, Math.max(0.2, optimal));
                     state.dist = optimal;
                     els.inputs.dist.value = optimal;
-                    
                     updateUI();
                     requestAnimationFrame(draw);
                 },
                 setupCardioid: () => {
-                    // CSA Preset: 2 Elements, End-Fire, Rear Inv, Spaced λ/4
                     state.count = 2;
                     els.inputs.count.value = 2;
                     window.app.setMode('endfire');
@@ -565,34 +733,95 @@
                      updateUI();
                      requestAnimationFrame(draw);
                 },
-                addZone: () => {
-                    // Add a default zone near center
-                    state.zones.push({
-                        x: -2, 
-                        y: 3, 
-                        w: 4, 
-                        h: 3
+                optimizeStageDist: () => {
+                    state.stageGap = 0.1;
+                    els.inputs.stgGap.value = 0.1;
+                    updateUI();
+                    requestAnimationFrame(draw);
+                },
+                autoOptimize: () => {
+                    // 1. Optimize Spacing to Lambda/4
+                    const v = 331.3 * Math.sqrt(1 + state.temp / 273.15);
+                    let optimal = (v / state.freq) / 4;
+                    optimal = Math.min(4.0, Math.max(0.2, optimal));
+                    state.dist = optimal;
+                    els.inputs.dist.value = optimal;
+
+                    // 2. Beam Steering Logic
+                    // Calculate phase delay: k * distance
+                    const k = (2 * Math.PI * state.freq) / v; 
+                    const tempSources = generateSourcesForLogic();
+                    
+                    state.customPhases = tempSources.map(s => {
+                        const d = Math.hypot(state.mic.x - s.x, state.mic.y - s.y);
+                        // Phase advancement to compensate for lag k*d
+                        return k * d; 
                     });
+                    
+                    // 3. Auto-Gain for Visuals (Force Red at Target)
+                    // Calculate the scalar sum of amplitudes at the mic position (maximum possible constructive interference)
+                    let theoreticalSum = 0;
+                    tempSources.forEach(s => {
+                        const d = Math.hypot(state.mic.x - s.x, state.mic.y - s.y);
+                        theoreticalSum += 1.0 / (1.0 + d);
+                    });
+                    
+                    // Set View Gain so that the theoretical sum maps to approx 1.0 (Red/White limit)
+                    if (theoreticalSum > 0.0001) {
+                        state.viewGain = 1.0 / theoreticalSum;
+                    }
+
+                    state.isOptimized = true;
+                    els.optStatus.style.display = 'block';
+                    updateUI();
+                    requestAnimationFrame(draw);
+                },
+                addZone: () => {
+                    state.zones.push({ x: -4, y: -8, w: 8, h: 5 });
+                    state.selectedZoneIndex = state.zones.length - 1;
                     requestAnimationFrame(draw);
                 },
                 clearZones: () => {
                     state.zones = [];
+                    state.selectedZoneIndex = -1;
                     requestAnimationFrame(draw);
                 }
             };
 
+            // --- HELPER ---
+            function resetGain() {
+                // Modified for better Distance Decay visualization
+                // Default gain increased slightly to allow "red" at source but decay visibly
+                state.viewGain = 1.3 / (state.count * 0.95);
+            }
+
             // --- EVENT LISTENERS ---
             
-            // Inputs
             Object.keys(els.inputs).forEach(key => {
                 els.inputs[key].addEventListener('input', (e) => {
-                    state[key] = parseFloat(e.target.value);
+                    const val = parseFloat(e.target.value);
+                    if (key === 'stgW') state.stage.w = val;
+                    else if (key === 'stgD') state.stage.h = val;
+                    else if (key === 'stgX') state.stage.x = val;
+                    else if (key === 'stgGap') state.stageGap = val;
+                    else if (key === 'latMargin') state.lateralMargin = val;
+                    else state[key] = val;
+                    
+                    // Reset optimization if physical parameters change significantly
+                    if (['freq', 'dist', 'stgX', 'stgGap', 'latMargin', 'count'].includes(key)) {
+                         if(state.isOptimized) {
+                             state.isOptimized = false;
+                             els.optStatus.style.display = 'none';
+                             resetGain();
+                         }
+                         if(key === 'count') resetGain();
+                    }
+
                     updateUI();
                     requestAnimationFrame(draw);
                 });
             });
 
-            // Canvas Interaction Logic
             els.canvas.addEventListener('mousedown', e => {
                 const rect = els.canvas.getBoundingClientRect();
                 const mouseX = e.clientX - rect.left;
@@ -601,57 +830,62 @@
                 const cx = els.canvas.width / 2 + state.view.x;
                 const cy = els.canvas.height / 2 + state.view.y;
                 const ppm = state.view.scale;
+                const toScreen = (mx, my) => ({ x: cx + mx * ppm, y: cy + my * ppm });
 
-                // 1. Check Mic Hit
-                const micScreenX = cx + state.mic.x * ppm;
-                const micScreenY = cy + state.mic.y * ppm;
-                const distToMic = Math.sqrt(Math.pow(mouseX - micScreenX, 2) + Math.pow(mouseY - micScreenY, 2));
-
-                if (distToMic < 15) {
+                const ms = toScreen(state.mic.x, state.mic.y);
+                if (Math.hypot(mouseX - ms.x, mouseY - ms.y) < 15) {
                     state.view.dragType = 'mic';
-                } else {
-                    // 2. Check Zones Hit
-                    let hitZone = false;
-                    for(let i=state.zones.length-1; i>=0; i--) {
-                        const z = state.zones[i];
-                        const zx = cx + z.x * ppm;
-                        const zy = cy + z.y * ppm;
-                        const zw = z.w * ppm;
-                        const zh = z.h * ppm;
+                    state.view.dragging = true;
+                    state.view.lastX = e.clientX;
+                    state.view.lastY = e.clientY;
+                    return;
+                }
 
-                        // Resize handle (bottom right)
-                        const handleSize = 15;
-                        if (mouseX > zx + zw - handleSize && mouseX < zx + zw + handleSize &&
-                            mouseY > zy + zh - handleSize && mouseY < zy + zh + handleSize) {
-                            state.view.dragType = 'zone-resize';
-                            state.view.dragIndex = i;
-                            hitZone = true;
-                            break;
-                        }
-
-                        // Body
-                        if (mouseX >= zx && mouseX <= zx + zw && mouseY >= zy && mouseY <= zy + zh) {
-                            state.view.dragType = 'zone';
-                            state.view.dragIndex = i;
-                            hitZone = true;
-                            break;
-                        }
+                // Reverse loop to check top-most zones first
+                for(let i=state.zones.length-1; i>=0; i--) {
+                    const z = state.zones[i];
+                    const zs = toScreen(z.x, z.y);
+                    const zw = z.w * ppm;
+                    const zh = z.h * ppm;
+                    
+                    // Resize corner (Bottom-Right)
+                    if (mouseX > zs.x + zw - 15 && mouseX < zs.x + zw + 15 &&
+                        mouseY > zs.y + zh - 15 && mouseY < zs.y + zh + 15) {
+                        state.view.dragType = 'zone-resize';
+                        state.view.dragIndex = i;
+                        state.selectedZoneIndex = i;
+                        state.view.dragging = true;
+                        state.view.lastX = e.clientX;
+                        state.view.lastY = e.clientY;
+                        requestAnimationFrame(draw);
+                        return;
                     }
-
-                    if (!hitZone) {
-                        state.view.dragType = 'view';
+                    // Body move
+                    if (mouseX >= zs.x && mouseX <= zs.x + zw && mouseY >= zs.y && mouseY <= zs.y + zh) {
+                        state.view.dragType = 'zone';
+                        state.view.dragIndex = i;
+                        state.selectedZoneIndex = i; // Select on click
+                        state.view.dragging = true;
+                        state.view.lastX = e.clientX;
+                        state.view.lastY = e.clientY;
+                        requestAnimationFrame(draw);
+                        return;
                     }
                 }
 
+                // If clicking empty space, deselect zone
+                state.selectedZoneIndex = -1;
+
+                state.view.dragType = 'view';
                 state.view.dragging = true;
                 state.view.lastX = e.clientX;
                 state.view.lastY = e.clientY;
+                requestAnimationFrame(draw);
             });
 
             window.addEventListener('mouseup', () => {
                 state.view.dragging = false;
                 state.view.dragType = null;
-                state.view.dragIndex = -1;
             });
 
             window.addEventListener('mousemove', e => {
@@ -668,6 +902,12 @@
                     else if (state.view.dragType === 'mic') {
                         state.mic.x += dxM;
                         state.mic.y += dyM;
+                        // Cancel opt on drag
+                        if(state.isOptimized) {
+                            state.isOptimized = false;
+                            els.optStatus.style.display = 'none';
+                            resetGain();
+                        }
                     }
                     else if (state.view.dragType === 'zone') {
                         const z = state.zones[state.view.dragIndex];
@@ -690,15 +930,13 @@
                 e.preventDefault();
                 const factor = e.deltaY > 0 ? 0.9 : 1.1;
                 state.view.scale *= factor;
-                // Clamp zoom
                 state.view.scale = Math.max(5, Math.min(100, state.view.scale));
                 requestAnimationFrame(draw);
             });
 
-            // Resize
             window.addEventListener('resize', handleResize);
 
-            // --- CORE FUNCTIONS ---
+            // --- LOGIC ---
 
             function handleResize() {
                 const parent = els.canvas.parentElement;
@@ -708,13 +946,22 @@
             }
 
             function updateUI() {
-                // Texts
                 els.displays.freq.innerText = state.freq + ' Hz';
                 els.displays.dist.innerText = state.dist.toFixed(2) + ' m';
                 els.displays.count.innerText = state.count;
                 els.displays.temp.innerText = state.temp + ' °C';
+                els.displays.stgW.innerText = state.stage.w.toFixed(1) + ' m';
+                els.displays.stgD.innerText = state.stage.h.toFixed(1) + ' m';
+                els.displays.stgX.innerText = state.stage.x.toFixed(1) + ' m';
+                els.displays.stgGap.innerText = state.stageGap.toFixed(2) + ' m';
+                els.displays.latMargin.innerText = state.lateralMargin.toFixed(1) + ' m';
 
-                // Physics Calcs for HUD
+                if (state.count === 1) {
+                    els.rows.dist.classList.add('disabled');
+                } else {
+                    els.rows.dist.classList.remove('disabled');
+                }
+
                 const c = 331.3 * Math.sqrt(1 + state.temp / 273.15);
                 const lambda = c / state.freq;
                 const delay = (state.dist / c) * 1000;
@@ -722,29 +969,40 @@
                 els.hud.speed.innerText = c.toFixed(1) + ' m/s';
                 els.hud.lambda.innerText = lambda.toFixed(2) + ' m';
                 
-                // Status Check
-                const limit = (2/3) * lambda; // Aliasing
-                const optimal = lambda / 4;   // Coupling
+                const limit = (2/3) * lambda; 
+                const optimal = lambda / 4; 
 
-                if (state.dist > limit) {
+                if (state.dist > limit && state.count > 1) {
                     els.hud.status.innerText = "ALERTA: ALIASING";
                     els.hud.status.className = "hud-value status-danger";
-                } else if (Math.abs(state.dist - optimal) < optimal * 0.15) {
+                } else if (Math.abs(state.dist - optimal) < optimal * 0.15 && state.count > 1) {
                     els.hud.status.innerText = "ÓPTIMO (λ/4)";
                     els.hud.status.className = "hud-value status-ok";
                 } else {
-                    els.hud.status.innerText = "ESTÁNDAR";
+                    els.hud.status.innerText = state.count === 1 ? "FUENTE PUNTUAL" : "ESTÁNDAR";
                     els.hud.status.className = "hud-value";
                 }
 
-                if (state.mode === 'endfire') {
+                // Bounce Analysis
+                let bounceText = "Baja";
+                let bounceColor = "#22c55e";
+                if (state.stageGap < 0.5) {
+                    bounceText = "CRÍTICA (Comb)";
+                    bounceColor = "#ef4444";
+                } else if (state.stageGap < 2.0) {
+                    bounceText = "MEDIA";
+                    bounceColor = "#f59e0b";
+                }
+                els.hud.bounce.innerText = bounceText;
+                els.hud.bounce.style.color = bounceColor;
+
+                if (state.mode === 'endfire' && state.count > 1) {
                     els.hud.delayRow.style.display = 'flex';
                     els.hud.delay.innerText = delay.toFixed(2) + ' ms / caja';
                 } else {
                     els.hud.delayRow.style.display = 'none';
                 }
 
-                // Coverage Update
                 if (state.zones.length > 0) {
                      els.hud.coverage.innerText = state.coverageStats.toFixed(1) + '%';
                      if (state.coverageStats > 80) els.hud.coverage.className = "hud-value status-ok";
@@ -770,239 +1028,490 @@
                 }
             }
 
+            // Helper to reuse generation logic without drawing
+            function generateSourcesForLogic() {
+                const stageFrontY = state.stage.y;
+                const c = 331.3 * Math.sqrt(1 + state.temp / 273.15);
+                const k = (2 * Math.PI * state.freq) / c;
+                
+                const sources = [];
+                let xOffsets = [state.stage.x];
+                if (state.lrMode) {
+                    const halfW = state.stage.w / 2;
+                    const offset = halfW + state.lateralMargin;
+                    xOffsets = [state.stage.x - offset, state.stage.x + offset];
+                }
+                
+                let globalIndex = 0;
+
+                xOffsets.forEach(xOff => {
+                    const startY = stageFrontY - state.stageGap; 
+                    
+                    if (state.mode === 'broadside') {
+                        const totalW = (state.count - 1) * state.dist;
+                        const startX = xOff - totalW / 2;
+                        
+                        for(let i=0; i<state.count; i++) {
+                            sources.push({
+                                x: startX + (i * state.dist),
+                                y: startY, 
+                                phase: 0,
+                                inv: state.polarities[i]
+                            });
+                            globalIndex++;
+                        }
+                    } else {
+                        // End-Fire Grow Backwards
+                        for(let i=0; i<state.count; i++) {
+                            const yPos = startY + (i * state.dist); 
+                            const delayMeters = (state.count - 1 - i) * state.dist; 
+                            sources.push({
+                                x: xOff,
+                                y: yPos,
+                                phase: k * delayMeters,
+                                inv: state.polarities[i]
+                            });
+                            globalIndex++;
+                        }
+                    }
+                });
+                return sources;
+            }
+
             function draw() {
                 const w = els.canvas.width;
                 const h = els.canvas.height;
                 const cx = w/2 + state.view.x;
                 const cy = h/2 + state.view.y;
+                const ppm = state.view.scale;
                 
-                // Physics
                 const c = 331.3 * Math.sqrt(1 + state.temp / 273.15);
                 const k = (2 * Math.PI * state.freq) / c;
 
-                // Sources setup
-                const sources = [];
-                const ppm = state.view.scale; 
+                // --- 0. BACKGROUND & GRID ---
+                ctx.fillStyle = '#09090b';
+                ctx.fillRect(0,0,w,h);
 
-                if (state.mode === 'broadside') {
-                    const totalW = (state.count - 1) * state.dist;
-                    const startX = -totalW / 2;
-                    for(let i=0; i<state.count; i++) {
-                        sources.push({
-                            x: startX + (i * state.dist),
-                            y: 0,
-                            phase: 0,
-                            inv: state.polarities[i]
-                        });
-                    }
-                } else {
-                    const totalH = (state.count - 1) * state.dist;
-                    const startY = totalH / 2; 
-                    for(let i=0; i<state.count; i++) {
-                        const yPos = startY - (i * state.dist);
-                        const delayMeters = i * state.dist;
-                        sources.push({
-                            x: 0,
-                            y: yPos,
-                            phase: k * delayMeters,
-                            inv: state.polarities[i]
-                        });
-                    }
+                ctx.save();
+                ctx.beginPath();
+                ctx.strokeStyle = '#222';
+                ctx.lineWidth = 1;
+                const startX = Math.floor((-cx) / ppm);
+                const endX = Math.ceil((w - cx) / ppm);
+                const startY = Math.floor((-cy) / ppm);
+                const endY = Math.ceil((h - cy) / ppm);
+
+                for(let gx=startX; gx<=endX; gx++) {
+                    const sx = cx + gx * ppm;
+                    ctx.moveTo(sx, 0); ctx.lineTo(sx, h);
+                }
+                for(let gy=startY; gy<=endY; gy++) {
+                    const sy = cy + gy * ppm;
+                    ctx.moveTo(0, sy); ctx.lineTo(w, sy);
+                }
+                ctx.stroke();
+                ctx.restore();
+
+
+                // --- 1. GENERATE SOURCES ---
+                // We reuse logic but apply optimization if needed
+                let sources = generateSourcesForLogic();
+                
+                if (state.isOptimized && state.customPhases.length === sources.length) {
+                    sources.forEach((s, i) => {
+                        s.phase = state.customPhases[i];
+                    });
                 }
 
-                // --- HEATMAP & COVERAGE LOGIC ---
-                // We perform coverage calculation IN the pixel loop for performance
-                // Pre-calc zone boundaries in pixels
+                // --- 2. REFLECTIONS & SHADOWS ---
+                const stageFrontY = state.stage.y;
+                const allSources = [...sources.map(s => ({...s, ampScale: 1.0}))];
+                
+                // PHYSICS: Proportional Reflection Strength
+                // Reflection depends on Stage Surface Area.
+                // Example: 10m x 6m stage -> Stronger than 2m x 2m.
+                const stageArea = state.stage.w * state.stage.h;
+                // Coef 0.0 to 1.0. Typically stage floor/wall is hard, so fairly high, 
+                // but limited by size vs wavelength. 
+                const refCoef = Math.min(0.9, Math.max(0.3, stageArea / 30.0));
+
+                sources.forEach(s => {
+                    if (s.y < stageFrontY) {
+                        const imgY = 2 * stageFrontY - s.y;
+                        allSources.push({
+                            x: s.x,
+                            y: imgY,
+                            phase: s.phase,
+                            inv: s.inv,
+                            isReflection: true,
+                            ampScale: refCoef // Apply reflection loss
+                        });
+                    }
+                });
+
+                // --- 3. HEATMAP RENDER ---
                 const activeZones = state.zones.map(z => ({
                     left: cx + z.x * ppm,
                     right: cx + (z.x + z.w) * ppm,
                     top: cy + z.y * ppm,
                     bottom: cy + (z.y + z.h) * ppm,
                     areaPoints: 0,
-                    goodPoints: 0
+                    goodPoints: 0,
+                    // Store boundaries in screen space for pixel loop optimization
+                    sLeft: Math.floor(cx + z.x * ppm),
+                    sRight: Math.ceil(cx + (z.x + z.w) * ppm),
+                    sTop: Math.floor(cy + z.y * ppm),
+                    sBottom: Math.ceil(cy + (z.y + z.h) * ppm),
+                    zTop: z.y // Store physical top Y for absorption calc
                 }));
 
-                // Track global max magnitude found during render for normalization context
-                // Although physically max is roughly 1.0 with our normalization, let's track it
-                // To avoid two passes, we assume Max is 1.0 (Constructive Sum of all elements normalized)
-                // -3dB is approx 0.707 linear magnitude.
-                const threshold = 0.707;
+                // Define Stage Physical Boundaries for Shadowing
+                const stgLeftPx = cx + (state.stage.x - state.stage.w/2)*ppm;
+                const stgRightPx = cx + (state.stage.x + state.stage.w/2)*ppm;
+                const stgFrontPx = cy + state.stage.y * ppm;
+                // "Behind" stage is +Y in this coord system (down screen)
+                const stgBackPx = cy + (state.stage.y + state.stage.h * 1.5) * ppm; // Shadow extends a bit
 
-                ctx.fillStyle = '#000';
-                ctx.fillRect(0,0,w,h);
+                // USE DYNAMIC GAIN
+                const gain = state.viewGain; 
 
-                const imgData = ctx.getImageData(0, 0, w, h);
-                const data = imgData.data;
-
-                const screenSources = sources.map(s => ({
+                const screenSources = allSources.map(s => ({
                     sx: s.x * ppm,
                     sy: s.y * ppm,
                     ph: s.phase,
-                    inv: s.inv
+                    inv: s.inv,
+                    ampScale: s.ampScale
                 }));
 
-                const gain = 1.0 / (state.count * 0.85); 
+                const imgData = ctx.getImageData(0, 0, w, h);
+                const data = imgData.data;
 
                 for(let y=0; y<h; y+=2) { 
                     const wy = y - cy;
                     const rowOff = y * w * 4;
 
+                    // Optimization: Check if row is potentially inside stage shadow
+                    const inShadowY = (y > stgFrontPx);
+
                     for(let x=0; x<w; x++) {
                         const wx = x - cx;
-
                         let rSum = 0;
                         let iSum = 0;
-
+                        
                         for(let i=0; i<screenSources.length; i++) {
                             const s = screenSources[i];
                             const dx = wx - s.sx;
                             const dy = wy - s.sy;
-                            
-                            const distPix = Math.sqrt(dx*dx + dy*dy);
-                            const distMeters = distPix / ppm;
+                            const distMeters = Math.sqrt(dx*dx + dy*dy) / ppm;
 
-                            const amp = 1.0 / (1.0 + distMeters); 
+                            // Distance attenuation 1/(1+d)
+                            const amp = (1.0 / (1.0 + distMeters)) * s.ampScale; 
                             const phi = (k * distMeters) - s.ph + (s.inv ? Math.PI : 0);
 
                             rSum += Math.cos(phi) * amp;
                             iSum += Math.sin(phi) * amp;
                         }
 
-                        const mag = Math.sqrt(rSum*rSum + iSum*iSum) * gain;
+                        let mag = Math.sqrt(rSum*rSum + iSum*iSum) * gain;
                         
-                        // Coverage Check
-                        for (let z of activeZones) {
-                            if (x >= z.left && x <= z.right && y >= z.top && y <= z.bottom) {
-                                z.areaPoints++;
-                                if (mag >= threshold) z.goodPoints++;
+                        // PHYSICS: Acoustic Shadow (Occlusion)
+                        // If pixel is "behind" the array (inside stage or deeper), attenuate high freq energy
+                        // Simulates lack of omnidirectionality or physical blocking
+                        if (inShadowY) {
+                            if (x > stgLeftPx && x < stgRightPx) {
+                                // Gradual shadow
+                                mag *= 0.25; 
                             }
                         }
 
-                        // Color Mapping
-                        let r=0, g=0, b=0;
-                        
-                        if (mag < 0.25) { b = (mag / 0.25) * 128; } 
-                        else if (mag < 0.5) {
-                            const t = (mag - 0.25) / 0.25;
-                            g = t * 255;
-                            b = 128 + (t * 127);
-                        } else if (mag < 0.75) {
-                            const t = (mag - 0.5) / 0.25;
-                            r = t * 255;
-                            g = 255;
-                            b = 255;
-                        } else {
-                            const t = Math.min(1, (mag - 0.75) / 0.25);
-                            r = 255;
-                            g = 255 * (1 - t);
-                            b = 255 * (1 - t);
+                        // Check zones coverage & APPLY ABSORPTION PHYSICS
+                        for (let z of activeZones) {
+                            if (x >= z.sLeft && x <= z.sRight && y >= z.sTop && y <= z.sBottom) {
+                                z.areaPoints++;
+                                // Physics: Audience Absorption
+                                const depthMeters = (wy/ppm) - z.zTop;
+                                const absorptionFactor = Math.max(0.4, 1.0 - (depthMeters * 0.08));
+                                mag *= absorptionFactor;
+                                if (mag >= 0.5) z.goodPoints++; // -6dB = 0.5 linear
+                            }
                         }
 
-                        // Grid
-                        const gridX = Math.abs(wx / ppm);
-                        const gridY = Math.abs(wy / ppm);
-                        if (Math.abs(gridX - Math.round(gridX)) < 0.02 || Math.abs(gridY - Math.round(gridY)) < 0.02) {
-                            r += 30; g += 30; b += 30;
+                        // Updated Color Map (Red/White High, Yellow Mid, Green/Blue Low)
+                        let r=0, g=0, b=0;
+                        
+                        if (mag > 1.0) {
+                             const t = Math.min(1, (mag - 1.0) * 2); 
+                             r=255; g=255*t; b=255*t;
+                        } else if (mag > 0.75) {
+                             r = 255;
+                             g = (mag - 0.75) * 4 * 100; // Slight orange tint
+                             b = 0;
+                        } else if (mag > 0.5) {
+                             const t = (mag - 0.5) * 4; // 0 to 1
+                             r = t * 255;
+                             g = 255;
+                             b = 0;
+                        } else if (mag > 0.25) {
+                             const t = (mag - 0.25) * 4;
+                             r = 0;
+                             g = t * 255;
+                             b = (1-t) * 255;
+                        } else {
+                             const t = mag * 4; 
+                             r = 0; g = 0; b = t * 255;
                         }
 
                         const idx = rowOff + (x * 4);
-                        data[idx] = r;
-                        data[idx+1] = g;
-                        data[idx+2] = b;
-                        data[idx+3] = 255;
+                        if (mag < 0.05) {
+                             data[idx] = 0; data[idx+1] = 0; data[idx+2] = 0; data[idx+3] = 0;
+                        } else {
+                             data[idx] = r; data[idx+1] = g; data[idx+2] = b; data[idx+3] = 230; 
+                        }
                     }
                 }
-                
                 ctx.putImageData(imgData, 0, 0);
 
-                // Update Stats
-                let totalPoints = 0;
-                let totalGood = 0;
-                activeZones.forEach(z => {
-                    totalPoints += z.areaPoints;
-                    totalGood += z.goodPoints;
-                });
-                
-                const newStats = totalPoints > 0 ? (totalGood / totalPoints) * 100 : 0;
-                if (Math.abs(newStats - state.coverageStats) > 0.1) {
-                    state.coverageStats = newStats;
-                    updateUI(); // Only update DOM if changed significantly
-                }
-
-                // --- VIRTUAL MIC CALCULATION ---
-                let micR = 0, micI = 0;
-                let minTime = Infinity, maxTime = -Infinity;
-
-                sources.forEach(s => {
-                    const dx = state.mic.x - s.x;
-                    const dy = state.mic.y - s.y;
-                    const d = Math.sqrt(dx*dx + dy*dy);
-                    const amp = 1.0 / (1.0 + d);
-                    const phi = (k * d) - s.phase + (s.inv ? Math.PI : 0);
-                    
-                    micR += Math.cos(phi) * amp;
-                    micI += Math.sin(phi) * amp;
-
-                    // Time of Arrival
-                    const t = (d / c) * 1000; // ms
-                    if(t < minTime) minTime = t;
-                    if(t > maxTime) maxTime = t;
-                });
-
-                const micMag = Math.sqrt(micR*micR + micI*micI) * gain;
-                const micPhase = Math.atan2(micI, micR) * (180/Math.PI);
-                const deltaT = maxTime - minTime;
-                
-                // --- VECTOR OVERLAYS ---
+                // --- 4. OVERLAYS ---
                 ctx.save();
                 ctx.translate(cx, cy);
-                ctx.scale(ppm, ppm); // Draw in meters
+                ctx.scale(ppm, ppm);
 
-                // 1. Draw Audience Zones
-                state.zones.forEach((z, i) => {
-                    ctx.fillStyle = 'rgba(34, 197, 94, 0.2)'; // Semi-transparent green
-                    ctx.strokeStyle = '#22c55e';
-                    ctx.lineWidth = 0.03;
+                // --- DIRECTIVITY "V" LINES ---
+                // Center of array for visualization
+                let centerX = 0, centerY = 0;
+                if (sources.length > 0) {
+                    sources.forEach(s => { centerX += s.x; centerY += s.y; });
+                    centerX /= sources.length;
+                    centerY /= sources.length;
+                }
+                
+                // Determine Steering Angle (Peak)
+                const getFarFieldMag = (theta) => {
+                    let r = 0, i = 0;
+                    const ux = Math.cos(theta);
+                    const uy = Math.sin(theta);
+                    for (let s of allSources) { 
+                         // Treat reflection as part of pattern but weaker
+                         const proj = s.x * ux + s.y * uy;
+                         const ph = k * proj - s.phase + (s.inv ? Math.PI : 0);
+                         const amp = s.ampScale;
+                         r += Math.cos(ph) * amp;
+                         i += Math.sin(ph) * amp;
+                    }
+                    return Math.sqrt(r*r + i*i);
+                };
+
+                // Find global peak
+                let maxMag = 0;
+                let peakAngle = -Math.PI/2;
+                const step = Math.PI / 180; // 1 deg
+                
+                for(let a = 0; a < 2*Math.PI; a += step) {
+                     const m = getFarFieldMag(a);
+                     if(m > maxMag) {
+                         maxMag = m;
+                         peakAngle = a;
+                     }
+                }
+                
+                // Find -6dB points (0.5 * maxMag) around peak
+                let foundLeft = null;
+                let foundRight = null;
+                
+                // Scan Counter-Clockwise from peak
+                for (let a = peakAngle; a > peakAngle - Math.PI; a -= step/2) {
+                    if (getFarFieldMag(a) < maxMag * 0.5) {
+                        foundLeft = a;
+                        break;
+                    }
+                }
+                // Scan Clockwise from peak
+                for (let a = peakAngle; a < peakAngle + Math.PI; a += step/2) {
+                    if (getFarFieldMag(a) < maxMag * 0.5) {
+                        foundRight = a;
+                        break;
+                    }
+                }
+
+                if (foundLeft !== null && foundRight !== null) {
+                    ctx.save();
+                    ctx.strokeStyle = '#facc15'; // Yellow 400
+                    ctx.lineWidth = 0.05;
+                    ctx.setLineDash([0.2, 0.2]);
                     
-                    // Body
+                    // Extended V Lines to show dispersion through audience
+                    const len = 40; 
+                    ctx.beginPath();
+                    ctx.moveTo(centerX, centerY);
+                    ctx.lineTo(centerX + Math.cos(foundLeft) * len, centerY + Math.sin(foundLeft) * len);
+                    ctx.stroke();
+
+                    ctx.beginPath();
+                    ctx.moveTo(centerX, centerY);
+                    ctx.lineTo(centerX + Math.cos(foundRight) * len, centerY + Math.sin(foundRight) * len);
+                    ctx.stroke();
+                    
+                    // Draw Axis
+                    ctx.strokeStyle = 'rgba(250, 204, 21, 0.3)';
+                    ctx.setLineDash([0.1, 0.3]);
+                    ctx.beginPath();
+                    ctx.moveTo(centerX, centerY);
+                    ctx.lineTo(centerX + Math.cos(peakAngle) * len, centerY + Math.sin(peakAngle) * len);
+                    ctx.stroke();
+
+                    ctx.restore();
+                }
+
+                // A. STAGE
+                const stgLeft = state.stage.x - state.stage.w/2;
+                ctx.fillStyle = '#3f3f46';
+                ctx.strokeStyle = '#71717a';
+                ctx.lineWidth = 0.05;
+                ctx.fillRect(stgLeft, state.stage.y, state.stage.w, state.stage.h);
+                ctx.strokeRect(stgLeft, state.stage.y, state.stage.w, state.stage.h);
+                
+                // Shadow Area visual hint (Subtle)
+                ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                ctx.fillRect(stgLeft, state.stage.y, state.stage.w, state.stage.h);
+                
+                ctx.fillStyle = '#d4d4d8';
+                ctx.font = '0.4px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(`ESCENARIO (${state.stage.w.toFixed(1)}m)`, state.stage.x, state.stage.y + state.stage.h/2);
+                
+                const arrY = state.stage.y - state.stageGap;
+                ctx.strokeStyle = '#fbbf24'; 
+                ctx.setLineDash([0.1, 0.1]);
+                ctx.beginPath();
+                ctx.moveTo(state.stage.x, arrY);
+                ctx.lineTo(state.stage.x, state.stage.y);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.fillStyle = '#fbbf24';
+                ctx.font = '0.3px monospace';
+                ctx.textAlign = 'left';
+                ctx.fillText(`d=${state.stageGap.toFixed(2)}m`, state.stage.x + 0.1, (arrY + state.stage.y)/2);
+
+                // B. ZONES
+                state.zones.forEach((z, i) => {
+                    const isSelected = (state.selectedZoneIndex === i);
+                    
+                    ctx.fillStyle = isSelected ? 'rgba(34, 197, 94, 0.3)' : 'rgba(34, 197, 94, 0.1)'; 
+                    ctx.strokeStyle = isSelected ? '#4ade80' : '#22c55e';
+                    ctx.lineWidth = isSelected ? 0.08 : 0.03;
+                    
                     ctx.fillRect(z.x, z.y, z.w, z.h);
                     ctx.strokeRect(z.x, z.y, z.w, z.h);
-
-                    // Resize Handle
-                    const hSize = 0.3; // meters
-                    ctx.fillStyle = 'rgba(34, 197, 94, 0.8)';
-                    ctx.fillRect(z.x + z.w - hSize, z.y + z.h - hSize, hSize, hSize);
+                    ctx.fillStyle = '#22c55e';
+                    ctx.fillRect(z.x + z.w - 0.3, z.y + z.h - 0.3, 0.3, 0.3);
                     
-                    // Label
                     ctx.fillStyle = '#fff';
-                    ctx.font = '0.3px sans-serif'; // Scaled font
-                    ctx.fillText(`Zona ${i+1}`, z.x + 0.1, z.y - 0.1);
+                    ctx.font = 'bold 0.4px sans-serif';
+                    ctx.textAlign = 'left';
+                    ctx.fillText(`Público ${i+1}`, z.x, z.y - 0.2);
+
+                    // ZONE ANALYSIS HUD
+                    if (isSelected) {
+                        // Calculate SPL Front and Rear Center
+                        const calcSplAt = (px, py) => {
+                             let r=0, i_comp=0;
+                             allSources.forEach(s => {
+                                 const dx = px - s.x, dy = py - s.y;
+                                 const d = Math.sqrt(dx*dx + dy*dy);
+                                 const amp = (1.0/(1.0+d)) * s.ampScale;
+                                 const phi = (k*d) - s.phase + (s.inv?Math.PI:0);
+                                 r += Math.cos(phi)*amp;
+                                 i_comp += Math.sin(phi)*amp;
+                             });
+                             return Math.sqrt(r*r + i_comp*i_comp) * gain;
+                        };
+
+                        const frontMag = calcSplAt(z.x + z.w/2, z.y);
+                        // Apply absorption factor to rear measurement
+                        const depthMeters = z.h;
+                        const absorptionFactor = Math.max(0.4, 1.0 - (depthMeters * 0.08));
+                        const rearMag = calcSplAt(z.x + z.w/2, z.y + z.h) * absorptionFactor;
+
+                        const frontDB = 20 * Math.log10(frontMag + 0.0001);
+                        const rearDB = 20 * Math.log10(rearMag + 0.0001);
+                        const loss = Math.abs(frontDB - rearDB);
+
+                        // Draw Floating HUD near zone
+                        ctx.save();
+                        // Reset transform for pixel-perfect text in HUD
+                        ctx.setTransform(1, 0, 0, 1, 0, 0); 
+                        const hudX = cx + (z.x + z.w + 0.5) * ppm;
+                        const hudY = cy + z.y * ppm;
+                        
+                        ctx.fillStyle = 'rgba(20, 20, 25, 0.95)';
+                        ctx.strokeStyle = '#4ade80';
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.roundRect(hudX, hudY, 140, 60, 4);
+                        ctx.fill();
+                        ctx.stroke();
+
+                        ctx.font = '11px sans-serif';
+                        ctx.fillStyle = '#e4e4e7';
+                        ctx.textAlign = 'left';
+                        ctx.fillText(`PÉRDIDA: -${loss.toFixed(1)} dB`, hudX + 10, hudY + 20);
+                        
+                        // Calculate effective dispersion width at rear
+                        // Simple indicator text based on directivity lines
+                        const angleDeg = (foundRight - foundLeft) * (180/Math.PI);
+                        
+                        ctx.fillText(`DISPERSIÓN: ${angleDeg.toFixed(0)}°`, hudX + 10, hudY + 40);
+                        ctx.font = '9px sans-serif';
+                        ctx.fillStyle = '#a1a1aa';
+                        ctx.fillText(`(Absorción Simulada)`, hudX + 80, hudY + 50);
+
+                        ctx.restore();
+                    }
                 });
 
-                // 2. Trajectory Lines
-                ctx.globalAlpha = 0.3;
-                ctx.strokeStyle = '#fff';
-                ctx.lineWidth = 0.02;
-                sources.forEach(s => {
-                    ctx.beginPath();
-                    ctx.moveTo(s.x, s.y);
-                    ctx.lineTo(state.mic.x, state.mic.y);
-                    ctx.stroke();
-                });
-                ctx.globalAlpha = 1.0;
-
-                // 3. Sources
+                // C. SOURCES
                 sources.forEach((s, i) => {
-                    const size = 0.4; // box size meters
+                    const size = 0.4;
                     ctx.fillStyle = s.inv ? '#450a0a' : '#18181b';
                     ctx.strokeStyle = s.inv ? '#ef4444' : '#a1a1aa';
                     ctx.lineWidth = 0.05;
-                    
                     ctx.fillRect(s.x - size/2, s.y - size/2, size, size);
                     ctx.strokeRect(s.x - size/2, s.y - size/2, size, size);
                 });
 
-                // 4. Virtual Microphone
+                // D. MIC & EFFICIENCY
+                let micR=0, micI=0;
+                let micSumAmp = 0; // For Max Possible (Scalar Sum)
+                let minTime=Infinity, maxTime=-Infinity;
+                allSources.forEach(s => {
+                    const dx = state.mic.x - s.x;
+                    const dy = state.mic.y - s.y;
+                    const d = Math.sqrt(dx*dx + dy*dy);
+                    const amp = (1.0/(1.0+d)) * s.ampScale;
+                    
+                    micSumAmp += amp; // Perfect sum
+
+                    const phi = (k*d) - s.phase + (s.inv?Math.PI:0);
+                    micR += Math.cos(phi)*amp;
+                    micI += Math.sin(phi)*amp;
+                    if (!s.isReflection) {
+                        const t = (d/c)*1000;
+                        if(t<minTime) minTime=t;
+                        if(t>maxTime) maxTime=t;
+                    }
+                });
+                
+                const micVectorMag = Math.sqrt(micR*micR + micI*micI);
+                const micMag = micVectorMag * gain; // Visual mag
+                
+                // Efficiency Calculation
+                // Efficiency = Actual Vector Sum / Scalar Sum of Amplitudes
+                // Scalar Sum represents if all arrived with 0 phase diff.
+                const efficiency = micSumAmp > 0 ? (micVectorMag / micSumAmp) * 100 : 0;
+
+                const micPhase = Math.atan2(micI, micR) * (180/Math.PI);
+                const deltaT = maxTime - minTime;
+
                 ctx.translate(state.mic.x, state.mic.y);
                 const micColor = micMag > 0.5 ? '#22c55e' : (micMag < 0.2 ? '#ef4444' : '#fbbf24');
                 ctx.strokeStyle = micColor;
@@ -1010,55 +1519,53 @@
                 ctx.beginPath();
                 ctx.arc(0, 0, 0.2, 0, Math.PI * 2);
                 ctx.stroke();
-                // Crosshair
                 ctx.beginPath(); ctx.moveTo(-0.15, 0); ctx.lineTo(0.15, 0); ctx.stroke();
                 ctx.beginPath(); ctx.moveTo(0, -0.15); ctx.lineTo(0, 0.15); ctx.stroke();
-
                 ctx.restore();
-                
-                // --- HUD & LABELS (Screen Space) ---
-                ctx.save();
-                ctx.font = 'bold 10px sans-serif';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                
-                // Source Labels
-                ctx.fillStyle = '#fff';
-                sources.forEach((s, i) => {
-                    const sx = cx + s.x * ppm;
-                    const sy = cy + s.y * ppm;
-                    ctx.fillText(s.inv ? 'Ø' : (i+1), sx, sy);
-                });
 
-                // Mic Info Bubble
+                // 5. STATS
+                let totalPoints = 0, totalGood = 0;
+                activeZones.forEach(z => { totalPoints+=z.areaPoints; totalGood+=z.goodPoints; });
+                const newStats = totalPoints > 0 ? (totalGood / totalPoints) * 100 : 0;
+                if (Math.abs(newStats - state.coverageStats) > 0.1) {
+                    state.coverageStats = newStats;
+                    updateUI(); 
+                }
+
+                // Mic Overlay Bubble
                 const mx = cx + state.mic.x * ppm;
                 const my = cy + state.mic.y * ppm;
-                
-                // Bubble Background
-                const boxW = 110, boxH = 50;
-                const bx = mx + 20, by = my - 25;
-                
+                ctx.save();
                 ctx.fillStyle = 'rgba(0,0,0,0.85)';
                 ctx.strokeStyle = '#444';
                 ctx.lineWidth = 1;
                 ctx.beginPath();
-                ctx.roundRect(bx, by, boxW, boxH, 6);
+                ctx.roundRect(mx + 20, my - 35, 140, 70, 6);
                 ctx.fill();
                 ctx.stroke();
-
-                // Bubble Text
+                ctx.font = 'bold 10px sans-serif';
                 ctx.textAlign = 'left';
+                ctx.textBaseline = 'middle';
                 ctx.fillStyle = '#a1a1aa';
-                ctx.fillText(`Presión: ${(micMag*100).toFixed(0)}%`, bx + 10, by + 15);
+                ctx.fillText(`Presión: ${(micMag*100).toFixed(0)}%`, mx + 30, my - 20);
+                
+                // Efficiency Color
+                let effColor = '#ef4444';
+                if(efficiency > 90) effColor = '#22c55e';
+                else if(efficiency > 70) effColor = '#fbbf24';
+                
+                ctx.fillStyle = effColor;
+                ctx.fillText(`Eficiencia Suma: ${efficiency.toFixed(1)}%`, mx + 30, my - 8);
+                
                 ctx.fillStyle = deltaT < 1.0 ? '#22c55e' : '#f59e0b';
-                ctx.fillText(`Δt: ${deltaT.toFixed(2)} ms`, bx + 10, by + 28);
+                ctx.fillText(`Δt: ${deltaT.toFixed(2)} ms`, mx + 30, my + 6);
                 ctx.fillStyle = '#e4e4e7';
-                ctx.fillText(`Fase: ${micPhase.toFixed(0)}°`, bx + 10, by + 41);
-
+                ctx.fillText(`Fase: ${micPhase.toFixed(0)}°`, mx + 30, my + 18);
                 ctx.restore();
             }
 
             // Init
+            resetGain();
             handleResize();
             updateUI();
         };
