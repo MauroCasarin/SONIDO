@@ -124,9 +124,9 @@
             transition: opacity 0.3s ease, transform 0.3s ease;
         }
 
-        /* CLASE PARA AUTO-OCULTAR */
+        /* CLASE PARA AUTO-OCULTAR AL 10% */
         .controls-hidden {
-            opacity: 0.1 !important; /* 10% Opacity requested */
+            opacity: 0.1 !important;
             pointer-events: none;
             filter: grayscale(100%);
         }
@@ -149,31 +149,39 @@
             touch-action: none;
         }
 
-        /* Fullscreen Toggle Button */
-        #btn-fullscreen {
+        /* Floating Actions in Viewport */
+        .viewport-actions {
             position: absolute;
             top: 10px;
             right: 10px;
-            background: rgba(0,0,0,0.4);
-            border: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            gap: 8px;
+            z-index: 100;
+        }
+
+        .vp-btn {
+            background: rgba(0,0,0,0.6);
+            border: 1px solid rgba(255,255,255,0.2);
             color: #fff;
-            width: 28px;
-            height: 28px;
+            width: 32px;
+            height: 32px;
             border-radius: 4px;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            z-index: 100;
             font-size: 14px;
-            backdrop-filter: blur(2px);
+            backdrop-filter: blur(4px);
+            transition: all 0.2s;
         }
+        .vp-btn:hover { background: rgba(59, 130, 246, 0.4); border-color: var(--accent); }
+        .vp-btn.paused { color: var(--warning); border-color: var(--warning); }
 
         /* CUSTOM TOOLTIP (ANIMATED & DELAYED) */
         .custom-tooltip {
             position: fixed;
-            background: rgba(0, 0, 0, 0.95);
-            border: 1px solid var(--accent);
+            background: rgba(0, 0, 0, 0.7); /* Semitransparente */
+            border: 1px solid rgba(59, 130, 246, 0.4);
             color: #fff;
             padding: 8px 12px;
             border-radius: 6px;
@@ -184,11 +192,9 @@
             box-shadow: 0 8px 20px rgba(0,0,0,0.6);
             text-align: left;
             line-height: 1.4;
-            
-            /* Animation States */
             opacity: 0;
             transform: translateY(10px);
-            transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: opacity 0.4s ease, transform 0.4s ease;
         }
         
         .custom-tooltip.visible {
@@ -337,7 +343,7 @@
                 z-index: 20; background: rgba(8, 8, 10, 0.85); padding-bottom: 20px;
             }
             .hud-panel { top: 5px; left: 5px; width: 110px; padding: 6px; }
-            #btn-fullscreen { display: none; }
+            .viewport-actions { top: 40px; right: 10px; } /* Ajuste para movil */
         }
     </style>
 <link rel="stylesheet" href="/index.css">
@@ -381,7 +387,11 @@
     <div id="main-layout">
         
         <div id="viewport">
-            <button id="btn-fullscreen" onclick="app.toggleFullscreen()" title="Pantalla Completa">⛶</button>
+            <div class="viewport-actions">
+                <button id="btn-play" class="vp-btn" onclick="app.togglePlay()" title="Play/Pausa">❚❚</button>
+                <button id="btn-fullscreen" class="vp-btn" onclick="app.toggleFullscreen()" title="Pantalla Completa">⛶</button>
+            </div>
+            
             <canvas id="simCanvas" width="800" height="600" data-tooltip="Visor de Predicción: Colores cálidos = mayor presión sonora. Arrastra el micrófono para medir."></canvas>
             
             <div id="hud-panel" class="hud-panel">
@@ -491,7 +501,8 @@
                 stageGap: 1.0, lateralMargin: 0.5, 
                 polarities: new Array(16).fill(false),
                 isOptimized: false, customPhases: [],   
-                viewGain: 1.0, isFullscreen: false, isGuideOpen: false,
+                viewGain: 1.0, isFullscreen: false, isGuideOpen: false, isPlaying: true,
+                time: 0,
                 view: { scale: 30, x: 0, y: 150, dragging: false, lastX: 0, lastY: 0, dragType: null, dragIndex: -1 },
                 mic: { x: 0, y: -5 },
                 stage: { w: 10, h: 6, x: 0, y: 2 },
@@ -522,7 +533,7 @@
                 },
                 btns: {
                     broad: document.getElementById('btn-broad'), end: document.getElementById('btn-end'),
-                    lr: document.getElementById('btn-lr')
+                    lr: document.getElementById('btn-lr'), play: document.getElementById('btn-play')
                 },
                 polContainer: document.getElementById('polarity-container'),
                 optStatus: document.getElementById('opt-status'),
@@ -554,6 +565,11 @@
                     state.isFullscreen = !state.isFullscreen;
                     handleResize(); 
                 },
+                togglePlay: () => {
+                    state.isPlaying = !state.isPlaying;
+                    els.btns.play.innerHTML = state.isPlaying ? '❚❚' : '▶';
+                    els.btns.play.className = state.isPlaying ? 'vp-btn' : 'vp-btn paused';
+                },
                 toggleGuide: () => {
                     state.isGuideOpen = !state.isGuideOpen;
                     els.modalGuide.classList.toggle('open', state.isGuideOpen);
@@ -580,13 +596,6 @@
                     window.app.setMode('endfire'); state.polarities.fill(false);
                     state.polarities[0] = true; window.app.applyPreset(state.freq);
                 },
-                optimizeSpacing: () => {
-                     const v = SPEED_OF_SOUND;
-                     let optimal = (v / state.freq) / 4;
-                     optimal = Math.min(4.0, Math.max(0.2, optimal));
-                     state.dist = optimal; els.inputs.dist.value = optimal;
-                     updateUI(); requestAnimationFrame(draw);
-                },
                 optimizeStageDist: () => {
                     state.stageGap = 0.1; els.inputs.stgGap.value = 0.1;
                     updateUI(); requestAnimationFrame(draw);
@@ -596,10 +605,8 @@
                     const k = (2 * Math.PI * state.freq) / v; 
                     const tempSources = generateSourcesForLogic();
                     
-                    // Auto-Focus: Calculate delay to align phases at mic
                     state.customPhases = tempSources.map(s => {
                         const d = Math.hypot(state.mic.x - s.x, state.mic.y - s.y);
-                        // Phase required to arrive at 0 relative phase
                         return -k * d; 
                     });
                     
@@ -632,46 +639,30 @@
                 return { x: clientX - rect.left, y: clientY - rect.top, clientX, clientY };
             }
 
-            // --- SMART TOOLTIPS (DELAYED + ANIMATED) ---
+            // --- SMART TOOLTIPS ---
             let tooltipTimer = null;
-            const TOOLTIP_DELAY = 2000; // 2 seconds
+            const TOOLTIP_DELAY = 2000; 
 
             function showTooltip(target) {
                 const text = target.getAttribute('data-tooltip');
                 if (!text) return;
-                
                 els.tooltip.innerHTML = text;
                 const rect = target.getBoundingClientRect();
-                
-                // Position logic
-                let top = rect.top - 40;
-                let left = rect.left + 10;
-                
-                // Boundaries check
+                let top = rect.top - 40; let left = rect.left + 10;
                 if (left + 200 > window.innerWidth) left = window.innerWidth - 210;
                 if (top < 10) top = rect.bottom + 10;
-
-                els.tooltip.style.left = left + 'px';
-                els.tooltip.style.top = top + 'px';
-                
+                els.tooltip.style.left = left + 'px'; els.tooltip.style.top = top + 'px';
                 els.tooltip.style.display = 'block';
-                // Trigger animation in next frame
-                requestAnimationFrame(() => {
-                    els.tooltip.classList.add('visible');
-                });
+                requestAnimationFrame(() => els.tooltip.classList.add('visible'));
             }
 
             function hideTooltip() {
                 els.tooltip.classList.remove('visible');
-                // Wait for animation before display:none
                 setTimeout(() => {
-                    if (!els.tooltip.classList.contains('visible')) {
-                         els.tooltip.style.display = 'none';
-                    }
-                }, 300);
+                    if (!els.tooltip.classList.contains('visible')) els.tooltip.style.display = 'none';
+                }, 400);
             }
 
-            // Desktop Events
             document.addEventListener('mouseover', e => {
                 const target = e.target.closest('[data-tooltip]');
                 if (target) {
@@ -681,39 +672,38 @@
             });
             document.addEventListener('mouseout', e => {
                 const target = e.target.closest('[data-tooltip]');
-                if (target) {
-                    clearTimeout(tooltipTimer);
-                    hideTooltip();
-                }
+                if (target) { clearTimeout(tooltipTimer); hideTooltip(); }
             });
-            // Mobile Events
             document.addEventListener('touchstart', e => {
                 const target = e.target.closest('[data-tooltip]');
                 if (target) {
                     clearTimeout(tooltipTimer);
                     tooltipTimer = setTimeout(() => {
-                        // Mobile centering
                         const text = target.getAttribute('data-tooltip');
                         if(text) {
-                            els.tooltip.innerHTML = text;
-                            els.tooltip.style.display = 'block';
-                            els.tooltip.style.left = '50%';
-                            els.tooltip.style.top = '20%';
+                            els.tooltip.innerHTML = text; els.tooltip.style.display = 'block';
+                            els.tooltip.style.left = '50%'; els.tooltip.style.top = '20%';
                             els.tooltip.style.transform = 'translate(-50%, 0)';
                             requestAnimationFrame(() => els.tooltip.classList.add('visible'));
                         }
                     }, TOOLTIP_DELAY);
                 }
             }, {passive: true});
-            document.addEventListener('touchend', () => {
-                clearTimeout(tooltipTimer);
-                hideTooltip();
-            });
+            document.addEventListener('touchend', () => { clearTimeout(tooltipTimer); hideTooltip(); });
 
+            // --- INPUT HANDLERS ---
+            function setControlsTransparent() { els.controls.classList.add('controls-hidden'); }
+            function removeControlsTransparent() { els.controls.classList.remove('controls-hidden'); }
 
             Object.keys(els.inputs).forEach(key => {
                 if(!els.inputs[key]) return;
-                els.inputs[key].addEventListener('input', (e) => {
+                const input = els.inputs[key];
+                input.addEventListener('mousedown', setControlsTransparent);
+                input.addEventListener('touchstart', setControlsTransparent, {passive: true});
+                input.addEventListener('mouseup', removeControlsTransparent);
+                input.addEventListener('touchend', removeControlsTransparent);
+                input.addEventListener('change', removeControlsTransparent);
+                input.addEventListener('input', (e) => {
                     const val = parseFloat(e.target.value);
                     if (key === 'stgW') state.stage.w = val;
                     else if (key === 'stgD') state.stage.h = val;
@@ -722,9 +712,7 @@
                     else state[key] = val;
                     
                     if (['freq', 'dist', 'stgGap', 'latMargin', 'count'].includes(key)) {
-                         if(state.isOptimized) {
-                             state.isOptimized = false; els.optStatus.style.display = 'none'; resetGain();
-                         }
+                         if(state.isOptimized) { state.isOptimized = false; els.optStatus.style.display = 'none'; resetGain(); }
                          if(key === 'count') resetGain();
                     }
                     updateUI(); requestAnimationFrame(draw);
@@ -733,38 +721,30 @@
 
             function handleStart(e) {
                 if(e.type === 'touchstart') e.preventDefault();
-                // AUTO-HIDE LOGIC
-                els.controls.classList.add('controls-hidden');
-                els.hudPanel.style.opacity = '0.2';
-
+                setControlsTransparent(); els.hudPanel.style.opacity = '0.2';
                 const pos = getPointerPos(e);
-                const mouseX = pos.x; const mouseY = pos.y;
                 const cx = els.canvas.width / 2 + state.view.x;
                 const cy = els.canvas.height / 2 + state.view.y;
                 const ppm = state.view.scale;
                 const toScreen = (mx, my) => ({ x: cx + mx * ppm, y: cy + my * ppm });
-
                 const ms = toScreen(state.mic.x, state.mic.y);
-                if (Math.hypot(mouseX - ms.x, mouseY - ms.y) < 30) {
+                
+                if (Math.hypot(pos.x - ms.x, pos.y - ms.y) < 30) {
                     state.view.dragType = 'mic'; state.view.dragging = true;
                     state.view.lastX = pos.clientX; state.view.lastY = pos.clientY;
                     return;
                 }
-
                 for(let i=state.zones.length-1; i>=0; i--) {
-                    const z = state.zones[i];
-                    const zs = toScreen(z.x, z.y);
+                    const z = state.zones[i]; const zs = toScreen(z.x, z.y);
                     const zw = z.w * ppm; const zh = z.h * ppm;
-                    if (mouseX > zs.x + zw - 25 && mouseX < zs.x + zw + 25 && mouseY > zs.y + zh - 25 && mouseY < zs.y + zh + 25) {
-                        state.view.dragType = 'zone-resize'; state.view.dragIndex = i;
-                        state.selectedZoneIndex = i; state.view.dragging = true;
-                        state.view.lastX = pos.clientX; state.view.lastY = pos.clientY;
+                    if (pos.x > zs.x + zw - 25 && pos.x < zs.x + zw + 25 && pos.y > zs.y + zh - 25 && pos.y < zs.y + zh + 25) {
+                        state.view.dragType = 'zone-resize'; state.view.dragIndex = i; state.selectedZoneIndex = i;
+                        state.view.dragging = true; state.view.lastX = pos.clientX; state.view.lastY = pos.clientY;
                         requestAnimationFrame(draw); return;
                     }
-                    if (mouseX >= zs.x && mouseX <= zs.x + zw && mouseY >= zs.y && mouseY <= zs.y + zh) {
-                        state.view.dragType = 'zone'; state.view.dragIndex = i;
-                        state.selectedZoneIndex = i; state.view.dragging = true;
-                        state.view.lastX = pos.clientX; state.view.lastY = pos.clientY;
+                    if (pos.x >= zs.x && pos.x <= zs.x + zw && pos.y >= zs.y && pos.y <= zs.y + zh) {
+                        state.view.dragType = 'zone'; state.view.dragIndex = i; state.selectedZoneIndex = i;
+                        state.view.dragging = true; state.view.lastX = pos.clientX; state.view.lastY = pos.clientY;
                         requestAnimationFrame(draw); return;
                     }
                 }
@@ -782,14 +762,11 @@
                     const dxM = dxPix / state.view.scale;
                     const dyM = dyPix / state.view.scale;
 
-                    if (state.view.dragType === 'view') {
-                        state.view.x += dxPix; state.view.y += dyPix;
-                    } 
+                    if (state.view.dragType === 'view') { state.view.x += dxPix; state.view.y += dyPix; } 
                     else if (state.view.dragType === 'mic') {
                         state.mic.x += dxM; state.mic.y += dyM;
                         if(state.isOptimized) {
-                             const v = SPEED_OF_SOUND;
-                             const k = (2 * Math.PI * state.freq) / v; 
+                             const v = SPEED_OF_SOUND; const k = (2 * Math.PI * state.freq) / v; 
                              const tempSources = generateSourcesForLogic();
                              state.customPhases = tempSources.map(s => {
                                 const d = Math.hypot(state.mic.x - s.x, state.mic.y - s.y);
@@ -797,13 +774,8 @@
                              });
                         }
                     }
-                    else if (state.view.dragType === 'zone') {
-                        const z = state.zones[state.view.dragIndex]; z.x += dxM; z.y += dyM;
-                    }
-                    else if (state.view.dragType === 'zone-resize') {
-                        const z = state.zones[state.view.dragIndex];
-                        z.w = Math.max(0.5, z.w + dxM); z.h = Math.max(0.5, z.h + dyM);
-                    }
+                    else if (state.view.dragType === 'zone') { const z = state.zones[state.view.dragIndex]; z.x += dxM; z.y += dyM; }
+                    else if (state.view.dragType === 'zone-resize') { const z = state.zones[state.view.dragIndex]; z.w = Math.max(0.5, z.w + dxM); z.h = Math.max(0.5, z.h + dyM); }
                     state.view.lastX = pos.clientX; state.view.lastY = pos.clientY;
                     requestAnimationFrame(draw);
                 }
@@ -811,9 +783,7 @@
 
             function handleEnd(e) {
                 state.view.dragging = false; state.view.dragType = null;
-                // RESTORE CONTROLS
-                els.controls.classList.remove('controls-hidden');
-                els.hudPanel.style.opacity = '1';
+                removeControlsTransparent(); els.hudPanel.style.opacity = '1';
             }
 
             els.canvas.addEventListener('mousedown', handleStart);
@@ -832,9 +802,11 @@
 
             function handleResize() {
                 const parent = els.canvas.parentElement;
-                els.canvas.width = parent.clientWidth;
-                els.canvas.height = parent.clientHeight;
-                requestAnimationFrame(draw);
+                if(parent.clientWidth > 0 && parent.clientHeight > 0) {
+                    els.canvas.width = parent.clientWidth;
+                    els.canvas.height = parent.clientHeight;
+                    requestAnimationFrame(draw);
+                }
             }
 
             function updateUI() {
@@ -845,16 +817,12 @@
                 els.displays.stgD.innerText = state.stage.h.toFixed(1) + ' m';
                 els.displays.stgGap.innerText = state.stageGap.toFixed(2) + ' m';
                 els.displays.latMargin.innerText = state.lateralMargin.toFixed(1) + ' m';
-
                 if (state.count === 1) els.rows.dist.classList.add('disabled');
                 else els.rows.dist.classList.remove('disabled');
-
                 const c = SPEED_OF_SOUND;
                 const lambda = c / state.freq;
                 const delay = (state.dist / c) * 1000;
-
                 els.hud.lambda.innerText = lambda.toFixed(2) + ' m';
-                
                 const limit = (2/3) * lambda; const optimal = lambda / 4; 
                 if (state.dist > limit && state.count > 1) {
                     els.hud.status.innerText = "ALIASING"; els.hud.status.className = "hud-value status-danger";
@@ -864,11 +832,9 @@
                     els.hud.status.innerText = state.count === 1 ? "PUNTUAL" : "ESTANDAR";
                     els.hud.status.className = "hud-value";
                 }
-
                 if (state.mode === 'endfire' && state.count > 1) {
                     els.hud.delayRow.style.display = 'flex'; els.hud.delay.innerText = delay.toFixed(2) + ' ms';
                 } else els.hud.delayRow.style.display = 'none';
-
                 renderPolarityGrid();
             }
 
@@ -911,54 +877,31 @@
                 return sources;
             }
 
-            // Updated Color Mapping for better Inverse Square Law visualization
             function getHeatmapColor(db) {
-                // Expanded range to show falloff better (-6dB per double distance)
-                // Hot > +3dB
-                // +0dB
-                // -6dB (Double distance)
-                // -12dB (Quadruple distance)
-                // -24dB (Far field)
-                
                 let r=0, g=0, b=0;
-
-                if (db >= 3) {
-                    // White hot
-                    r=255; g=255; b=255;
-                } else if (db >= 0) {
-                    // Red to White
-                    const t = db / 3.0; // 0 to 1
-                    r=255; g=Math.floor(t*255); b=Math.floor(t*255);
-                } else if (db >= -6) {
-                    // Yellow to Red
-                    const t = (db + 6) / 6.0; 
-                    r=255; g=Math.floor(t*255); b=0;
-                } else if (db >= -12) {
-                    // Green to Yellow
-                    const t = (db + 12) / 6.0;
-                    r=Math.floor(t*255); g=255; b=0;
-                } else if (db >= -24) {
-                    // Blue to Green (Wide range for falloff)
-                    const t = (db + 24) / 12.0;
-                    r=0; g=Math.floor(t*255); b=Math.floor((1-t)*255);
-                } else if (db >= -40) {
-                    // Black to Blue
-                    const t = (db + 40) / 16.0;
-                    r=0; g=0; b=Math.floor(t*255);
-                } else {
-                    r=0; g=0; b=0;
-                }
+                if (db >= 3) { r=255; g=255; b=255; } 
+                else if (db >= 0) { const t = db/3.0; r=255; g=Math.floor(t*255); b=Math.floor(t*255); } 
+                else if (db >= -6) { const t = (db+6)/6.0; r=255; g=Math.floor(t*255); b=0; } 
+                else if (db >= -12) { const t = (db+12)/6.0; r=Math.floor(t*255); g=255; b=0; } 
+                else if (db >= -24) { const t = (db+24)/12.0; r=0; g=Math.floor(t*255); b=Math.floor((1-t)*255); } 
+                else if (db >= -40) { const t = (db+40)/16.0; r=0; g=0; b=Math.floor(t*255); } 
+                else { r=0; g=0; b=0; }
                 return {r, g, b};
             }
 
             function draw() {
                 const w = els.canvas.width; const h = els.canvas.height;
+                if(w === 0 || h === 0) return; // FIX 1: Prevent IndexSizeError
+
                 const cx = w/2 + state.view.x; const cy = h/2 + state.view.y;
                 const ppm = state.view.scale;
-                const c = SPEED_OF_SOUND; const k = (2 * Math.PI * state.freq) / c;
+                const c = SPEED_OF_SOUND; 
+                const k = (2 * Math.PI * state.freq) / c;
+                const timePhase = state.time * 0.5;
 
                 ctx.fillStyle = '#09090b'; ctx.fillRect(0,0,w,h);
-                // Grid
+                
+                // --- GRID ---
                 ctx.save(); ctx.beginPath(); ctx.strokeStyle = '#222'; ctx.lineWidth = 1;
                 const startX = Math.floor((-cx) / ppm); const endX = Math.ceil((w - cx) / ppm);
                 const startY = Math.floor((-cy) / ppm); const endY = Math.ceil((h - cy) / ppm);
@@ -971,88 +914,103 @@
                     sources.forEach((s, i) => { s.phase = state.customPhases[i]; });
                 }
 
-                const stageFrontY = state.stage.y;
-                const allSources = [...sources.map(s => ({...s, ampScale: 1.0}))];
-                const stageArea = state.stage.w * state.stage.h;
-                const refCoef = Math.min(0.9, Math.max(0.3, stageArea / 30.0));
-
-                sources.forEach(s => {
-                    if (s.y < stageFrontY) {
-                        const imgY = 2 * stageFrontY - s.y;
-                        allSources.push({ x: s.x, y: imgY, phase: s.phase, inv: s.inv, isReflection: true, ampScale: refCoef });
-                    }
-                });
-
+                // Stage pixel bounds
                 const stgLeftPx = cx + (state.stage.x - state.stage.w/2)*ppm;
                 const stgRightPx = cx + (state.stage.x + state.stage.w/2)*ppm;
                 const stgFrontPx = cy + state.stage.y * ppm;
+                const stgBackPx = cy + (state.stage.y + state.stage.h) * ppm;
+                
                 const gain = state.viewGain; 
 
-                const screenSources = allSources.map(s => ({
-                    sx: s.x * ppm, sy: s.y * ppm, ph: s.phase, inv: s.inv, ampScale: s.ampScale
+                const screenSources = sources.map(s => ({
+                    sx: s.x * ppm, sy: s.y * ppm, ph: s.phase, inv: s.inv
                 }));
 
                 const imgData = ctx.getImageData(0, 0, w, h);
                 const data = imgData.data;
-                const shadowAtten = 0.1259; 
 
+                // FIX 2: REWRITTEN RENDER LOOP (Clean Logic)
                 for(let y=0; y<h; y+=2) { 
                     const wy = y - cy; const rowOff = y * w * 4;
-                    const behindStage = (y > stgFrontPx);
-                    for(let x=0; x<w; x++) {
-                        const wx = x - cx; let rSum = 0; let iSum = 0;
+
+                    for(let x=0; x<w; x+=2) {
+                        // 1. STAGE SHADOW CHECK
+                        if (x >= stgLeftPx && x <= stgRightPx && y >= stgFrontPx && y <= stgBackPx) {
+                             const idx = rowOff + (x * 4);
+                             data[idx] = 0;   // R
+                             data[idx+1] = 0; // G
+                             data[idx+2] = 20; // B (Dark Blue)
+                             data[idx+3] = 255; // Alpha
+                             
+                             // Fill block
+                             data[idx+4]=0; data[idx+5]=0; data[idx+6]=20; data[idx+7]=255;
+                             continue; // Skip Physics
+                        }
+
+                        // 2. WAVE PHYSICS
+                        const wx = x - cx; 
+                        let pSum = 0; 
+
                         for(let i=0; i<screenSources.length; i++) {
                             const s = screenSources[i];
                             const dx = wx - s.sx; const dy = wy - s.sy;
                             const distMeters = Math.sqrt(dx*dx + dy*dy) / ppm;
                             
-                            // INVERSE SQUARE LAW IMPLEMENTATION
-                            // Amplitude is 1/d, Power is 1/d^2.
-                            // We sum amplitudes (pressure), convert to dB which is 20log10(P/P0).
-                            // A doubling of distance halves the amplitude (0.5), which is 20log(0.5) = -6dB.
+                            // Inverse Square Law
                             const dClamped = Math.max(0.1, distMeters);
-                            const amp = (1.0 / dClamped) * s.ampScale; 
+                            const amp = (1.0 / dClamped); 
                             
-                            const phi = (k * distMeters) - s.ph + (s.inv ? Math.PI : 0);
-                            rSum += Math.cos(phi) * amp; iSum += Math.sin(phi) * amp;
+                            // Animated Wave Function
+                            const totalPhase = (k * distMeters) - timePhase - s.ph + (s.inv ? Math.PI : 0);
+                            pSum += amp * Math.sin(totalPhase);
                         }
-                        let mag = Math.sqrt(rSum*rSum + iSum*iSum) * gain;
-                        if (behindStage && x > stgLeftPx && x < stgRightPx) mag *= shadowAtten; 
                         
-                        const db = 20 * Math.log10(mag + 0.0000001);
+                        const absPressure = Math.abs(pSum) * gain;
+                        const db = 20 * Math.log10(absPressure + 0.0000001);
                         const {r,g,b} = getHeatmapColor(db);
                         
                         const idx = rowOff + (x * 4);
                         data[idx] = r; data[idx+1] = g; data[idx+2] = b; 
                         
-                        // Transparency falloff for aesthetic
-                        if (db < -50) data[idx+3] = 0; 
-                        else if (db < -30) data[idx+3] = Math.floor(255 * ((db + 50) / 20));
-                        else data[idx+3] = 230; 
+                        // Attenuation Transparency
+                        if (db < -60) data[idx+3] = 0; 
+                        else if (db < -40) data[idx+3] = Math.floor(255 * ((db + 60) / 20));
+                        else data[idx+3] = 230;
+
+                        // Fill block
+                        if (x+1 < w) {
+                            data[idx+4] = r; data[idx+5] = g; data[idx+6] = b; data[idx+7] = data[idx+3];
+                        }
+                    }
+                    // Vertical Fill
+                     if (y+1 < h) {
+                        const nextRowOff = (y+1) * w * 4;
+                        for(let x=0; x<w*4; x++) data[nextRowOff + x] = data[rowOff + x];
                     }
                 }
                 ctx.putImageData(imgData, 0, 0);
 
                 ctx.save(); ctx.translate(cx, cy); ctx.scale(ppm, ppm);
-                // Stage
+                // Stage Outline
                 const stgLeft = state.stage.x - state.stage.w/2;
-                ctx.fillStyle = '#3f3f46'; ctx.strokeStyle = '#71717a'; ctx.lineWidth = 0.05;
-                ctx.fillRect(stgLeft, state.stage.y, state.stage.w, state.stage.h);
+                ctx.strokeStyle = '#52525b'; ctx.lineWidth = 0.05;
                 ctx.strokeRect(stgLeft, state.stage.y, state.stage.w, state.stage.h);
-                ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(stgLeft, state.stage.y, state.stage.w, state.stage.h);
+                // Label
+                ctx.fillStyle = '#fff'; ctx.font = 'bold 0.5px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText("ESCENARIO", state.stage.x, state.stage.y + state.stage.h/2);
                 
                 // Sources
                 sources.forEach((s, i) => {
                     const size = 0.4;
-                    ctx.fillStyle = s.inv ? '#450a0a' : '#18181b'; ctx.strokeStyle = s.inv ? '#ef4444' : '#a1a1aa';
-                    ctx.lineWidth = 0.05; ctx.fillRect(s.x - size/2, s.y - size/2, size, size);
-                    ctx.strokeRect(s.x - size/2, s.y - size/2, size, size);
+                    ctx.fillStyle = s.inv ? '#ef4444' : '#e4e4e7'; ctx.strokeStyle = '#000';
+                    ctx.lineWidth = 0.02; 
+                    ctx.beginPath(); ctx.arc(s.x, s.y, size/2, 0, Math.PI*2); ctx.fill(); ctx.stroke();
                 });
 
                 // Zones
                 state.zones.forEach((z, i) => {
                     const isSelected = (state.selectedZoneIndex === i);
-                    ctx.fillStyle = isSelected ? 'rgba(34, 197, 94, 0.3)' : 'rgba(34, 197, 94, 0.1)'; 
+                    ctx.fillStyle = isSelected ? 'rgba(34, 197, 94, 0.2)' : 'rgba(34, 197, 94, 0.05)'; 
                     ctx.strokeStyle = isSelected ? '#4ade80' : '#22c55e';
                     ctx.lineWidth = isSelected ? 0.08 : 0.03;
                     ctx.fillRect(z.x, z.y, z.w, z.h); ctx.strokeRect(z.x, z.y, z.w, z.h);
@@ -1061,18 +1019,16 @@
                 });
 
                 // Mic
-                let micR=0, micI=0; let micSumAmp = 0; 
-                allSources.forEach(s => {
+                let micComplexR = 0; let micComplexI = 0;
+                sources.forEach(s => {
                     const dx = state.mic.x - s.x; const dy = state.mic.y - s.y;
                     const d = Math.sqrt(dx*dx + dy*dy); const dClamped = Math.max(0.1, d);
-                    const amp = (1.0/dClamped) * s.ampScale; micSumAmp += amp; 
+                    const amp = (1.0/dClamped); 
                     const phi = (k*d) - s.phase + (s.inv?Math.PI:0);
-                    micR += Math.cos(phi)*amp; micI += Math.sin(phi)*amp;
+                    micComplexR += Math.cos(phi)*amp; micComplexI += Math.sin(phi)*amp;
                 });
-                const micVectorMag = Math.sqrt(micR*micR + micI*micI);
-                const micMag = micVectorMag * gain; 
+                const micMag = Math.sqrt(micComplexR*micComplexR + micComplexI*micComplexI) * gain; 
                 const micDB = 20 * Math.log10(micMag + 0.000001);
-                const efficiency = micSumAmp > 0 ? (micVectorMag / micSumAmp) * 100 : 0;
                 
                 ctx.translate(state.mic.x, state.mic.y);
                 const micColor = micDB > -6 ? '#22c55e' : (micDB < -12 ? '#ef4444' : '#fbbf24');
@@ -1086,26 +1042,21 @@
                 const mx = cx + state.mic.x * ppm; const my = cy + state.mic.y * ppm;
                 ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
                 ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.strokeStyle = '#444';
-                ctx.beginPath(); ctx.roundRect(mx + 15, my - 30, 90, 40, 4); ctx.fill(); ctx.stroke();
-                ctx.font = 'bold 9px sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-                ctx.fillStyle = '#fff'; ctx.fillText(`${micDB.toFixed(1)} dB`, mx + 25, my - 16);
-                let effColor = '#ef4444'; if(efficiency > 90) effColor = '#22c55e'; else if(efficiency > 70) effColor = '#fbbf24';
-                ctx.fillStyle = effColor; ctx.fillText(`${efficiency.toFixed(1)}% Sum`, mx + 25, my);
+                ctx.beginPath(); ctx.roundRect(mx + 15, my - 30, 60, 25, 4); ctx.fill(); ctx.stroke();
+                ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+                ctx.fillStyle = '#fff'; ctx.fillText(`${micDB.toFixed(1)} dB`, mx + 20, my - 17);
                 ctx.restore();
 
-                // --- PHASE ANALYZER (COMPACT) ---
+                // Phase Analyzer
                 if (sources.length > 0) {
                     const analyzerW = 100; const analyzerH = 60;
                     const ax = w - analyzerW - 10; const ay = h - analyzerH - 10;
-
                     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.translate(ax, ay);
-                    ctx.fillStyle = 'rgba(10, 10, 12, 0.7)'; ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+                    ctx.fillStyle = 'rgba(10, 10, 12, 0.9)'; ctx.strokeStyle = 'rgba(255,255,255,0.2)';
                     ctx.lineWidth = 1; ctx.beginPath(); ctx.roundRect(0, 0, analyzerW, analyzerH, 4); ctx.fill(); ctx.stroke();
-
                     const s1 = sources[0]; const s2 = sources.length > 1 ? sources[1] : null;
                     const plotW = analyzerW - 10; const plotH = analyzerH - 10;
                     const plotX = 5; const plotY = 5; const midY = plotY + plotH/2;
-
                     const getMicData = (s) => {
                         const dx = state.mic.x - s.x; const dy = state.mic.y - s.y;
                         const d = Math.sqrt(dx*dx + dy*dy); const dClamped = Math.max(0.1, d);
@@ -1114,32 +1065,29 @@
                     };
                     const d1 = getMicData(s1); const d2 = s2 ? getMicData(s2) : { amp: 0, ph: 0 };
                     const maxAmp = Math.max(d1.amp, d2.amp, 0.001) * 2.5; const scaleY = (plotH / 2) / maxAmp;
-
                     ctx.beginPath(); ctx.strokeStyle = '#333'; ctx.moveTo(plotX, midY); ctx.lineTo(plotX + plotW, midY); ctx.stroke();
-
                     ctx.beginPath(); ctx.strokeStyle = '#06b6d4'; ctx.lineWidth = 1.5;
-                    for(let i=0; i<=plotW; i++) {
-                        const t = (i / plotW) * 2 * Math.PI; const y = d1.amp * Math.sin(t - d1.ph);
-                        ctx.lineTo(plotX + i, midY - y * scaleY);
-                    } ctx.stroke();
-
+                    for(let i=0; i<=plotW; i++) { const t = (i / plotW) * 2 * Math.PI; const y = d1.amp * Math.sin(t - d1.ph); ctx.lineTo(plotX + i, midY - y * scaleY); } ctx.stroke();
                     if (s2) {
                         ctx.beginPath(); ctx.strokeStyle = '#d946ef'; ctx.lineWidth = 1.5;
-                        for(let i=0; i<=plotW; i++) {
-                            const t = (i / plotW) * 2 * Math.PI; const y = d2.amp * Math.sin(t - d2.ph);
-                            ctx.lineTo(plotX + i, midY - y * scaleY);
-                        } ctx.stroke();
+                        for(let i=0; i<=plotW; i++) { const t = (i / plotW) * 2 * Math.PI; const y = d2.amp * Math.sin(t - d2.ph); ctx.lineTo(plotX + i, midY - y * scaleY); } ctx.stroke();
                         ctx.beginPath(); ctx.strokeStyle = 'rgba(255,255,255,0.8)'; ctx.setLineDash([2, 2]); ctx.lineWidth = 1;
-                        for(let i=0; i<=plotW; i++) {
-                            const t = (i / plotW) * 2 * Math.PI;
-                            const y1 = d1.amp * Math.sin(t - d1.ph); const y2 = d2.amp * Math.sin(t - d2.ph);
-                            ctx.lineTo(plotX + i, midY - (y1 + y2) * scaleY);
-                        } ctx.stroke(); ctx.setLineDash([]);
+                        for(let i=0; i<=plotW; i++) { const t = (i / plotW) * 2 * Math.PI; const y1 = d1.amp * Math.sin(t - d1.ph); const y2 = d2.amp * Math.sin(t - d2.ph); ctx.lineTo(plotX + i, midY - (y1 + y2) * scaleY); } ctx.stroke(); ctx.setLineDash([]);
                     }
                     ctx.restore();
                 }
             }
+
+            function animate() {
+                if(state.isPlaying) {
+                    state.time += 0.2;
+                    draw();
+                }
+                requestAnimationFrame(animate);
+            }
+
             resetGain(); handleResize(); updateUI();
+            animate(); 
         };
     </script>
 <script type="module" src="/index.tsx"></script>
