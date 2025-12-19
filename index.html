@@ -147,6 +147,10 @@
         canvas {
             display: block;
             touch-action: none;
+            /* SUAVIZADO VISUAL (Anti-aliasing sutil) */
+            /* El renderizado interno ahora es de alta calidad, mantenemos un blur mínimo para blending */
+            filter: blur(0.3px) contrast(1.1); 
+            image-rendering: optimizeQuality;
         }
 
         /* Floating Actions in Viewport */
@@ -541,6 +545,8 @@
             };
 
             const ctx = els.canvas.getContext('2d', { alpha: false });
+            // Enable smooth scaling for any zoom operations, though we are doing 1:1 render.
+            ctx.imageSmoothingEnabled = true;
 
             window.app = {
                 setMode: (m) => {
@@ -548,18 +554,18 @@
                     els.optStatus.style.display = 'none';
                     els.btns.broad.className = m === 'broadside' ? 'active' : '';
                     els.btns.end.className = m === 'endfire' ? 'active' : '';
-                    updateUI(); requestAnimationFrame(draw);
+                    updateUI(); 
                 },
                 toggleLR: () => {
                     state.lrMode = !state.lrMode; state.isOptimized = false; resetGain();
                     els.optStatus.style.display = 'none';
                     els.btns.lr.innerText = state.lrMode ? "MODO: STEREO L/R" : "MODO: MONO CENTRAL";
                     els.btns.lr.className = state.lrMode ? 'active' : '';
-                    updateUI(); requestAnimationFrame(draw);
+                    updateUI(); 
                 },
                 togglePolarity: (i) => {
                     state.polarities[i] = !state.polarities[i];
-                    renderPolarityGrid(); requestAnimationFrame(draw);
+                    renderPolarityGrid(); 
                 },
                 toggleFullscreen: () => {
                     state.isFullscreen = !state.isFullscreen;
@@ -580,7 +586,7 @@
                     optimal = Math.min(4.0, Math.max(0.2, optimal));
                     state.dist = optimal; els.inputs.dist.value = optimal;
                     state.isOptimized = false; els.optStatus.style.display = 'none';
-                    updateUI(); requestAnimationFrame(draw);
+                    updateUI(); 
                 },
                 applyPreset: (hz) => {
                     state.freq = hz; state.isOptimized = false; resetGain();
@@ -589,7 +595,7 @@
                     let optimal = (v / hz) / 4;
                     optimal = Math.min(4.0, Math.max(0.2, optimal));
                     state.dist = optimal; els.inputs.dist.value = optimal;
-                    updateUI(); requestAnimationFrame(draw);
+                    updateUI(); 
                 },
                 setupCardioid: () => {
                     state.count = 2; els.inputs.count.value = 2;
@@ -598,7 +604,7 @@
                 },
                 optimizeStageDist: () => {
                     state.stageGap = 0.1; els.inputs.stgGap.value = 0.1;
-                    updateUI(); requestAnimationFrame(draw);
+                    updateUI(); 
                 },
                 autoOptimize: () => {
                     const v = SPEED_OF_SOUND;
@@ -611,16 +617,14 @@
                     });
                     
                     state.isOptimized = true; els.optStatus.style.display = 'block';
-                    resetGain(); updateUI(); requestAnimationFrame(draw);
+                    resetGain(); updateUI(); 
                 },
                 addZone: () => {
                     state.zones.push({ x: -4, y: -8, w: 8, h: 5 });
                     state.selectedZoneIndex = state.zones.length - 1;
-                    requestAnimationFrame(draw);
                 },
                 clearZones: () => {
                     state.zones = []; state.selectedZoneIndex = -1;
-                    requestAnimationFrame(draw);
                 }
             };
 
@@ -715,7 +719,7 @@
                          if(state.isOptimized) { state.isOptimized = false; els.optStatus.style.display = 'none'; resetGain(); }
                          if(key === 'count') resetGain();
                     }
-                    updateUI(); requestAnimationFrame(draw);
+                    updateUI(); 
                 });
             });
 
@@ -740,17 +744,17 @@
                     if (pos.x > zs.x + zw - 25 && pos.x < zs.x + zw + 25 && pos.y > zs.y + zh - 25 && pos.y < zs.y + zh + 25) {
                         state.view.dragType = 'zone-resize'; state.view.dragIndex = i; state.selectedZoneIndex = i;
                         state.view.dragging = true; state.view.lastX = pos.clientX; state.view.lastY = pos.clientY;
-                        requestAnimationFrame(draw); return;
+                         return;
                     }
                     if (pos.x >= zs.x && pos.x <= zs.x + zw && pos.y >= zs.y && pos.y <= zs.y + zh) {
                         state.view.dragType = 'zone'; state.view.dragIndex = i; state.selectedZoneIndex = i;
                         state.view.dragging = true; state.view.lastX = pos.clientX; state.view.lastY = pos.clientY;
-                        requestAnimationFrame(draw); return;
+                         return;
                     }
                 }
                 state.selectedZoneIndex = -1; state.view.dragType = 'view';
                 state.view.dragging = true; state.view.lastX = pos.clientX; state.view.lastY = pos.clientY;
-                requestAnimationFrame(draw);
+                
             }
 
             function handleMove(e) {
@@ -777,7 +781,7 @@
                     else if (state.view.dragType === 'zone') { const z = state.zones[state.view.dragIndex]; z.x += dxM; z.y += dyM; }
                     else if (state.view.dragType === 'zone-resize') { const z = state.zones[state.view.dragIndex]; z.w = Math.max(0.5, z.w + dxM); z.h = Math.max(0.5, z.h + dyM); }
                     state.view.lastX = pos.clientX; state.view.lastY = pos.clientY;
-                    requestAnimationFrame(draw);
+                    
                 }
             }
 
@@ -796,7 +800,7 @@
                 e.preventDefault();
                 const factor = e.deltaY > 0 ? 0.9 : 1.1;
                 state.view.scale *= factor; state.view.scale = Math.max(5, Math.min(100, state.view.scale));
-                requestAnimationFrame(draw);
+                
             });
             window.addEventListener('resize', handleResize);
 
@@ -805,7 +809,7 @@
                 if(parent.clientWidth > 0 && parent.clientHeight > 0) {
                     els.canvas.width = parent.clientWidth;
                     els.canvas.height = parent.clientHeight;
-                    requestAnimationFrame(draw);
+                    
                 }
             }
 
@@ -877,26 +881,60 @@
                 return sources;
             }
 
-            function getHeatmapColor(db) {
-                let r=0, g=0, b=0;
-                if (db >= 3) { r=255; g=255; b=255; } 
-                else if (db >= 0) { const t = db/3.0; r=255; g=Math.floor(t*255); b=Math.floor(t*255); } 
-                else if (db >= -6) { const t = (db+6)/6.0; r=255; g=Math.floor(t*255); b=0; } 
-                else if (db >= -12) { const t = (db+12)/6.0; r=Math.floor(t*255); g=255; b=0; } 
-                else if (db >= -24) { const t = (db+24)/12.0; r=0; g=Math.floor(t*255); b=Math.floor((1-t)*255); } 
-                else if (db >= -40) { const t = (db+40)/16.0; r=0; g=0; b=Math.floor(t*255); } 
-                else { r=0; g=0; b=0; }
-                return {r, g, b};
+            // Optimized color picker for smoother gradients and no object creation spam
+            function fillHeatmapColor(db, data, idx) {
+                let r=0, g=0, b=0, a=230;
+                
+                // Decay logic is handled by calculating dB from pressure.
+                // We just need a smooth palette here.
+                if (db > 0) {
+                     // White to Yellow hot
+                     r = 255; 
+                     g = 255; 
+                     b = Math.min(255, Math.floor(db * 20)); // Subtle tint
+                } else if (db > -6) {
+                    // Yellow/Orange
+                    const t = (db + 6) / 6; // 0 to 1
+                    r = 255; 
+                    g = Math.floor(200 + t * 55); 
+                    b = 0;
+                } else if (db > -12) {
+                    // Red/Orange
+                    const t = (db + 12) / 6;
+                    r = 255; 
+                    g = Math.floor(t * 200); 
+                    b = 0;
+                } else if (db > -24) {
+                    // Blue to Red (transition)
+                    const t = (db + 24) / 12;
+                    r = Math.floor(t * 255); 
+                    g = 0; 
+                    b = Math.floor((1-t) * 255);
+                } else if (db > -60) {
+                    // Fade out Blue
+                    const t = (db + 60) / 36;
+                    r = 0; g = 0; 
+                    b = Math.floor(t * 255);
+                    a = Math.floor(t * 230); // Fade alpha
+                } else {
+                    r=0; g=0; b=0; a=0;
+                }
+
+                data[idx] = r; 
+                data[idx+1] = g; 
+                data[idx+2] = b; 
+                data[idx+3] = a;
             }
 
             function draw() {
                 const w = els.canvas.width; const h = els.canvas.height;
-                if(w === 0 || h === 0) return; // FIX 1: Prevent IndexSizeError
+                if(w === 0 || h === 0) return; 
 
                 const cx = w/2 + state.view.x; const cy = h/2 + state.view.y;
                 const ppm = state.view.scale;
                 const c = SPEED_OF_SOUND; 
                 const k = (2 * Math.PI * state.freq) / c;
+                // Synchronized time for both Heatmap and Analyzer
                 const timePhase = state.time * 0.5;
 
                 ctx.fillStyle = '#09090b'; ctx.fillRect(0,0,w,h);
@@ -922,70 +960,91 @@
                 
                 const gain = state.viewGain; 
 
-                const screenSources = sources.map(s => ({
-                    sx: s.x * ppm, sy: s.y * ppm, ph: s.phase, inv: s.inv
-                }));
+                // --- REFLECTION SETUP ---
+                const REFLECTION_ATTENUATION = 0.7; // 30% absorption
+                
+                // Pre-calculate source positions in pixels to speed up loop
+                const screenSources = [];
+                const virtualSources = [];
+
+                sources.forEach(s => {
+                    const sx = cx + s.x * ppm;
+                    const sy = cy + s.y * ppm;
+                    
+                    // Real Source
+                    screenSources.push({ sx, sy, ph: s.phase, inv: s.inv });
+
+                    // Virtual Source (Reflection)
+                    // Math: VirtualY_meters = StageY + (StageY - SourceY)
+                    const vY_meters = state.stage.y + (state.stage.y - s.y);
+                    const vSy = cy + vY_meters * ppm; 
+                    
+                    virtualSources.push({ sx: sx, sy: vSy, ph: s.phase, inv: s.inv });
+                });
 
                 const imgData = ctx.getImageData(0, 0, w, h);
                 const data = imgData.data;
 
-                // FIX 2: REWRITTEN RENDER LOOP (Clean Logic)
-                for(let y=0; y<h; y+=2) { 
-                    const wy = y - cy; const rowOff = y * w * 4;
+                // --- 1:1 PIXEL RENDERING (NO SKIPPING) FOR EXACT FREQUENCY SCALE ---
+                for(let y=0; y<h; y++) { 
+                    const rowOff = y * w * 4;
+                    // Pre-calc Y related checks
+                    const inStageY = (y >= stgFrontPx && y <= stgBackPx);
 
-                    for(let x=0; x<w; x+=2) {
-                        // 1. STAGE SHADOW CHECK
-                        if (x >= stgLeftPx && x <= stgRightPx && y >= stgFrontPx && y <= stgBackPx) {
-                             const idx = rowOff + (x * 4);
+                    for(let x=0; x<w; x++) {
+                        const idx = rowOff + (x * 4);
+
+                        // 1. STAGE SHADOW
+                        if (inStageY && x >= stgLeftPx && x <= stgRightPx) {
                              data[idx] = 0;   // R
                              data[idx+1] = 0; // G
-                             data[idx+2] = 20; // B (Dark Blue)
-                             data[idx+3] = 255; // Alpha
-                             
-                             // Fill block
-                             data[idx+4]=0; data[idx+5]=0; data[idx+6]=20; data[idx+7]=255;
-                             continue; // Skip Physics
+                             data[idx+2] = 20; // B
+                             data[idx+3] = 255; // A
+                             continue;
                         }
 
                         // 2. WAVE PHYSICS
-                        const wx = x - cx; 
+                        // We use exact pixel coordinates.
                         let pSum = 0; 
 
+                        // Direct Sound
                         for(let i=0; i<screenSources.length; i++) {
                             const s = screenSources[i];
-                            const dx = wx - s.sx; const dy = wy - s.sy;
+                            const dx = x - s.sx; 
+                            const dy = y - s.sy;
+                            // Distance in pixels -> meters
                             const distMeters = Math.sqrt(dx*dx + dy*dy) / ppm;
                             
-                            // Inverse Square Law
+                            // Physics: Amplitude decay 1/d
                             const dClamped = Math.max(0.1, distMeters);
                             const amp = (1.0 / dClamped); 
                             
-                            // Animated Wave Function
+                            // Wave function
                             const totalPhase = (k * distMeters) - timePhase - s.ph + (s.inv ? Math.PI : 0);
+                            pSum += amp * Math.sin(totalPhase);
+                        }
+
+                        // Reflected Sound (Virtual Sources)
+                        // Sums into the SAME pSum to create interference/cancellation
+                        for(let i=0; i<virtualSources.length; i++) {
+                            const vs = virtualSources[i];
+                            const dx = x - vs.sx; 
+                            const dy = y - vs.sy;
+                            const distMeters = Math.sqrt(dx*dx + dy*dy) / ppm;
+                            
+                            const dClamped = Math.max(0.1, distMeters);
+                            // Attenuated
+                            const amp = (1.0 / dClamped) * REFLECTION_ATTENUATION; 
+                            
+                            const totalPhase = (k * distMeters) - timePhase - vs.ph + (vs.inv ? Math.PI : 0);
                             pSum += amp * Math.sin(totalPhase);
                         }
                         
                         const absPressure = Math.abs(pSum) * gain;
+                        // Logarithmic scale for color
                         const db = 20 * Math.log10(absPressure + 0.0000001);
-                        const {r,g,b} = getHeatmapColor(db);
                         
-                        const idx = rowOff + (x * 4);
-                        data[idx] = r; data[idx+1] = g; data[idx+2] = b; 
-                        
-                        // Attenuation Transparency
-                        if (db < -60) data[idx+3] = 0; 
-                        else if (db < -40) data[idx+3] = Math.floor(255 * ((db + 60) / 20));
-                        else data[idx+3] = 230;
-
-                        // Fill block
-                        if (x+1 < w) {
-                            data[idx+4] = r; data[idx+5] = g; data[idx+6] = b; data[idx+7] = data[idx+3];
-                        }
-                    }
-                    // Vertical Fill
-                     if (y+1 < h) {
-                        const nextRowOff = (y+1) * w * 4;
-                        for(let x=0; x<w*4; x++) data[nextRowOff + x] = data[rowOff + x];
+                        fillHeatmapColor(db, data, idx);
                     }
                 }
                 ctx.putImageData(imgData, 0, 0);
@@ -1020,10 +1079,18 @@
 
                 // Mic
                 let micComplexR = 0; let micComplexI = 0;
-                sources.forEach(s => {
+                // Add virtuals to mic calc for dB accuracy with reflections
+                const allSourcesForMic = [...sources.map(s=>({...s, ampFactor:1.0}))];
+                 sources.forEach(s => {
+                    const vY = state.stage.y + (state.stage.y - s.y);
+                    allSourcesForMic.push({ x: s.x, y: vY, phase: s.phase, inv: s.inv, ampFactor: REFLECTION_ATTENUATION });
+                });
+
+                allSourcesForMic.forEach(s => {
                     const dx = state.mic.x - s.x; const dy = state.mic.y - s.y;
                     const d = Math.sqrt(dx*dx + dy*dy); const dClamped = Math.max(0.1, d);
-                    const amp = (1.0/dClamped); 
+                    const amp = (1.0/dClamped) * s.ampFactor; 
+                    // Mic uses standard phase envelope, not animated time
                     const phi = (k*d) - s.phase + (s.inv?Math.PI:0);
                     micComplexR += Math.cos(phi)*amp; micComplexI += Math.sin(phi)*amp;
                 });
@@ -1047,32 +1114,60 @@
                 ctx.fillStyle = '#fff'; ctx.fillText(`${micDB.toFixed(1)} dB`, mx + 20, my - 17);
                 ctx.restore();
 
-                // Phase Analyzer
+                // Phase Analyzer (Synchronized with Pause)
                 if (sources.length > 0) {
                     const analyzerW = 100; const analyzerH = 60;
                     const ax = w - analyzerW - 10; const ay = h - analyzerH - 10;
                     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.translate(ax, ay);
                     ctx.fillStyle = 'rgba(10, 10, 12, 0.9)'; ctx.strokeStyle = 'rgba(255,255,255,0.2)';
                     ctx.lineWidth = 1; ctx.beginPath(); ctx.roundRect(0, 0, analyzerW, analyzerH, 4); ctx.fill(); ctx.stroke();
+                    
                     const s1 = sources[0]; const s2 = sources.length > 1 ? sources[1] : null;
                     const plotW = analyzerW - 10; const plotH = analyzerH - 10;
                     const plotX = 5; const plotY = 5; const midY = plotY + plotH/2;
+                    
                     const getMicData = (s) => {
                         const dx = state.mic.x - s.x; const dy = state.mic.y - s.y;
                         const d = Math.sqrt(dx*dx + dy*dy); const dClamped = Math.max(0.1, d);
-                        const amp = (1.0 / dClamped); const ph = (k * d) - s.phase + (s.inv ? Math.PI : 0);
+                        const amp = (1.0 / dClamped); 
+                        // Note: We subtract timePhase here to freeze the wave in the analyzer window when paused
+                        const ph = (k * d) - s.phase + (s.inv ? Math.PI : 0);
                         return { amp, ph };
                     };
                     const d1 = getMicData(s1); const d2 = s2 ? getMicData(s2) : { amp: 0, ph: 0 };
                     const maxAmp = Math.max(d1.amp, d2.amp, 0.001) * 2.5; const scaleY = (plotH / 2) / maxAmp;
+                    
                     ctx.beginPath(); ctx.strokeStyle = '#333'; ctx.moveTo(plotX, midY); ctx.lineTo(plotX + plotW, midY); ctx.stroke();
+                    
+                    // Cyan Trace
                     ctx.beginPath(); ctx.strokeStyle = '#06b6d4'; ctx.lineWidth = 1.5;
-                    for(let i=0; i<=plotW; i++) { const t = (i / plotW) * 2 * Math.PI; const y = d1.amp * Math.sin(t - d1.ph); ctx.lineTo(plotX + i, midY - y * scaleY); } ctx.stroke();
+                    for(let i=0; i<=plotW; i++) { 
+                        const t = (i / plotW) * 2 * Math.PI; 
+                        // Use timePhase for sync
+                        const y = d1.amp * Math.sin(t - d1.ph - timePhase); 
+                        ctx.lineTo(plotX + i, midY - y * scaleY); 
+                    } 
+                    ctx.stroke();
+
+                    // Magenta Trace
                     if (s2) {
                         ctx.beginPath(); ctx.strokeStyle = '#d946ef'; ctx.lineWidth = 1.5;
-                        for(let i=0; i<=plotW; i++) { const t = (i / plotW) * 2 * Math.PI; const y = d2.amp * Math.sin(t - d2.ph); ctx.lineTo(plotX + i, midY - y * scaleY); } ctx.stroke();
+                        for(let i=0; i<=plotW; i++) { 
+                            const t = (i / plotW) * 2 * Math.PI; 
+                            const y = d2.amp * Math.sin(t - d2.ph - timePhase); 
+                            ctx.lineTo(plotX + i, midY - y * scaleY); 
+                        } 
+                        ctx.stroke();
+                        
+                        // Sum Trace
                         ctx.beginPath(); ctx.strokeStyle = 'rgba(255,255,255,0.8)'; ctx.setLineDash([2, 2]); ctx.lineWidth = 1;
-                        for(let i=0; i<=plotW; i++) { const t = (i / plotW) * 2 * Math.PI; const y1 = d1.amp * Math.sin(t - d1.ph); const y2 = d2.amp * Math.sin(t - d2.ph); ctx.lineTo(plotX + i, midY - (y1 + y2) * scaleY); } ctx.stroke(); ctx.setLineDash([]);
+                        for(let i=0; i<=plotW; i++) { 
+                            const t = (i / plotW) * 2 * Math.PI; 
+                            const y1 = d1.amp * Math.sin(t - d1.ph - timePhase); 
+                            const y2 = d2.amp * Math.sin(t - d2.ph - timePhase); 
+                            ctx.lineTo(plotX + i, midY - (y1 + y2) * scaleY); 
+                        } 
+                        ctx.stroke(); ctx.setLineDash([]);
                     }
                     ctx.restore();
                 }
@@ -1081,8 +1176,8 @@
             function animate() {
                 if(state.isPlaying) {
                     state.time += 0.2;
-                    draw();
                 }
+                draw(); // Always draw
                 requestAnimationFrame(animate);
             }
 
