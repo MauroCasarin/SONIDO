@@ -369,7 +369,9 @@
             </div>
 
             <div style="font-size:10px; color:#555; text-align:center;">
-                Mouse Wheel: Zoom • Drag: Pan
+                <strong>Virtual Mic:</strong> Drag circle to measure phase.
+                <br>
+                Mouse Wheel: Zoom • Drag BG: Pan
             </div>
         </div>
 
@@ -435,6 +437,11 @@
                     dragging: false,
                     lastX: 0,
                     lastY: 0
+                },
+                mic: {
+                    x: 0, // World X (meters)
+                    y: 2, // World Y (meters)
+                    dragging: false
                 }
             };
 
@@ -532,24 +539,60 @@
                 });
             });
 
-            // Canvas Zoom/Pan
+            // Canvas Interaction Logic
             els.canvas.addEventListener('mousedown', e => {
-                state.view.dragging = true;
+                const rect = els.canvas.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+
+                const cx = els.canvas.width / 2 + state.view.x;
+                const cy = els.canvas.height / 2 + state.view.y;
+                const ppm = state.view.scale;
+
+                // Check distance to Mic
+                const micScreenX = cx + state.mic.x * ppm;
+                const micScreenY = cy + state.mic.y * ppm;
+                
+                const dx = mouseX - micScreenX;
+                const dy = mouseY - micScreenY;
+                const distToMic = Math.sqrt(dx*dx + dy*dy);
+
+                if (distToMic < 15) { // 15px radius hit target
+                    state.mic.dragging = true;
+                } else {
+                    state.view.dragging = true;
+                }
+
                 state.view.lastX = e.clientX;
                 state.view.lastY = e.clientY;
             });
-            window.addEventListener('mouseup', () => state.view.dragging = false);
+
+            window.addEventListener('mouseup', () => {
+                state.view.dragging = false;
+                state.mic.dragging = false;
+            });
+
             window.addEventListener('mousemove', e => {
                 if(state.view.dragging) {
                     const dx = e.clientX - state.view.lastX;
                     const dy = e.clientY - state.view.lastY;
                     state.view.x += dx;
                     state.view.y += dy;
+                } else if (state.mic.dragging) {
+                    const dx = e.clientX - state.view.lastX;
+                    const dy = e.clientY - state.view.lastY;
+                    // Convert pixel movement to meters
+                    state.mic.x += dx / state.view.scale;
+                    state.mic.y += dy / state.view.scale;
+                }
+
+                if (state.view.dragging || state.mic.dragging) {
                     state.view.lastX = e.clientX;
                     state.view.lastY = e.clientY;
                     requestAnimationFrame(draw);
                 }
             });
+
             els.canvas.addEventListener('wheel', e => {
                 e.preventDefault();
                 const factor = e.deltaY > 0 ? 0.9 : 1.1;
@@ -658,10 +701,6 @@
                     for(let i=0; i<state.count; i++) {
                         // i=0 is Rear
                         const yPos = startY - (i * state.dist);
-                        // Delay logic for Endfire: Front elements wait for rear wave.
-                        // Distance from rear element = i * dist.
-                        // Delay needed = dist / c.
-                        // Phase delay = k * dist.
                         const delayMeters = i * state.dist;
                         sources.push({
                             x: 0,
@@ -691,8 +730,8 @@
                 const gain = 1.0 / (state.count * 0.85); // Normalization factor
 
                 // Loop every pixel
-                for(let y=0; y<h; y++) {
-                    // World Y relative to center
+                for(let y=0; y<h; y+=2) { // Optimization: Interlacing / Skip lines could be used, but keeping high qual
+                    // Actually, let's keep full res for quality, it's fast enough on modern engines
                     const wy = y - cy;
                     const rowOff = y * w * 4;
 
@@ -708,13 +747,6 @@
                             const dx = wx - s.sx;
                             const dy = wy - s.sy;
                             
-                            // Distance in meters requires dividing by ppm, but let's do phase logic
-                            // Phase = k * distance_meters
-                            // distance_meters = distance_pixels / ppm
-                            // so Phase = (k / ppm) * distance_pixels
-                            
-                            // Let's stick to meters for precision
-                            // dist_meters = sqrt(dx^2 + dy^2) / ppm
                             const distPix = Math.sqrt(dx*dx + dy*dy);
                             const distMeters = distPix / ppm;
 
@@ -731,36 +763,26 @@
                         const mag = Math.sqrt(rSum*rSum + iSum*iSum) * gain;
                         
                         // Color Mapping
-                        // Palette: Black(0) -> Blue(0.25) -> Cyan(0.5) -> White(0.75) -> Red(1.0)
-                        
                         let r=0, g=0, b=0;
                         
-                        if (mag < 0.25) {
-                            // 0.0 to 0.25: Black to Blue
-                            b = (mag / 0.25) * 128; 
-                        } else if (mag < 0.5) {
-                            // 0.25 to 0.5: Blue to Cyan
+                        if (mag < 0.25) { b = (mag / 0.25) * 128; } 
+                        else if (mag < 0.5) {
                             const t = (mag - 0.25) / 0.25;
                             g = t * 255;
                             b = 128 + (t * 127);
                         } else if (mag < 0.75) {
-                            // 0.5 to 0.75: Cyan to White
                             const t = (mag - 0.5) / 0.25;
                             r = t * 255;
                             g = 255;
                             b = 255;
                         } else {
-                            // 0.75 to 1.0+: White to Red
                             const t = Math.min(1, (mag - 0.75) / 0.25);
                             r = 255;
                             g = 255 * (1 - t);
                             b = 255 * (1 - t);
                         }
 
-                        // Simple Grid (1 meter lines)
-                        // world pos modulo ppm
-                        // wx and wy are pixels from center
-                        // if abs(wx) % ppm < 1...
+                        // Grid
                         const gridX = Math.abs(wx / ppm);
                         const gridY = Math.abs(wy / ppm);
                         if (Math.abs(gridX - Math.round(gridX)) < 0.02 || Math.abs(gridY - Math.round(gridY)) < 0.02) {
@@ -774,14 +796,54 @@
                         data[idx+3] = 255;
                     }
                 }
+                
+                // Duplicate lines for simpler renderer if needed, but we did full loop above
+                // To fill gaps if we skipped lines, but we didn't.
 
                 ctx.putImageData(imgData, 0, 0);
 
+                // --- VIRTUAL MIC CALCULATION ---
+                let micR = 0, micI = 0;
+                let minTime = Infinity, maxTime = -Infinity;
+
+                sources.forEach(s => {
+                    const dx = state.mic.x - s.x;
+                    const dy = state.mic.y - s.y;
+                    const d = Math.sqrt(dx*dx + dy*dy);
+                    const amp = 1.0 / (1.0 + d);
+                    const phi = (k * d) - s.phase + (s.inv ? Math.PI : 0);
+                    
+                    micR += Math.cos(phi) * amp;
+                    micI += Math.sin(phi) * amp;
+
+                    // Time of Arrival
+                    const t = (d / c) * 1000; // ms
+                    if(t < minTime) minTime = t;
+                    if(t > maxTime) maxTime = t;
+                });
+
+                const micMag = Math.sqrt(micR*micR + micI*micI) * gain;
+                const micPhase = Math.atan2(micI, micR) * (180/Math.PI);
+                const deltaT = maxTime - minTime;
+                
                 // --- VECTOR OVERLAYS ---
                 ctx.save();
                 ctx.translate(cx, cy);
                 ctx.scale(ppm, ppm); // Draw in meters
 
+                // Trajectory Lines (Mic active)
+                ctx.globalAlpha = 0.3;
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 0.02;
+                sources.forEach(s => {
+                    ctx.beginPath();
+                    ctx.moveTo(s.x, s.y);
+                    ctx.lineTo(state.mic.x, state.mic.y);
+                    ctx.stroke();
+                });
+                ctx.globalAlpha = 1.0;
+
+                // Sources
                 sources.forEach((s, i) => {
                     const size = 0.4; // box size meters
                     ctx.fillStyle = s.inv ? '#450a0a' : '#18181b';
@@ -790,26 +852,61 @@
                     
                     ctx.fillRect(s.x - size/2, s.y - size/2, size, size);
                     ctx.strokeRect(s.x - size/2, s.y - size/2, size, size);
-                    
-                    // Text needs to be unscaled to look good? 
-                    // Canvas transforms affect text size.
-                    // Easier to just draw basic rects here.
                 });
+
+                // Virtual Microphone Icon
+                ctx.translate(state.mic.x, state.mic.y);
+                const micColor = micMag > 0.5 ? '#22c55e' : (micMag < 0.2 ? '#ef4444' : '#fbbf24');
+                ctx.strokeStyle = micColor;
+                ctx.lineWidth = 0.05;
+                ctx.beginPath();
+                ctx.arc(0, 0, 0.2, 0, Math.PI * 2);
+                ctx.stroke();
+                // Crosshair
+                ctx.beginPath(); ctx.moveTo(-0.15, 0); ctx.lineTo(0.15, 0); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(0, -0.15); ctx.lineTo(0, 0.15); ctx.stroke();
 
                 ctx.restore();
                 
-                // Draw Text Labels on top (Screen Space)
+                // --- HUD & LABELS (Screen Space) ---
                 ctx.save();
+                ctx.font = 'bold 10px sans-serif';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                ctx.font = 'bold 10px sans-serif';
-                ctx.fillStyle = '#fff';
                 
+                // Source Labels
+                ctx.fillStyle = '#fff';
                 sources.forEach((s, i) => {
                     const sx = cx + s.x * ppm;
                     const sy = cy + s.y * ppm;
                     ctx.fillText(s.inv ? 'Ø' : (i+1), sx, sy);
                 });
+
+                // Mic Info Bubble
+                const mx = cx + state.mic.x * ppm;
+                const my = cy + state.mic.y * ppm;
+                
+                // Bubble Background
+                const boxW = 110, boxH = 50;
+                const bx = mx + 20, by = my - 25;
+                
+                ctx.fillStyle = 'rgba(0,0,0,0.85)';
+                ctx.strokeStyle = '#444';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.roundRect(bx, by, boxW, boxH, 6);
+                ctx.fill();
+                ctx.stroke();
+
+                // Bubble Text
+                ctx.textAlign = 'left';
+                ctx.fillStyle = '#a1a1aa';
+                ctx.fillText(`Press: ${(micMag*100).toFixed(0)}%`, bx + 10, by + 15);
+                ctx.fillStyle = deltaT < 1.0 ? '#22c55e' : '#f59e0b';
+                ctx.fillText(`Δt: ${deltaT.toFixed(2)} ms`, bx + 10, by + 28);
+                ctx.fillStyle = '#e4e4e7';
+                ctx.fillText(`Phase: ${micPhase.toFixed(0)}°`, bx + 10, by + 41);
+
                 ctx.restore();
             }
 
