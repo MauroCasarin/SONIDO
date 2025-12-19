@@ -85,6 +85,28 @@
             letter-spacing: 2px;
         }
 
+        .btn-help {
+            background: transparent;
+            border: 1px solid #3f3f46;
+            color: var(--text-dim);
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-help:hover {
+            border-color: var(--accent);
+            color: #fff;
+            background: rgba(59, 130, 246, 0.1);
+            transform: scale(1.05);
+        }
+
         /* LAYOUT */
         #main-layout {
             display: flex;
@@ -395,6 +417,103 @@
             padding-bottom: 2px;
         }
 
+        /* MODAL GUÍA */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(5px);
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        
+        .modal-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background: #18181b;
+            border: 1px solid #3f3f46;
+            border-radius: 8px;
+            padding: 25px;
+            width: 90%;
+            max-width: 380px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.7);
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
+            position: relative;
+        }
+
+        .modal-overlay.open .modal-content {
+            transform: translateY(0);
+        }
+
+        .modal-title {
+            color: #fff;
+            font-size: 16px;
+            margin: 0 0 20px 0;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #27272a;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .guide-item {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            color: #e4e4e7;
+        }
+
+        .guide-icon {
+            font-size: 20px;
+            width: 30px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .guide-item strong {
+            color: var(--accent);
+            display: block;
+            margin-bottom: 4px;
+            font-size: 13px;
+        }
+
+        .guide-item p {
+            margin: 0;
+            font-size: 12px;
+            color: #a1a1aa;
+            line-height: 1.5;
+        }
+
+        .modal-close-btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .modal-close-btn:hover {
+            filter: brightness(1.1);
+        }
+
         /* FOOTER */
         footer {
             height: 35px;
@@ -531,7 +650,42 @@
                 <span>DE SONIDO GRAVES</span>
             </h1>
         </div>
+        <!-- BOTÓN DE GUÍA -->
+        <button class="btn-help" onclick="app.toggleGuide()" title="Guía Técnica">?</button>
     </header>
+
+    <!-- MODAL GUÍA TÉCNICA -->
+    <div id="modal-guide" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="modal-title">Guía Técnica de Diseño</h3>
+            
+            <div class="guide-item">
+                <span class="guide-icon">⚡</span>
+                <div>
+                    <strong>Suma Total (+6dB)</strong>
+                    <p>Separa los subwoofers a <strong>λ/4</strong> (ej: 1.07m a 80Hz). Esto garantiza que las ondas se sumen perfectamente al frente, logrando el máximo impacto.</p>
+                </div>
+            </div>
+
+            <div class="guide-item">
+                <span class="guide-icon">🎯</span>
+                <div>
+                    <strong>Control de Directividad</strong>
+                    <p>Separa a <strong>λ/2</strong> (ej: 2.14m a 80Hz). A esta distancia, el arreglo comienza a cancelar energía lateralmente, "enfocando" el sonido hacia adelante.</p>
+                </div>
+            </div>
+
+            <div class="guide-item">
+                <span class="guide-icon">🌊</span>
+                <div>
+                    <strong>Coherencia de Fase</strong>
+                    <p>Observa el <em>Analizador de Fase</em> (esquina inf. derecha). Busca que las ondas (Cian/Magenta) estén alineadas (pico con pico). Si se cruzan, hay cancelación.</p>
+                </div>
+            </div>
+
+            <button class="modal-close-btn" onclick="app.toggleGuide()">Entendido</button>
+        </div>
+    </div>
 
     <div id="main-layout">
         
@@ -770,6 +924,7 @@
                 customPhases: [],   
                 viewGain: 1.0,      
                 isFullscreen: false,
+                isGuideOpen: false, // New state for modal
                 view: {
                     scale: 30, // Pixels per meter
                     x: 0,      
@@ -838,7 +993,8 @@
                     lr: document.getElementById('btn-lr')
                 },
                 polContainer: document.getElementById('polarity-container'),
-                optStatus: document.getElementById('opt-status')
+                optStatus: document.getElementById('opt-status'),
+                modalGuide: document.getElementById('modal-guide')
             };
 
             const ctx = els.canvas.getContext('2d', { alpha: false });
@@ -878,6 +1034,14 @@
                         document.body.classList.remove('fullscreen-mode');
                     }
                     handleResize(); 
+                },
+                toggleGuide: () => {
+                    state.isGuideOpen = !state.isGuideOpen;
+                    if (state.isGuideOpen) {
+                        els.modalGuide.classList.add('open');
+                    } else {
+                        els.modalGuide.classList.remove('open');
+                    }
                 },
                 setLambdaFraction: (frac) => {
                     const c = SPEED_OF_SOUND;
