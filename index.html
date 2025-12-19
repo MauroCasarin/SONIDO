@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Simulador de Arreglos de Sonido Graves - MC Audio</title>
     <style>
         :root {
@@ -28,23 +28,33 @@
             flex-direction: column;
             overflow: hidden;
             user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            overscroll-behavior: none;
         }
 
         /* HEADER */
         header {
-            height: 60px; /* Un poco más alto para el logo */
+            height: 60px; 
             border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
             justify-content: space-between;
             padding: 0 20px;
             background: #000;
+            flex-shrink: 0;
+            z-index: 50;
         }
 
         .brand-area {
             display: flex;
             align-items: center;
             gap: 15px;
+        }
+
+        .brand-link {
+            text-decoration: none;
+            display: flex;
+            align-items: center;
         }
 
         .logo-img {
@@ -79,7 +89,9 @@
         #main-layout {
             display: flex;
             flex: 1;
-            height: calc(100vh - 60px);
+            height: calc(100vh - 60px - 35px);
+            overflow: hidden;
+            position: relative;
         }
 
         /* SIDEBAR (CONTROLES) */
@@ -91,8 +103,10 @@
             display: flex;
             flex-direction: column;
             gap: 24px;
-            overflow-y: auto;
+            overflow-y: auto; /* Internal scroll */
             flex-shrink: 0;
+            z-index: 20;
+            overscroll-behavior: contain;
         }
 
         /* CANVAS AREA */
@@ -105,11 +119,36 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            z-index: 10;
         }
 
         canvas {
             display: block;
             box-shadow: 0 0 50px rgba(0,0,0,0.5);
+            touch-action: none; /* Blocks browser scroll/zoom on canvas */
+        }
+
+        /* Fullscreen Toggle Button */
+        #btn-fullscreen {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(0,0,0,0.6);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #fff;
+            width: 36px;
+            height: 36px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 100;
+            font-size: 18px;
+            backdrop-filter: blur(4px);
+        }
+        #btn-fullscreen:active {
+            background: var(--accent);
         }
 
         /* UI ELEMENTS */
@@ -163,6 +202,7 @@
             -webkit-appearance: none;
             width: 100%;
             background: transparent;
+            padding: 5px 0;
         }
         
         input[type=range]:focus { outline: none; }
@@ -176,6 +216,7 @@
             cursor: pointer;
             margin-top: -5px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            transition: transform 0.1s;
         }
 
         input[type=range]::-webkit-slider-runnable-track {
@@ -186,7 +227,6 @@
             border-radius: 2px;
         }
 
-        /* BOTONES */
         .btn-row { display: flex; gap: 8px; }
         .btn-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
 
@@ -206,6 +246,10 @@
         button:hover {
             background: #3f3f46;
             color: #fff;
+        }
+        
+        button:active {
+            transform: scale(0.98);
         }
 
         button.active {
@@ -235,6 +279,18 @@
              box-shadow: 0 0 15px rgba(124, 58, 237, 0.5);
              filter: brightness(1.1);
         }
+        
+        button.small-btn {
+            padding: 4px 8px;
+            font-size: 9px;
+            border-radius: 3px;
+            background: #27272a;
+            border: 1px solid #3f3f46;
+        }
+        button.small-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
 
         /* POLARIDAD */
         .polarity-grid {
@@ -252,6 +308,7 @@
             border-radius: 4px;
             font-size: 10px;
             font-weight: bold;
+            cursor: pointer;
         }
 
         .pol-btn span:first-child { font-size: 12px; margin-bottom: 2px; }
@@ -272,6 +329,7 @@
             width: 200px;
             pointer-events: none;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            z-index: 10;
         }
 
         .legend-panel {
@@ -291,6 +349,7 @@
             flex-direction: row;
             align-items: center;
             gap: 10px;
+            z-index: 10;
         }
 
         .hud-row {
@@ -308,17 +367,16 @@
         .status-warn { color: var(--warning); }
         .status-danger { color: var(--danger); }
 
-        /* Vertical Legend Bar */
         .color-bar {
             width: 12px;
             height: 200px;
             background: linear-gradient(to top, 
-                #000 0%,     /* Silencio */
-                #0000ff 25%, /* Azul -12dB */
-                #00ff00 50%, /* Verde -6dB */
-                #ffff00 75%, /* Amarillo 0dB */
-                #ff0000 90%, /* Rojo +6dB */
-                #ffffff 100% /* Blanco +12dB */
+                #ffffff 0%,   /* +6dB (White) */
+                #ff0000 15%,  /* +3dB (Red) */
+                #ffff00 30%,  /* 0dB (Yellow) */
+                #00ff00 50%,  /* -6dB (Green) */
+                #0000ff 75%,  /* -12dB (Blue) */
+                #000000 100%  /* -20dB (Black) */
             );
             border-radius: 4px;
             border: 1px solid #333;
@@ -339,7 +397,7 @@
 
         /* FOOTER */
         footer {
-            height: 30px;
+            height: 35px;
             background: #000;
             border-top: 1px solid var(--border);
             display: flex;
@@ -349,6 +407,113 @@
             color: #52525b;
             font-weight: 500;
             letter-spacing: 0.5px;
+            flex-shrink: 0;
+            z-index: 60;
+            padding: 0;
+        }
+
+        .footer-link {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            color: #52525b;
+            text-decoration: none;
+            width: 100%;
+            height: 100%;
+            transition: color 0.2s;
+        }
+        .footer-link:hover {
+            color: var(--accent);
+        }
+        .footer-icon {
+            width: 14px;
+            height: 14px;
+            fill: currentColor;
+        }
+
+        /* --- MOBILE RESPONSIVE STYLES (SPLIT VIEW) --- */
+        @media (max-width: 768px) {
+            header {
+                padding: 0 15px;
+            }
+
+            .logo-img { height: 35px; }
+
+            h1 { font-size: 14px; }
+            h1 span { font-size: 9px; }
+
+            #main-layout {
+                flex-direction: column; /* Stack Vertically */
+            }
+
+            /* FIXED CANVAS ON TOP - 45% of screen */
+            #viewport {
+                flex: none; /* Do not grow */
+                width: 100%;
+                height: 45vh; /* Fixed percentage */
+                min-height: 0;
+                order: 1;
+                border-bottom: 1px solid var(--border);
+            }
+
+            /* SCROLLABLE CONTROLS BELOW */
+            #controles {
+                flex: 1; /* Take remaining space */
+                width: 100%;
+                height: auto; /* Let flex handle height */
+                order: 2;
+                border-right: none;
+                padding-bottom: 40px;
+            }
+
+            /* FULLSCREEN MODE OVERRIDES */
+            body.fullscreen-mode header { display: none; }
+            body.fullscreen-mode footer { display: none; }
+            body.fullscreen-mode #controles { display: none; }
+            
+            body.fullscreen-mode #main-layout {
+                height: 100vh;
+            }
+            body.fullscreen-mode #viewport {
+                height: 100%;
+                min-height: 100%;
+                border-bottom: none;
+            }
+
+            /* Touch Optimizations */
+            button {
+                padding: 12px 14px; 
+                font-size: 11px;
+            }
+
+            .pol-btn {
+                min-height: 50px; 
+            }
+
+            input[type=range]::-webkit-slider-thumb {
+                width: 24px;
+                height: 24px;
+                margin-top: -10px;
+            }
+            input[type=range]::-webkit-slider-runnable-track {
+                height: 6px;
+            }
+
+            /* HUD Tweaks */
+            .hud-panel {
+                top: 10px;
+                left: 10px;
+                width: 150px;
+                padding: 10px;
+            }
+            .legend-panel {
+                right: 10px;
+                padding: 5px;
+                width: 40px;
+            }
+            .legend-text { font-size: 8px; }
+            .color-bar { width: 8px; }
         }
 
     </style>
@@ -358,7 +523,7 @@
 
     <header>
         <div class="brand-area">
-            <a href="https://www.instagram.com/3d_mc_3d/" target="_blank" title="Visitar Instagram de MC">
+            <a href="https://www.instagram.com/3d_mc_3d/" target="_blank" title="Visitar Instagram de MC" class="brand-link">
                 <img src="https://raw.githubusercontent.com/MauroCasarin/SONIDO/refs/heads/main/MC%2048%20N.png" alt="MC Logo" class="logo-img">
             </a>
             <h1>
@@ -370,7 +535,7 @@
 
     <div id="main-layout">
         
-        <!-- CONTROLES SIDEBAR -->
+        <!-- CONTROLES SIDEBAR (Scrollable on Mobile) -->
         <div id="controles">
             
             <!-- Global Params -->
@@ -380,9 +545,9 @@
                 <div class="slider-row">
                     <div class="slider-label">
                         <span>Frecuencia</span>
-                        <span class="slider-val" id="disp-freq">60 Hz</span>
+                        <span class="slider-val" id="disp-freq">80 Hz</span>
                     </div>
-                    <input type="range" id="input-freq" min="20" max="200" value="60">
+                    <input type="range" id="input-freq" min="20" max="200" value="80">
                 </div>
 
                 <div class="slider-row" id="row-count">
@@ -397,17 +562,14 @@
                 <div class="slider-row" id="row-dist">
                     <div class="slider-label">
                         <span>Separación</span>
-                        <span class="slider-val" id="disp-dist">1.00 m</span>
+                        <span class="slider-val" id="disp-dist">1.07 m</span>
                     </div>
-                    <input type="range" id="input-dist" min="0.2" max="4.0" step="0.01" value="1.00">
-                </div>
-
-                <div class="slider-row">
-                    <div class="slider-label">
-                        <span>Temperatura</span>
-                        <span class="slider-val" id="disp-temp" style="color:var(--warning)">20 °C</span>
+                    <input type="range" id="input-dist" min="0.2" max="4.0" step="0.01" value="1.07">
+                    <!-- Quick Separation Buttons -->
+                    <div class="btn-row" style="margin-top:6px;">
+                        <button class="small-btn" style="flex:1" onclick="app.setLambdaFraction(0.25)">Sep λ/4 (Suma Frontal)</button>
+                        <button class="small-btn" style="flex:1" onclick="app.setLambdaFraction(0.5)">Sep λ/2 (Rechazo Lat)</button>
                     </div>
-                    <input type="range" id="input-temp" min="-10" max="45" value="20">
                 </div>
             </div>
 
@@ -433,14 +595,6 @@
                     <input type="range" id="input-lat-margin" min="0" max="5.0" step="0.1" value="0.5">
                 </div>
 
-                <div style="margin-top:12px; margin-bottom:6px; font-size:9px; font-weight:bold; color:#52525b;">PRESETS AUTOMÁTICOS (λ/4)</div>
-                <div class="btn-grid">
-                    <button onclick="app.applyPreset(40)">40Hz</button>
-                    <button onclick="app.applyPreset(50)">50Hz</button>
-                    <button onclick="app.applyPreset(63)">63Hz</button>
-                    <button onclick="app.applyPreset(80)">80Hz</button>
-                </div>
-
                 <div class="btn-row" style="margin-top:12px;">
                     <button class="danger" style="flex:1" onclick="app.setupCardioid()">CARDIOIDE CSA</button>
                     <button style="flex:1; border-color:var(--accent); color:var(--accent);" onclick="app.optimizeSpacing()">AUTO ESPACIO</button>
@@ -451,7 +605,7 @@
             <div class="control-group">
                 <div class="group-title">MICRÓFONO & OPTIMIZACIÓN</div>
                 <div style="font-size:10px; color:#a1a1aa; margin-bottom:8px;">
-                    Posiciona el micrófono y pulsa para enfocar los retardos en ese punto.
+                    Posiciona el micrófono para ver el Analizador de Fase.
                 </div>
                 <button class="magic" style="width:100%; padding:10px;" onclick="app.autoOptimize()">
                     ✨ AUTO-OPTIMIZAR (FOCUS)
@@ -524,15 +678,20 @@
             </div>
         </div>
 
-        <!-- VISUALIZER AREA -->
+        <!-- VISUALIZER AREA (Fixed Top on Mobile) -->
         <div id="viewport">
+            <!-- Fullscreen Toggle Button -->
+            <button id="btn-fullscreen" onclick="app.toggleFullscreen()" title="Pantalla Completa">
+                ⛶
+            </button>
+
             <canvas id="simCanvas" width="800" height="600"></canvas>
             
             <!-- HUD OVERLAY (Left) -->
             <div class="hud-panel" style="top:20px; left:20px;">
                 <div class="hud-row">
                     <span class="hud-label">Velocidad Sonido:</span>
-                    <span class="hud-value" id="hud-speed">--</span>
+                    <span class="hud-value" id="hud-speed">343 m/s</span>
                 </div>
                 <div class="hud-row">
                     <span class="hud-label">Longitud de Onda (λ):</span>
@@ -563,12 +722,12 @@
             <!-- COLOR LEGEND (Right) -->
             <div class="legend-panel">
                 <div class="legend-text">
-                    <span style="color:#fff;">+12dB<br>(Pegada)</span>
-                    <span style="color:#ff0000;">+6dB</span>
+                    <span style="color:#fff;">+6dB<br>(Suma)</span>
+                    <span style="color:#ff0000;">+3dB</span>
                     <span style="color:#ffff00;">0dB</span>
                     <span style="color:#00ff00;">-6dB</span>
                     <span style="color:#0000ff;">-12dB</span>
-                    <span style="color:#444;">SILENCIO</span>
+                    <span style="color:#444;">-20dB</span>
                 </div>
                 <div class="color-bar"></div>
             </div>
@@ -577,7 +736,13 @@
     </div>
 
     <footer>
-        Creado por Mauro Casarin
+        <a href="https://www.instagram.com/3d_mc_3d/" target="_blank" class="footer-link">
+            <!-- Instagram Icon (Simple SVG) -->
+            <svg class="footer-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+            </svg>
+            <span>Creado por Mauro Casarin</span>
+        </a>
     </footer>
 
     <script>
@@ -588,24 +753,27 @@
         
         window.onload = function() {
             
+            const SPEED_OF_SOUND = 343; // Constants fixed as per request
+
             // --- STATE MANAGEMENT ---
             const state = {
-                freq: 60,
-                dist: 1.0,
-                count: 2,
-                temp: 20,
-                mode: 'broadside', // 'broadside' | 'endfire'
-                lrMode: false,     // Single vs Stereo L/R
-                stageGap: 1.0,     // Distance from array back to stage front
-                lateralMargin: 0.5, // Lateral safety margin for L/R
+                freq: 80, // Default 80Hz
+                dist: 1.07, // Default 1.07m (lambda/4 at 80Hz with c=343 -> 343/80/4 = 1.0718)
+                count: 2, // Default 2 baffles
+                // temp: 20, // Removed temperature as speed is fixed to 343
+                mode: 'broadside', 
+                lrMode: false,     
+                stageGap: 1.0,     
+                lateralMargin: 0.5, 
                 polarities: new Array(16).fill(false),
-                isOptimized: false, // Flag for beam focusing
-                customPhases: [],   // Stores calculated phases for optimization
-                viewGain: 1.0,      // Dynamic gain for visualization
+                isOptimized: false, 
+                customPhases: [],   
+                viewGain: 1.0,      
+                isFullscreen: false,
                 view: {
                     scale: 30, // Pixels per meter
-                    x: 0,      // Offset X
-                    y: 150,    // Offset Y (Shifted down to show audience up)
+                    x: 0,      
+                    y: 150,    
                     dragging: false,
                     lastX: 0,
                     lastY: 0,
@@ -614,13 +782,13 @@
                 },
                 mic: {
                     x: 0, 
-                    y: -5, // Audience is negative Y
+                    y: -5, 
                 },
                 stage: {
                     w: 10,
-                    h: 6, // Depth
-                    x: 0, // Center X
-                    y: 2, // Front Face Y (Positive Y is down/stage area)
+                    h: 6, 
+                    x: 0, 
+                    y: 2, 
                 },
                 zones: [],
                 selectedZoneIndex: -1, 
@@ -634,7 +802,7 @@
                     freq: document.getElementById('input-freq'),
                     dist: document.getElementById('input-dist'),
                     count: document.getElementById('input-count'),
-                    temp: document.getElementById('input-temp'),
+                    // temp: document.getElementById('input-temp'), // Removed
                     stgW: document.getElementById('input-stg-w'),
                     stgD: document.getElementById('input-stg-d'),
                     stgX: document.getElementById('input-stg-x'),
@@ -645,7 +813,7 @@
                     freq: document.getElementById('disp-freq'),
                     dist: document.getElementById('disp-dist'),
                     count: document.getElementById('disp-count'),
-                    temp: document.getElementById('disp-temp'),
+                    // temp: document.getElementById('disp-temp'), // Removed
                     stgW: document.getElementById('disp-stg-w'),
                     stgD: document.getElementById('disp-stg-d'),
                     stgX: document.getElementById('disp-stg-x'),
@@ -689,7 +857,7 @@
                 },
                 toggleLR: () => {
                     state.lrMode = !state.lrMode;
-                    state.isOptimized = false; // Reset opt on config change
+                    state.isOptimized = false; 
                     resetGain();
                     els.optStatus.style.display = 'none';
                     els.btns.lr.innerText = state.lrMode ? "MODO: STEREO L/R" : "MODO: MONO CENTRAL";
@@ -702,13 +870,34 @@
                     renderPolarityGrid();
                     requestAnimationFrame(draw);
                 },
+                toggleFullscreen: () => {
+                    state.isFullscreen = !state.isFullscreen;
+                    if(state.isFullscreen) {
+                        document.body.classList.add('fullscreen-mode');
+                    } else {
+                        document.body.classList.remove('fullscreen-mode');
+                    }
+                    handleResize(); 
+                },
+                setLambdaFraction: (frac) => {
+                    const c = SPEED_OF_SOUND;
+                    let optimal = (c / state.freq) * frac;
+                    optimal = Math.min(4.0, Math.max(0.2, optimal));
+                    state.dist = optimal;
+                    els.inputs.dist.value = optimal;
+                    // Auto optimization is cleared when manually adjusting separation
+                    state.isOptimized = false; 
+                    els.optStatus.style.display = 'none';
+                    updateUI();
+                    requestAnimationFrame(draw);
+                },
                 applyPreset: (hz) => {
                     state.freq = hz;
                     state.isOptimized = false;
                     resetGain();
                     els.optStatus.style.display = 'none';
                     els.inputs.freq.value = hz;
-                    const v = 331.3 * Math.sqrt(1 + state.temp / 273.15);
+                    const v = SPEED_OF_SOUND;
                     let optimal = (v / hz) / 4;
                     optimal = Math.min(4.0, Math.max(0.2, optimal));
                     state.dist = optimal;
@@ -725,7 +914,7 @@
                     window.app.applyPreset(state.freq);
                 },
                 optimizeSpacing: () => {
-                     const v = 331.3 * Math.sqrt(1 + state.temp / 273.15);
+                     const v = SPEED_OF_SOUND;
                      let optimal = (v / state.freq) / 4;
                      optimal = Math.min(4.0, Math.max(0.2, optimal));
                      state.dist = optimal;
@@ -740,39 +929,23 @@
                     requestAnimationFrame(draw);
                 },
                 autoOptimize: () => {
-                    // 1. Optimize Spacing to Lambda/4
-                    const v = 331.3 * Math.sqrt(1 + state.temp / 273.15);
+                    const v = SPEED_OF_SOUND;
                     let optimal = (v / state.freq) / 4;
                     optimal = Math.min(4.0, Math.max(0.2, optimal));
                     state.dist = optimal;
                     els.inputs.dist.value = optimal;
 
-                    // 2. Beam Steering Logic
-                    // Calculate phase delay: k * distance
                     const k = (2 * Math.PI * state.freq) / v; 
                     const tempSources = generateSourcesForLogic();
                     
                     state.customPhases = tempSources.map(s => {
                         const d = Math.hypot(state.mic.x - s.x, state.mic.y - s.y);
-                        // Phase advancement to compensate for lag k*d
                         return k * d; 
                     });
                     
-                    // 3. Auto-Gain for Visuals (Force Red at Target)
-                    // Calculate the scalar sum of amplitudes at the mic position (maximum possible constructive interference)
-                    let theoreticalSum = 0;
-                    tempSources.forEach(s => {
-                        const d = Math.hypot(state.mic.x - s.x, state.mic.y - s.y);
-                        theoreticalSum += 1.0 / (1.0 + d);
-                    });
-                    
-                    // Set View Gain so that the theoretical sum maps to approx 1.0 (Red/White limit)
-                    if (theoreticalSum > 0.0001) {
-                        state.viewGain = 1.0 / theoreticalSum;
-                    }
-
                     state.isOptimized = true;
                     els.optStatus.style.display = 'block';
+                    resetGain();
                     updateUI();
                     requestAnimationFrame(draw);
                 },
@@ -790,14 +963,34 @@
 
             // --- HELPER ---
             function resetGain() {
-                // Modified for better Distance Decay visualization
-                // Default gain increased slightly to allow "red" at source but decay visibly
-                state.viewGain = 1.3 / (state.count * 0.95);
+                // Calibrate so that at standard distance it visualizes nicely
+                state.viewGain = 1.0; 
+            }
+
+            function getPointerPos(e) {
+                const rect = els.canvas.getBoundingClientRect();
+                let clientX, clientY;
+                
+                if (e.changedTouches && e.changedTouches.length > 0) {
+                    clientX = e.changedTouches[0].clientX;
+                    clientY = e.changedTouches[0].clientY;
+                } else {
+                    clientX = e.clientX;
+                    clientY = e.clientY;
+                }
+                
+                return {
+                    x: clientX - rect.left,
+                    y: clientY - rect.top,
+                    clientX: clientX,
+                    clientY: clientY
+                };
             }
 
             // --- EVENT LISTENERS ---
             
             Object.keys(els.inputs).forEach(key => {
+                if(!els.inputs[key]) return; // Guard against removed elements
                 els.inputs[key].addEventListener('input', (e) => {
                     const val = parseFloat(e.target.value);
                     if (key === 'stgW') state.stage.w = val;
@@ -807,7 +1000,6 @@
                     else if (key === 'latMargin') state.lateralMargin = val;
                     else state[key] = val;
                     
-                    // Reset optimization if physical parameters change significantly
                     if (['freq', 'dist', 'stgX', 'stgGap', 'latMargin', 'count'].includes(key)) {
                          if(state.isOptimized) {
                              state.isOptimized = false;
@@ -822,76 +1014,67 @@
                 });
             });
 
-            els.canvas.addEventListener('mousedown', e => {
-                const rect = els.canvas.getBoundingClientRect();
-                const mouseX = e.clientX - rect.left;
-                const mouseY = e.clientY - rect.top;
-
+            // Pointer Handlers...
+            function handleStart(e) {
+                if(e.type === 'touchstart') e.preventDefault();
+                const pos = getPointerPos(e);
+                const mouseX = pos.x;
+                const mouseY = pos.y;
                 const cx = els.canvas.width / 2 + state.view.x;
                 const cy = els.canvas.height / 2 + state.view.y;
                 const ppm = state.view.scale;
                 const toScreen = (mx, my) => ({ x: cx + mx * ppm, y: cy + my * ppm });
 
                 const ms = toScreen(state.mic.x, state.mic.y);
-                if (Math.hypot(mouseX - ms.x, mouseY - ms.y) < 15) {
+                if (Math.hypot(mouseX - ms.x, mouseY - ms.y) < 25) {
                     state.view.dragType = 'mic';
                     state.view.dragging = true;
-                    state.view.lastX = e.clientX;
-                    state.view.lastY = e.clientY;
+                    state.view.lastX = pos.clientX;
+                    state.view.lastY = pos.clientY;
                     return;
                 }
 
-                // Reverse loop to check top-most zones first
                 for(let i=state.zones.length-1; i>=0; i--) {
                     const z = state.zones[i];
                     const zs = toScreen(z.x, z.y);
                     const zw = z.w * ppm;
                     const zh = z.h * ppm;
-                    
-                    // Resize corner (Bottom-Right)
-                    if (mouseX > zs.x + zw - 15 && mouseX < zs.x + zw + 15 &&
-                        mouseY > zs.y + zh - 15 && mouseY < zs.y + zh + 15) {
+                    if (mouseX > zs.x + zw - 25 && mouseX < zs.x + zw + 25 &&
+                        mouseY > zs.y + zh - 25 && mouseY < zs.y + zh + 25) {
                         state.view.dragType = 'zone-resize';
                         state.view.dragIndex = i;
                         state.selectedZoneIndex = i;
                         state.view.dragging = true;
-                        state.view.lastX = e.clientX;
-                        state.view.lastY = e.clientY;
+                        state.view.lastX = pos.clientX;
+                        state.view.lastY = pos.clientY;
                         requestAnimationFrame(draw);
                         return;
                     }
-                    // Body move
                     if (mouseX >= zs.x && mouseX <= zs.x + zw && mouseY >= zs.y && mouseY <= zs.y + zh) {
                         state.view.dragType = 'zone';
                         state.view.dragIndex = i;
-                        state.selectedZoneIndex = i; // Select on click
+                        state.selectedZoneIndex = i;
                         state.view.dragging = true;
-                        state.view.lastX = e.clientX;
-                        state.view.lastY = e.clientY;
+                        state.view.lastX = pos.clientX;
+                        state.view.lastY = pos.clientY;
                         requestAnimationFrame(draw);
                         return;
                     }
                 }
-
-                // If clicking empty space, deselect zone
                 state.selectedZoneIndex = -1;
-
                 state.view.dragType = 'view';
                 state.view.dragging = true;
-                state.view.lastX = e.clientX;
-                state.view.lastY = e.clientY;
+                state.view.lastX = pos.clientX;
+                state.view.lastY = pos.clientY;
                 requestAnimationFrame(draw);
-            });
+            }
 
-            window.addEventListener('mouseup', () => {
-                state.view.dragging = false;
-                state.view.dragType = null;
-            });
-
-            window.addEventListener('mousemove', e => {
+            function handleMove(e) {
                 if(state.view.dragging) {
-                    const dxPix = e.clientX - state.view.lastX;
-                    const dyPix = e.clientY - state.view.lastY;
+                    e.preventDefault(); 
+                    const pos = getPointerPos(e);
+                    const dxPix = pos.clientX - state.view.lastX;
+                    const dyPix = pos.clientY - state.view.lastY;
                     const dxM = dxPix / state.view.scale;
                     const dyM = dyPix / state.view.scale;
 
@@ -902,7 +1085,6 @@
                     else if (state.view.dragType === 'mic') {
                         state.mic.x += dxM;
                         state.mic.y += dyM;
-                        // Cancel opt on drag
                         if(state.isOptimized) {
                             state.isOptimized = false;
                             els.optStatus.style.display = 'none';
@@ -919,13 +1101,23 @@
                         z.w = Math.max(0.5, z.w + dxM);
                         z.h = Math.max(0.5, z.h + dyM);
                     }
-
-                    state.view.lastX = e.clientX;
-                    state.view.lastY = e.clientY;
+                    state.view.lastX = pos.clientX;
+                    state.view.lastY = pos.clientY;
                     requestAnimationFrame(draw);
                 }
-            });
+            }
 
+            function handleEnd(e) {
+                state.view.dragging = false;
+                state.view.dragType = null;
+            }
+
+            els.canvas.addEventListener('mousedown', handleStart);
+            window.addEventListener('mousemove', handleMove);
+            window.addEventListener('mouseup', handleEnd);
+            els.canvas.addEventListener('touchstart', handleStart, {passive: false});
+            window.addEventListener('touchmove', handleMove, {passive: false});
+            window.addEventListener('touchend', handleEnd);
             els.canvas.addEventListener('wheel', e => {
                 e.preventDefault();
                 const factor = e.deltaY > 0 ? 0.9 : 1.1;
@@ -933,7 +1125,6 @@
                 state.view.scale = Math.max(5, Math.min(100, state.view.scale));
                 requestAnimationFrame(draw);
             });
-
             window.addEventListener('resize', handleResize);
 
             // --- LOGIC ---
@@ -949,7 +1140,7 @@
                 els.displays.freq.innerText = state.freq + ' Hz';
                 els.displays.dist.innerText = state.dist.toFixed(2) + ' m';
                 els.displays.count.innerText = state.count;
-                els.displays.temp.innerText = state.temp + ' °C';
+                // els.displays.temp.innerText = state.temp + ' °C'; // Removed
                 els.displays.stgW.innerText = state.stage.w.toFixed(1) + ' m';
                 els.displays.stgD.innerText = state.stage.h.toFixed(1) + ' m';
                 els.displays.stgX.innerText = state.stage.x.toFixed(1) + ' m';
@@ -962,11 +1153,11 @@
                     els.rows.dist.classList.remove('disabled');
                 }
 
-                const c = 331.3 * Math.sqrt(1 + state.temp / 273.15);
+                const c = SPEED_OF_SOUND;
                 const lambda = c / state.freq;
                 const delay = (state.dist / c) * 1000;
 
-                els.hud.speed.innerText = c.toFixed(1) + ' m/s';
+                // els.hud.speed.innerText = c.toFixed(1) + ' m/s'; // Already hardcoded in HTML
                 els.hud.lambda.innerText = lambda.toFixed(2) + ' m';
                 
                 const limit = (2/3) * lambda; 
@@ -983,7 +1174,6 @@
                     els.hud.status.className = "hud-value";
                 }
 
-                // Bounce Analysis
                 let bounceText = "Baja";
                 let bounceColor = "#22c55e";
                 if (state.stageGap < 0.5) {
@@ -1028,10 +1218,9 @@
                 }
             }
 
-            // Helper to reuse generation logic without drawing
             function generateSourcesForLogic() {
                 const stageFrontY = state.stage.y;
-                const c = 331.3 * Math.sqrt(1 + state.temp / 273.15);
+                const c = SPEED_OF_SOUND;
                 const k = (2 * Math.PI * state.freq) / c;
                 
                 const sources = [];
@@ -1042,8 +1231,6 @@
                     xOffsets = [state.stage.x - offset, state.stage.x + offset];
                 }
                 
-                let globalIndex = 0;
-
                 xOffsets.forEach(xOff => {
                     const startY = stageFrontY - state.stageGap; 
                     
@@ -1058,24 +1245,85 @@
                                 phase: 0,
                                 inv: state.polarities[i]
                             });
-                            globalIndex++;
                         }
                     } else {
-                        // End-Fire Grow Backwards
+                        // End-Fire: Sum forward (towards audience, +y)
+                        // Rear speaker (i=0) is at startY.
+                        // Front speaker (i=N-1) is at startY + (N-1)*dist.
+                        // For constructive interference forward, subsequent speakers must be delayed.
+                        // Delay = distance / c.
                         for(let i=0; i<state.count; i++) {
                             const yPos = startY + (i * state.dist); 
-                            const delayMeters = (state.count - 1 - i) * state.dist; 
+                            const delayMeters = i * state.dist; // Forward summation delay
                             sources.push({
                                 x: xOff,
                                 y: yPos,
                                 phase: k * delayMeters,
                                 inv: state.polarities[i]
                             });
-                            globalIndex++;
                         }
                     }
                 });
                 return sources;
+            }
+
+            function getHeatmapColor(db) {
+                // dB mapping to RGB
+                // +6dB or more -> White (255,255,255)
+                // +3dB -> Red (255,0,0)
+                // 0dB -> Yellow (255,255,0)
+                // -6dB -> Green (0,255,0)
+                // -12dB -> Blue (0,0,255)
+                // -20dB -> Black (0,0,0)
+
+                let r=0, g=0, b=0;
+
+                if (db >= 6) {
+                    // White
+                    r=255; g=255; b=255;
+                } else if (db >= 3) {
+                    // Red to White
+                    // 3 -> 255,0,0
+                    // 6 -> 255,255,255
+                    const t = (db - 3) / 3;
+                    r=255; 
+                    g=Math.floor(t * 255); 
+                    b=Math.floor(t * 255);
+                } else if (db >= 0) {
+                    // Yellow to Red
+                    // 0 -> 255,255,0
+                    // 3 -> 255,0,0
+                    const t = (db - 0) / 3;
+                    r=255;
+                    g=Math.floor((1-t) * 255);
+                    b=0;
+                } else if (db >= -6) {
+                    // Green to Yellow
+                    // -6 -> 0,255,0
+                    // 0 -> 255,255,0
+                    const t = (db - (-6)) / 6;
+                    r=Math.floor(t * 255);
+                    g=255;
+                    b=0;
+                } else if (db >= -12) {
+                    // Blue to Green
+                    // -12 -> 0,0,255
+                    // -6 -> 0,255,0
+                    const t = (db - (-12)) / 6;
+                    r=0;
+                    g=Math.floor(t * 255);
+                    b=Math.floor((1-t) * 255);
+                } else if (db >= -20) {
+                    // Black to Blue
+                    // -20 -> 0,0,0
+                    // -12 -> 0,0,255
+                    const t = (db - (-20)) / 8;
+                    r=0; g=0; b=Math.floor(t * 255);
+                } else {
+                    // Black
+                    r=0; g=0; b=0;
+                }
+                return {r, g, b};
             }
 
             function draw() {
@@ -1085,7 +1333,7 @@
                 const cy = h/2 + state.view.y;
                 const ppm = state.view.scale;
                 
-                const c = 331.3 * Math.sqrt(1 + state.temp / 273.15);
+                const c = SPEED_OF_SOUND;
                 const k = (2 * Math.PI * state.freq) / c;
 
                 // --- 0. BACKGROUND & GRID ---
@@ -1112,9 +1360,7 @@
                 ctx.stroke();
                 ctx.restore();
 
-
                 // --- 1. GENERATE SOURCES ---
-                // We reuse logic but apply optimization if needed
                 let sources = generateSourcesForLogic();
                 
                 if (state.isOptimized && state.customPhases.length === sources.length) {
@@ -1126,13 +1372,7 @@
                 // --- 2. REFLECTIONS & SHADOWS ---
                 const stageFrontY = state.stage.y;
                 const allSources = [...sources.map(s => ({...s, ampScale: 1.0}))];
-                
-                // PHYSICS: Proportional Reflection Strength
-                // Reflection depends on Stage Surface Area.
-                // Example: 10m x 6m stage -> Stronger than 2m x 2m.
                 const stageArea = state.stage.w * state.stage.h;
-                // Coef 0.0 to 1.0. Typically stage floor/wall is hard, so fairly high, 
-                // but limited by size vs wavelength. 
                 const refCoef = Math.min(0.9, Math.max(0.3, stageArea / 30.0));
 
                 sources.forEach(s => {
@@ -1144,7 +1384,7 @@
                             phase: s.phase,
                             inv: s.inv,
                             isReflection: true,
-                            ampScale: refCoef // Apply reflection loss
+                            ampScale: refCoef 
                         });
                     }
                 });
@@ -1157,22 +1397,17 @@
                     bottom: cy + (z.y + z.h) * ppm,
                     areaPoints: 0,
                     goodPoints: 0,
-                    // Store boundaries in screen space for pixel loop optimization
                     sLeft: Math.floor(cx + z.x * ppm),
                     sRight: Math.ceil(cx + (z.x + z.w) * ppm),
                     sTop: Math.floor(cy + z.y * ppm),
                     sBottom: Math.ceil(cy + (z.y + z.h) * ppm),
-                    zTop: z.y // Store physical top Y for absorption calc
+                    zTop: z.y 
                 }));
 
-                // Define Stage Physical Boundaries for Shadowing
                 const stgLeftPx = cx + (state.stage.x - state.stage.w/2)*ppm;
                 const stgRightPx = cx + (state.stage.x + state.stage.w/2)*ppm;
                 const stgFrontPx = cy + state.stage.y * ppm;
-                // "Behind" stage is +Y in this coord system (down screen)
-                const stgBackPx = cy + (state.stage.y + state.stage.h * 1.5) * ppm; // Shadow extends a bit
-
-                // USE DYNAMIC GAIN
+                
                 const gain = state.viewGain; 
 
                 const screenSources = allSources.map(s => ({
@@ -1186,290 +1421,98 @@
                 const imgData = ctx.getImageData(0, 0, w, h);
                 const data = imgData.data;
 
+                // 18dB Attenuation factor: 10^(-18/20) approx 0.1259
+                const shadowAtten = 0.1259;
+
                 for(let y=0; y<h; y+=2) { 
                     const wy = y - cy;
                     const rowOff = y * w * 4;
-
-                    // Optimization: Check if row is potentially inside stage shadow
-                    const inShadowY = (y > stgFrontPx);
+                    
+                    // Simple Shadow Check: If pixel is 'behind' the stage structure relative to sources (top).
+                    // Stage Front is stgFrontPx. If y > stgFrontPx, it might be in shadow.
+                    const behindStage = (y > stgFrontPx);
 
                     for(let x=0; x<w; x++) {
                         const wx = x - cx;
                         let rSum = 0;
                         let iSum = 0;
                         
+                        // Vector Summation
                         for(let i=0; i<screenSources.length; i++) {
                             const s = screenSources[i];
                             const dx = wx - s.sx;
                             const dy = wy - s.sy;
+                            // Physical distance in meters
                             const distMeters = Math.sqrt(dx*dx + dy*dy) / ppm;
 
-                            // Distance attenuation 1/(1+d)
-                            const amp = (1.0 / (1.0 + distMeters)) * s.ampScale; 
+                            // STRICT INVERSE SQUARE LAW: Amplitude = 1 / d
+                            const dClamped = Math.max(0.1, distMeters);
+                            const amp = (1.0 / dClamped) * s.ampScale; 
+                            
                             const phi = (k * distMeters) - s.ph + (s.inv ? Math.PI : 0);
 
                             rSum += Math.cos(phi) * amp;
                             iSum += Math.sin(phi) * amp;
                         }
 
+                        // Magnitude of vector sum
                         let mag = Math.sqrt(rSum*rSum + iSum*iSum) * gain;
                         
-                        // PHYSICS: Acoustic Shadow (Occlusion)
-                        // If pixel is "behind" the array (inside stage or deeper), attenuate high freq energy
-                        // Simulates lack of omnidirectionality or physical blocking
-                        if (inShadowY) {
-                            if (x > stgLeftPx && x < stgRightPx) {
-                                // Gradual shadow
-                                mag *= 0.25; 
-                            }
+                        // Apply Stage Shadow (-18dB)
+                        // This applies if pixel is within the horizontal bounds of the stage and "behind" it.
+                        if (behindStage && x > stgLeftPx && x < stgRightPx) {
+                             mag *= shadowAtten; 
                         }
 
-                        // Check zones coverage & APPLY ABSORPTION PHYSICS
+                        // Convert to Decibels
+                        const db = 20 * Math.log10(mag + 0.000001);
+
+                        // Check zones coverage
                         for (let z of activeZones) {
                             if (x >= z.sLeft && x <= z.sRight && y >= z.sTop && y <= z.sBottom) {
                                 z.areaPoints++;
-                                // Physics: Audience Absorption
+                                // Simple absorption calc
                                 const depthMeters = (wy/ppm) - z.zTop;
-                                const absorptionFactor = Math.max(0.4, 1.0 - (depthMeters * 0.08));
-                                mag *= absorptionFactor;
-                                if (mag >= 0.5) z.goodPoints++; // -6dB = 0.5 linear
+                                const absDB = Math.min(0, -(depthMeters * 0.5)); // loss per meter depth
+                                if (db + absDB >= -6) z.goodPoints++;
                             }
                         }
 
-                        // Updated Color Map (Red/White High, Yellow Mid, Green/Blue Low)
-                        let r=0, g=0, b=0;
-                        
-                        if (mag > 1.0) {
-                             const t = Math.min(1, (mag - 1.0) * 2); 
-                             r=255; g=255*t; b=255*t;
-                        } else if (mag > 0.75) {
-                             r = 255;
-                             g = (mag - 0.75) * 4 * 100; // Slight orange tint
-                             b = 0;
-                        } else if (mag > 0.5) {
-                             const t = (mag - 0.5) * 4; // 0 to 1
-                             r = t * 255;
-                             g = 255;
-                             b = 0;
-                        } else if (mag > 0.25) {
-                             const t = (mag - 0.25) * 4;
-                             r = 0;
-                             g = t * 255;
-                             b = (1-t) * 255;
-                        } else {
-                             const t = mag * 4; 
-                             r = 0; g = 0; b = t * 255;
-                        }
+                        const {r,g,b} = getHeatmapColor(db);
 
                         const idx = rowOff + (x * 4);
-                        if (mag < 0.05) {
-                             data[idx] = 0; data[idx+1] = 0; data[idx+2] = 0; data[idx+3] = 0;
-                        } else {
-                             data[idx] = r; data[idx+1] = g; data[idx+2] = b; data[idx+3] = 230; 
-                        }
+                        data[idx] = r; data[idx+1] = g; data[idx+2] = b; 
+                        
+                        // Transparency for very low levels
+                        if (db < -30) data[idx+3] = 0; 
+                        else if (db < -20) data[idx+3] = Math.floor(255 * ((db + 30) / 10));
+                        else data[idx+3] = 230; 
                     }
                 }
                 ctx.putImageData(imgData, 0, 0);
 
-                // --- 4. OVERLAYS ---
+                // --- 4. OVERLAYS (Stage, Sources, Zones, Mic) ---
                 ctx.save();
                 ctx.translate(cx, cy);
                 ctx.scale(ppm, ppm);
 
-                // --- DIRECTIVITY "V" LINES ---
-                // Center of array for visualization
-                let centerX = 0, centerY = 0;
-                if (sources.length > 0) {
-                    sources.forEach(s => { centerX += s.x; centerY += s.y; });
-                    centerX /= sources.length;
-                    centerY /= sources.length;
-                }
-                
-                // Determine Steering Angle (Peak)
-                const getFarFieldMag = (theta) => {
-                    let r = 0, i = 0;
-                    const ux = Math.cos(theta);
-                    const uy = Math.sin(theta);
-                    for (let s of allSources) { 
-                         // Treat reflection as part of pattern but weaker
-                         const proj = s.x * ux + s.y * uy;
-                         const ph = k * proj - s.phase + (s.inv ? Math.PI : 0);
-                         const amp = s.ampScale;
-                         r += Math.cos(ph) * amp;
-                         i += Math.sin(ph) * amp;
-                    }
-                    return Math.sqrt(r*r + i*i);
-                };
-
-                // Find global peak
-                let maxMag = 0;
-                let peakAngle = -Math.PI/2;
-                const step = Math.PI / 180; // 1 deg
-                
-                for(let a = 0; a < 2*Math.PI; a += step) {
-                     const m = getFarFieldMag(a);
-                     if(m > maxMag) {
-                         maxMag = m;
-                         peakAngle = a;
-                     }
-                }
-                
-                // Find -6dB points (0.5 * maxMag) around peak
-                let foundLeft = null;
-                let foundRight = null;
-                
-                // Scan Counter-Clockwise from peak
-                for (let a = peakAngle; a > peakAngle - Math.PI; a -= step/2) {
-                    if (getFarFieldMag(a) < maxMag * 0.5) {
-                        foundLeft = a;
-                        break;
-                    }
-                }
-                // Scan Clockwise from peak
-                for (let a = peakAngle; a < peakAngle + Math.PI; a += step/2) {
-                    if (getFarFieldMag(a) < maxMag * 0.5) {
-                        foundRight = a;
-                        break;
-                    }
-                }
-
-                if (foundLeft !== null && foundRight !== null) {
-                    ctx.save();
-                    ctx.strokeStyle = '#facc15'; // Yellow 400
-                    ctx.lineWidth = 0.05;
-                    ctx.setLineDash([0.2, 0.2]);
-                    
-                    // Extended V Lines to show dispersion through audience
-                    const len = 40; 
-                    ctx.beginPath();
-                    ctx.moveTo(centerX, centerY);
-                    ctx.lineTo(centerX + Math.cos(foundLeft) * len, centerY + Math.sin(foundLeft) * len);
-                    ctx.stroke();
-
-                    ctx.beginPath();
-                    ctx.moveTo(centerX, centerY);
-                    ctx.lineTo(centerX + Math.cos(foundRight) * len, centerY + Math.sin(foundRight) * len);
-                    ctx.stroke();
-                    
-                    // Draw Axis
-                    ctx.strokeStyle = 'rgba(250, 204, 21, 0.3)';
-                    ctx.setLineDash([0.1, 0.3]);
-                    ctx.beginPath();
-                    ctx.moveTo(centerX, centerY);
-                    ctx.lineTo(centerX + Math.cos(peakAngle) * len, centerY + Math.sin(peakAngle) * len);
-                    ctx.stroke();
-
-                    ctx.restore();
-                }
-
-                // A. STAGE
+                // Stage
                 const stgLeft = state.stage.x - state.stage.w/2;
                 ctx.fillStyle = '#3f3f46';
                 ctx.strokeStyle = '#71717a';
                 ctx.lineWidth = 0.05;
                 ctx.fillRect(stgLeft, state.stage.y, state.stage.w, state.stage.h);
                 ctx.strokeRect(stgLeft, state.stage.y, state.stage.w, state.stage.h);
-                
-                // Shadow Area visual hint (Subtle)
-                ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                // Visual shadow hint (darker overlay)
+                ctx.fillStyle = 'rgba(0,0,0,0.6)'; 
                 ctx.fillRect(stgLeft, state.stage.y, state.stage.w, state.stage.h);
                 
                 ctx.fillStyle = '#d4d4d8';
                 ctx.font = '0.4px sans-serif';
                 ctx.textAlign = 'center';
-                ctx.fillText(`ESCENARIO (${state.stage.w.toFixed(1)}m)`, state.stage.x, state.stage.y + state.stage.h/2);
+                ctx.fillText(`ESCENARIO (-18dB)`, state.stage.x, state.stage.y + state.stage.h/2);
                 
-                const arrY = state.stage.y - state.stageGap;
-                ctx.strokeStyle = '#fbbf24'; 
-                ctx.setLineDash([0.1, 0.1]);
-                ctx.beginPath();
-                ctx.moveTo(state.stage.x, arrY);
-                ctx.lineTo(state.stage.x, state.stage.y);
-                ctx.stroke();
-                ctx.setLineDash([]);
-                ctx.fillStyle = '#fbbf24';
-                ctx.font = '0.3px monospace';
-                ctx.textAlign = 'left';
-                ctx.fillText(`d=${state.stageGap.toFixed(2)}m`, state.stage.x + 0.1, (arrY + state.stage.y)/2);
-
-                // B. ZONES
-                state.zones.forEach((z, i) => {
-                    const isSelected = (state.selectedZoneIndex === i);
-                    
-                    ctx.fillStyle = isSelected ? 'rgba(34, 197, 94, 0.3)' : 'rgba(34, 197, 94, 0.1)'; 
-                    ctx.strokeStyle = isSelected ? '#4ade80' : '#22c55e';
-                    ctx.lineWidth = isSelected ? 0.08 : 0.03;
-                    
-                    ctx.fillRect(z.x, z.y, z.w, z.h);
-                    ctx.strokeRect(z.x, z.y, z.w, z.h);
-                    ctx.fillStyle = '#22c55e';
-                    ctx.fillRect(z.x + z.w - 0.3, z.y + z.h - 0.3, 0.3, 0.3);
-                    
-                    ctx.fillStyle = '#fff';
-                    ctx.font = 'bold 0.4px sans-serif';
-                    ctx.textAlign = 'left';
-                    ctx.fillText(`Público ${i+1}`, z.x, z.y - 0.2);
-
-                    // ZONE ANALYSIS HUD
-                    if (isSelected) {
-                        // Calculate SPL Front and Rear Center
-                        const calcSplAt = (px, py) => {
-                             let r=0, i_comp=0;
-                             allSources.forEach(s => {
-                                 const dx = px - s.x, dy = py - s.y;
-                                 const d = Math.sqrt(dx*dx + dy*dy);
-                                 const amp = (1.0/(1.0+d)) * s.ampScale;
-                                 const phi = (k*d) - s.phase + (s.inv?Math.PI:0);
-                                 r += Math.cos(phi)*amp;
-                                 i_comp += Math.sin(phi)*amp;
-                             });
-                             return Math.sqrt(r*r + i_comp*i_comp) * gain;
-                        };
-
-                        const frontMag = calcSplAt(z.x + z.w/2, z.y);
-                        // Apply absorption factor to rear measurement
-                        const depthMeters = z.h;
-                        const absorptionFactor = Math.max(0.4, 1.0 - (depthMeters * 0.08));
-                        const rearMag = calcSplAt(z.x + z.w/2, z.y + z.h) * absorptionFactor;
-
-                        const frontDB = 20 * Math.log10(frontMag + 0.0001);
-                        const rearDB = 20 * Math.log10(rearMag + 0.0001);
-                        const loss = Math.abs(frontDB - rearDB);
-
-                        // Draw Floating HUD near zone
-                        ctx.save();
-                        // Reset transform for pixel-perfect text in HUD
-                        ctx.setTransform(1, 0, 0, 1, 0, 0); 
-                        const hudX = cx + (z.x + z.w + 0.5) * ppm;
-                        const hudY = cy + z.y * ppm;
-                        
-                        ctx.fillStyle = 'rgba(20, 20, 25, 0.95)';
-                        ctx.strokeStyle = '#4ade80';
-                        ctx.lineWidth = 1;
-                        ctx.beginPath();
-                        ctx.roundRect(hudX, hudY, 140, 60, 4);
-                        ctx.fill();
-                        ctx.stroke();
-
-                        ctx.font = '11px sans-serif';
-                        ctx.fillStyle = '#e4e4e7';
-                        ctx.textAlign = 'left';
-                        ctx.fillText(`PÉRDIDA: -${loss.toFixed(1)} dB`, hudX + 10, hudY + 20);
-                        
-                        // Calculate effective dispersion width at rear
-                        // Simple indicator text based on directivity lines
-                        const angleDeg = (foundRight - foundLeft) * (180/Math.PI);
-                        
-                        ctx.fillText(`DISPERSIÓN: ${angleDeg.toFixed(0)}°`, hudX + 10, hudY + 40);
-                        ctx.font = '9px sans-serif';
-                        ctx.fillStyle = '#a1a1aa';
-                        ctx.fillText(`(Absorción Simulada)`, hudX + 80, hudY + 50);
-
-                        ctx.restore();
-                    }
-                });
-
-                // C. SOURCES
+                // Sources
                 sources.forEach((s, i) => {
                     const size = 0.4;
                     ctx.fillStyle = s.inv ? '#450a0a' : '#18181b';
@@ -1479,41 +1522,47 @@
                     ctx.strokeRect(s.x - size/2, s.y - size/2, size, size);
                 });
 
-                // D. MIC & EFFICIENCY
+                // Zones
+                state.zones.forEach((z, i) => {
+                    const isSelected = (state.selectedZoneIndex === i);
+                    ctx.fillStyle = isSelected ? 'rgba(34, 197, 94, 0.3)' : 'rgba(34, 197, 94, 0.1)'; 
+                    ctx.strokeStyle = isSelected ? '#4ade80' : '#22c55e';
+                    ctx.lineWidth = isSelected ? 0.08 : 0.03;
+                    ctx.fillRect(z.x, z.y, z.w, z.h);
+                    ctx.strokeRect(z.x, z.y, z.w, z.h);
+                    ctx.fillStyle = '#fff';
+                    ctx.font = 'bold 0.4px sans-serif';
+                    ctx.textAlign = 'left';
+                    ctx.fillText(`Público ${i+1}`, z.x, z.y - 0.2);
+                });
+
+                // Mic Bubble Stats
                 let micR=0, micI=0;
-                let micSumAmp = 0; // For Max Possible (Scalar Sum)
-                let minTime=Infinity, maxTime=-Infinity;
+                let micSumAmp = 0; 
                 allSources.forEach(s => {
                     const dx = state.mic.x - s.x;
                     const dy = state.mic.y - s.y;
                     const d = Math.sqrt(dx*dx + dy*dy);
-                    const amp = (1.0/(1.0+d)) * s.ampScale;
+                    const dClamped = Math.max(0.1, d);
+                    const amp = (1.0/dClamped) * s.ampScale;
                     
-                    micSumAmp += amp; // Perfect sum
+                    micSumAmp += amp; 
 
                     const phi = (k*d) - s.phase + (s.inv?Math.PI:0);
                     micR += Math.cos(phi)*amp;
                     micI += Math.sin(phi)*amp;
-                    if (!s.isReflection) {
-                        const t = (d/c)*1000;
-                        if(t<minTime) minTime=t;
-                        if(t>maxTime) maxTime=t;
-                    }
                 });
                 
                 const micVectorMag = Math.sqrt(micR*micR + micI*micI);
-                const micMag = micVectorMag * gain; // Visual mag
-                
-                // Efficiency Calculation
-                // Efficiency = Actual Vector Sum / Scalar Sum of Amplitudes
-                // Scalar Sum represents if all arrived with 0 phase diff.
+                const micMag = micVectorMag * gain; 
+                const micDB = 20 * Math.log10(micMag + 0.000001);
+
+                // Efficiency (Vector Sum / Scalar Sum)
                 const efficiency = micSumAmp > 0 ? (micVectorMag / micSumAmp) * 100 : 0;
-
-                const micPhase = Math.atan2(micI, micR) * (180/Math.PI);
-                const deltaT = maxTime - minTime;
-
+                
+                // Draw Mic
                 ctx.translate(state.mic.x, state.mic.y);
-                const micColor = micMag > 0.5 ? '#22c55e' : (micMag < 0.2 ? '#ef4444' : '#fbbf24');
+                const micColor = micDB > -6 ? '#22c55e' : (micDB < -12 ? '#ef4444' : '#fbbf24');
                 ctx.strokeStyle = micColor;
                 ctx.lineWidth = 0.05;
                 ctx.beginPath();
@@ -1521,47 +1570,151 @@
                 ctx.stroke();
                 ctx.beginPath(); ctx.moveTo(-0.15, 0); ctx.lineTo(0.15, 0); ctx.stroke();
                 ctx.beginPath(); ctx.moveTo(0, -0.15); ctx.lineTo(0, 0.15); ctx.stroke();
-                ctx.restore();
+                ctx.restore(); // Undo mic translate
+                
+                // Floating dB readout near mic
+                ctx.font = 'bold 0.6px sans-serif';
+                ctx.fillStyle = '#fff';
+                ctx.textAlign = 'left';
+                // A bit offset to top-right of the mic center
+                const labelText = (micDB > 0 ? "+" : "") + micDB.toFixed(1) + " dB";
+                ctx.fillText(labelText, state.mic.x + 0.3, state.mic.y - 0.3);
 
-                // 5. STATS
-                let totalPoints = 0, totalGood = 0;
-                activeZones.forEach(z => { totalPoints+=z.areaPoints; totalGood+=z.goodPoints; });
-                const newStats = totalPoints > 0 ? (totalGood / totalPoints) * 100 : 0;
-                if (Math.abs(newStats - state.coverageStats) > 0.1) {
-                    state.coverageStats = newStats;
-                    updateUI(); 
-                }
-
-                // Mic Overlay Bubble
+                // Overlay Text (Mic HUD)
                 const mx = cx + state.mic.x * ppm;
                 const my = cy + state.mic.y * ppm;
                 ctx.save();
+                ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform for pixel drawing
+                
                 ctx.fillStyle = 'rgba(0,0,0,0.85)';
                 ctx.strokeStyle = '#444';
                 ctx.lineWidth = 1;
                 ctx.beginPath();
-                ctx.roundRect(mx + 20, my - 35, 140, 70, 6);
+                ctx.roundRect(mx + 20, my - 35, 120, 60, 6);
                 ctx.fill();
                 ctx.stroke();
                 ctx.font = 'bold 10px sans-serif';
                 ctx.textAlign = 'left';
                 ctx.textBaseline = 'middle';
-                ctx.fillStyle = '#a1a1aa';
-                ctx.fillText(`Presión: ${(micMag*100).toFixed(0)}%`, mx + 30, my - 20);
+                ctx.fillStyle = '#fff';
+                ctx.fillText(`Nivel: ${micDB.toFixed(1)} dB`, mx + 30, my - 15);
                 
-                // Efficiency Color
                 let effColor = '#ef4444';
                 if(efficiency > 90) effColor = '#22c55e';
                 else if(efficiency > 70) effColor = '#fbbf24';
-                
                 ctx.fillStyle = effColor;
-                ctx.fillText(`Eficiencia Suma: ${efficiency.toFixed(1)}%`, mx + 30, my - 8);
-                
-                ctx.fillStyle = deltaT < 1.0 ? '#22c55e' : '#f59e0b';
-                ctx.fillText(`Δt: ${deltaT.toFixed(2)} ms`, mx + 30, my + 6);
-                ctx.fillStyle = '#e4e4e7';
-                ctx.fillText(`Fase: ${micPhase.toFixed(0)}°`, mx + 30, my + 18);
+                ctx.fillText(`Suma: ${efficiency.toFixed(1)}%`, mx + 30, my + 5);
                 ctx.restore();
+
+                // --- 5. PHASE ANALYZER HUD (New) ---
+                // Only if we have at least 1 source
+                if (sources.length > 0) {
+                    const analyzerW = 140;
+                    const analyzerH = 80;
+                    const ax = w - analyzerW - 20; // Bottom right
+                    const ay = h - analyzerH - 20;
+
+                    // Background
+                    ctx.save();
+                    ctx.setTransform(1, 0, 0, 1, 0, 0);
+                    ctx.translate(ax, ay);
+                    ctx.fillStyle = 'rgba(0,0,0,0.85)';
+                    ctx.strokeStyle = '#333';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.roundRect(0, 0, analyzerW, analyzerH, 6);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Title
+                    ctx.fillStyle = '#aaa';
+                    ctx.font = '9px sans-serif';
+                    ctx.textAlign = 'left';
+                    ctx.fillText("ANALIZADOR DE FASE (MIC)", 10, 15);
+
+                    // Get Source 1 and Source 2 data relative to Mic
+                    const s1 = sources[0];
+                    const s2 = sources.length > 1 ? sources[1] : null;
+
+                    const plotW = analyzerW - 20;
+                    const plotH = analyzerH - 30;
+                    const plotX = 10;
+                    const plotY = 25;
+                    const midY = plotY + plotH/2;
+
+                    // Helper to get mic phase/amp
+                    const getMicData = (s) => {
+                        const dx = state.mic.x - s.x;
+                        const dy = state.mic.y - s.y;
+                        const d = Math.sqrt(dx*dx + dy*dy);
+                        const dClamped = Math.max(0.1, d);
+                        const amp = (1.0 / dClamped);
+                        const ph = (k * d) - s.phase + (s.inv ? Math.PI : 0);
+                        return { amp, ph };
+                    };
+
+                    const d1 = getMicData(s1);
+                    const d2 = s2 ? getMicData(s2) : { amp: 0, ph: 0 };
+
+                    // Find max amp to scale
+                    const maxAmp = Math.max(d1.amp, d2.amp, 0.001) * 2.5; 
+                    const scaleY = (plotH / 2) / maxAmp;
+
+                    ctx.beginPath();
+                    ctx.strokeStyle = '#444'; // Center line
+                    ctx.moveTo(plotX, midY);
+                    ctx.lineTo(plotX + plotW, midY);
+                    ctx.stroke();
+
+                    // Draw Wave 1 (Cyan)
+                    ctx.beginPath();
+                    ctx.strokeStyle = '#06b6d4'; // Cyan
+                    ctx.lineWidth = 1.5;
+                    for(let i=0; i<=plotW; i++) {
+                        const t = (i / plotW) * 2 * Math.PI; // 0 to 2PI
+                        const y = d1.amp * Math.sin(t - d1.ph);
+                        ctx.lineTo(plotX + i, midY - y * scaleY);
+                    }
+                    ctx.stroke();
+
+                    if (s2) {
+                        // Draw Wave 2 (Magenta)
+                        ctx.beginPath();
+                        ctx.strokeStyle = '#d946ef'; // Fuchsia
+                        ctx.lineWidth = 1.5;
+                        for(let i=0; i<=plotW; i++) {
+                            const t = (i / plotW) * 2 * Math.PI;
+                            const y = d2.amp * Math.sin(t - d2.ph);
+                            ctx.lineTo(plotX + i, midY - y * scaleY);
+                        }
+                        ctx.stroke();
+
+                        // Draw Sum (White, Dashed)
+                        ctx.beginPath();
+                        ctx.strokeStyle = '#fff';
+                        ctx.lineWidth = 2;
+                        for(let i=0; i<=plotW; i++) {
+                            const t = (i / plotW) * 2 * Math.PI;
+                            const y1 = d1.amp * Math.sin(t - d1.ph);
+                            const y2 = d2.amp * Math.sin(t - d2.ph);
+                            const ySum = y1 + y2;
+                            ctx.lineTo(plotX + i, midY - ySum * scaleY);
+                        }
+                        ctx.stroke();
+                        
+                        // Legend
+                        ctx.font = '8px sans-serif';
+                        ctx.fillStyle = '#06b6d4'; ctx.fillText("1", plotX, plotY + plotH + 8);
+                        ctx.fillStyle = '#d946ef'; ctx.fillText("2", plotX + 10, plotY + plotH + 8);
+                        ctx.fillStyle = '#fff'; ctx.fillText("SUM", plotX + 25, plotY + plotH + 8);
+                    } else {
+                         // Legend for single source
+                        ctx.font = '8px sans-serif';
+                        ctx.fillStyle = '#06b6d4'; ctx.fillText("1", plotX, plotY + plotH + 8);
+                    }
+
+                    ctx.restore();
+                }
             }
 
             // Init
