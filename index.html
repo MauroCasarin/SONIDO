@@ -7,10 +7,10 @@
     <style>
         :root {
             --bg-dark: #09090b; /* Zinc 950 */
-            --bg-panel: #18181b; /* Zinc 900 */
-            --border: #27272a;   /* Zinc 800 */
+            --bg-panel: rgba(10, 10, 12, 0.9);
+            --border: rgba(255, 255, 255, 0.1);
             --accent: #3b82f6;   /* Blue 500 */
-            --accent-glow: rgba(59, 130, 246, 0.2);
+            --accent-glow: rgba(59, 130, 246, 0.3);
             --text-main: #e4e4e7;
             --text-dim: #a1a1aa;
             --danger: #ef4444;
@@ -34,13 +34,14 @@
 
         /* HEADER */
         header {
-            height: 60px; 
+            height: 40px; 
             border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 20px;
-            background: #000;
+            padding: 0 10px;
+            background: rgba(5,5,5,0.95);
+            backdrop-filter: blur(5px);
             flex-shrink: 0;
             z-index: 50;
         }
@@ -48,7 +49,7 @@
         .brand-area {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 8px;
         }
 
         .brand-link {
@@ -58,77 +59,76 @@
         }
 
         .logo-img {
-            height: 45px;
+            height: 28px;
             width: auto;
             transition: transform 0.2s;
             cursor: pointer;
         }
         
-        .logo-img:hover {
-            transform: scale(1.05);
-            filter: brightness(1.2);
-        }
-
         h1 {
-            font-size: 16px;
+            font-size: 12px;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 0.5px;
             margin: 0;
             color: #fff;
             display: flex;
             flex-direction: column;
+            line-height: 1;
         }
 
         h1 span {
-            font-size: 10px;
+            font-size: 8px;
             color: var(--accent);
-            letter-spacing: 2px;
+            letter-spacing: 1px;
         }
 
         .btn-help {
             background: transparent;
             border: 1px solid #3f3f46;
             color: var(--text-dim);
-            width: 32px;
-            height: 32px;
+            width: 24px;
+            height: 24px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: bold;
-            font-size: 14px;
+            font-size: 12px;
             cursor: pointer;
             transition: all 0.2s;
-        }
-        .btn-help:hover {
-            border-color: var(--accent);
-            color: #fff;
-            background: rgba(59, 130, 246, 0.1);
-            transform: scale(1.05);
         }
 
         /* LAYOUT */
         #main-layout {
             display: flex;
             flex: 1;
-            height: calc(100vh - 60px - 35px);
+            height: calc(100vh - 40px - 25px); 
             overflow: hidden;
             position: relative;
         }
 
         /* SIDEBAR (CONTROLES) */
         #controles {
-            width: 320px;
+            width: 280px;
             background: var(--bg-panel);
+            backdrop-filter: blur(12px);
             border-right: 1px solid var(--border);
-            padding: 20px;
+            padding: 10px;
             display: flex;
             flex-direction: column;
-            gap: 24px;
-            overflow-y: auto; /* Internal scroll */
+            gap: 8px;
+            overflow-y: auto;
             flex-shrink: 0;
             z-index: 20;
             overscroll-behavior: contain;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        /* CLASE PARA AUTO-OCULTAR */
+        .controls-hidden {
+            opacity: 0.1 !important; /* 10% Opacity requested */
+            pointer-events: none;
+            filter: grayscale(100%);
         }
 
         /* CANVAS AREA */
@@ -146,495 +146,199 @@
 
         canvas {
             display: block;
-            box-shadow: 0 0 50px rgba(0,0,0,0.5);
-            touch-action: none; /* Blocks browser scroll/zoom on canvas */
+            touch-action: none;
         }
 
         /* Fullscreen Toggle Button */
         #btn-fullscreen {
             position: absolute;
-            top: 15px;
-            right: 15px;
-            background: rgba(0,0,0,0.6);
-            border: 1px solid rgba(255,255,255,0.2);
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.1);
             color: #fff;
-            width: 36px;
-            height: 36px;
-            border-radius: 6px;
+            width: 28px;
+            height: 28px;
+            border-radius: 4px;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             z-index: 100;
-            font-size: 18px;
-            backdrop-filter: blur(4px);
+            font-size: 14px;
+            backdrop-filter: blur(2px);
         }
-        #btn-fullscreen:active {
-            background: var(--accent);
+
+        /* CUSTOM TOOLTIP (ANIMATED & DELAYED) */
+        .custom-tooltip {
+            position: fixed;
+            background: rgba(0, 0, 0, 0.95);
+            border: 1px solid var(--accent);
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            pointer-events: none;
+            z-index: 1000;
+            max-width: 220px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+            text-align: left;
+            line-height: 1.4;
+            
+            /* Animation States */
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .custom-tooltip.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .custom-tooltip strong {
+            display: block;
+            color: var(--accent);
+            margin-bottom: 3px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         /* UI ELEMENTS */
         .control-group {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 4px;
             background: rgba(255,255,255,0.03);
-            padding: 15px;
-            border-radius: 6px;
+            padding: 8px;
+            border-radius: 4px;
             border: 1px solid rgba(255,255,255,0.05);
         }
 
         .group-title {
-            font-size: 10px;
-            font-weight: bold;
+            font-size: 8px;
+            font-weight: 700;
             color: var(--text-dim);
             text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 5px;
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
         }
 
-        .slider-row {
-            margin-bottom: 8px;
-            transition: opacity 0.3s;
-        }
-        
-        .slider-row.disabled {
-            opacity: 0.3;
-            pointer-events: none;
-        }
-
+        .slider-row { margin-bottom: 2px; }
+        .slider-row.disabled { opacity: 0.3; pointer-events: none; }
         .slider-label {
-            display: flex;
-            justify-content: space-between;
-            font-size: 11px;
-            color: var(--text-dim);
-            margin-bottom: 4px;
+            display: flex; justify-content: space-between; font-size: 9px;
+            color: var(--text-dim); margin-bottom: 1px;
         }
-
-        .slider-val {
-            color: var(--accent);
-            font-family: monospace;
-            font-weight: bold;
-        }
+        .slider-val { color: var(--accent); font-family: monospace; font-weight: bold; }
 
         input[type=range] {
-            -webkit-appearance: none;
-            width: 100%;
-            background: transparent;
-            padding: 5px 0;
+            -webkit-appearance: none; width: 100%; background: transparent; padding: 4px 0; margin: 0;
         }
-        
         input[type=range]:focus { outline: none; }
-
         input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            height: 14px;
-            width: 14px;
-            border-radius: 50%;
-            background: #e4e4e7;
-            cursor: pointer;
-            margin-top: -5px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
-            transition: transform 0.1s;
+            -webkit-appearance: none; height: 14px; width: 14px;
+            border-radius: 50%; background: #e4e4e7; cursor: pointer;
+            margin-top: -6px; box-shadow: 0 1px 3px rgba(0,0,0,0.8); border: 1px solid #000;
         }
-
         input[type=range]::-webkit-slider-runnable-track {
-            width: 100%;
-            height: 4px;
-            cursor: pointer;
-            background: #3f3f46;
-            border-radius: 2px;
+            width: 100%; height: 2px; cursor: pointer;
+            background: rgba(255, 255, 255, 0.2); border-radius: 1px;
         }
 
-        .btn-row { display: flex; gap: 8px; }
-        .btn-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-
+        .btn-row { display: flex; gap: 4px; }
+        
         button {
-            background: #27272a;
-            border: 1px solid #3f3f46;
+            background: rgba(30, 30, 35, 0.9);
+            border: 1px solid rgba(80, 80, 90, 0.5);
             color: var(--text-dim);
-            padding: 8px 12px;
-            font-size: 10px;
-            font-weight: bold;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-transform: uppercase;
+            padding: 6px; font-size: 9px; font-weight: 600;
+            border-radius: 3px; cursor: pointer; transition: all 0.2s; text-transform: uppercase;
         }
-
-        button:hover {
-            background: #3f3f46;
-            color: #fff;
-        }
-        
-        button:active {
-            transform: scale(0.98);
-        }
-
-        button.active {
-            background: var(--accent);
-            color: #fff;
-            border-color: var(--accent);
-            box-shadow: 0 0 10px var(--accent-glow);
-        }
-
-        button.danger {
-            color: var(--danger);
-            border-color: rgba(239, 68, 68, 0.3);
-            background: rgba(239, 68, 68, 0.05);
-        }
-        button.danger:hover {
-            background: var(--danger);
-            color: white;
-        }
-        
-        button.magic {
-            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-            color: white;
-            border: none;
-            box-shadow: 0 0 10px rgba(124, 58, 237, 0.3);
-        }
-        button.magic:hover {
-             box-shadow: 0 0 15px rgba(124, 58, 237, 0.5);
-             filter: brightness(1.1);
-        }
-        
-        button.small-btn {
-            padding: 4px 8px;
-            font-size: 9px;
-            border-radius: 3px;
-            background: #27272a;
-            border: 1px solid #3f3f46;
-        }
-        button.small-btn:hover {
-            border-color: var(--accent);
-            color: var(--accent);
-        }
+        button:hover { background: rgba(60, 60, 70, 0.9); color: #fff; }
+        button.active { background: var(--accent); color: #fff; border-color: var(--accent); box-shadow: 0 0 8px var(--accent-glow); }
+        button.danger { color: var(--danger); border-color: rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.05); }
+        button.magic { background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: white; border: none; box-shadow: 0 0 8px rgba(124, 58, 237, 0.3); }
+        button.small-btn { padding: 4px; font-size: 8px; }
 
         /* POLARIDAD */
-        .polarity-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 6px;
-        }
-
+        .polarity-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; }
         .pol-btn {
-            aspect-ratio: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            border-radius: 4px;
-            font-size: 10px;
-            font-weight: bold;
-            cursor: pointer;
+            aspect-ratio: 1.3; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            border-radius: 2px; font-size: 8px; font-weight: bold; cursor: pointer;
         }
-
-        .pol-btn span:first-child { font-size: 12px; margin-bottom: 2px; }
-        
-        .pol-btn.normal { background: #27272a; color: #71717a; border: 1px solid #3f3f46; }
-        .pol-btn.inverted { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid var(--danger); }
+        .pol-btn span:first-child { font-size: 9px; margin-bottom: 0px; }
+        .pol-btn.normal { background: rgba(40, 40, 45, 0.7); color: #71717a; border: 1px solid rgba(80, 80, 90, 0.3); }
+        .pol-btn.inverted { background: rgba(239, 68, 68, 0.2); color: var(--danger); border: 1px solid var(--danger); }
 
         /* HUD & OVERLAYS */
         .hud-panel {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            background: rgba(9, 9, 11, 0.9);
-            border: 1px solid rgba(255,255,255,0.1);
-            backdrop-filter: blur(10px);
-            padding: 15px;
-            border-radius: 8px;
-            width: 200px;
-            pointer-events: none;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            z-index: 10;
+            position: absolute; top: 10px; left: 10px;
+            background: rgba(0, 0, 0, 0.6); border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(3px); padding: 8px; border-radius: 4px;
+            width: 140px; pointer-events: none; z-index: 15; transition: opacity 0.3s;
         }
-
-        .legend-panel {
-            position: absolute;
-            top: 50%;
-            right: 20px;
-            transform: translateY(-50%);
-            background: rgba(9, 9, 11, 0.85);
-            border: 1px solid rgba(255,255,255,0.1);
-            backdrop-filter: blur(10px);
-            padding: 10px;
-            border-radius: 8px;
-            width: 70px;
-            pointer-events: none;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            gap: 10px;
-            z-index: 10;
-        }
-
-        .hud-row {
-            display: flex;
-            justify-content: space-between;
-            font-size: 11px;
-            margin-bottom: 6px;
-            font-family: monospace;
-        }
-
-        .hud-label { color: #71717a; }
+        .hud-row { display: flex; justify-content: space-between; font-size: 9px; margin-bottom: 3px; font-family: monospace; }
+        .hud-label { color: #a1a1aa; }
         .hud-value { color: #fff; font-weight: bold; }
         
-        .status-ok { color: var(--success); }
-        .status-warn { color: var(--warning); }
-        .status-danger { color: var(--danger); }
-
-        .color-bar {
-            width: 12px;
-            height: 200px;
-            background: linear-gradient(to top, 
-                #ffffff 0%,   /* +6dB (White) */
-                #ff0000 15%,  /* +3dB (Red) */
-                #ffff00 30%,  /* 0dB (Yellow) */
-                #00ff00 50%,  /* -6dB (Green) */
-                #0000ff 75%,  /* -12dB (Blue) */
-                #000000 100%  /* -20dB (Black) */
-            );
-            border-radius: 4px;
-            border: 1px solid #333;
-        }
-        
-        .legend-text {
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            height: 200px;
-            font-size: 9px;
-            font-weight: bold;
-            color: #a1a1aa;
-            text-align: right;
-            padding-top: 2px;
-            padding-bottom: 2px;
-        }
-
         /* MODAL GUÍA */
         .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.8);
-            backdrop-filter: blur(5px);
-            z-index: 200;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(5px);
+            z-index: 200; display: flex; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
         }
-        
-        .modal-overlay.open {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
+        .modal-overlay.open { opacity: 1; pointer-events: auto; }
         .modal-content {
-            background: #18181b;
-            border: 1px solid #3f3f46;
-            border-radius: 8px;
-            padding: 25px;
-            width: 90%;
-            max-width: 380px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.7);
-            transform: translateY(20px);
-            transition: transform 0.3s ease;
-            position: relative;
+            background: #18181b; border: 1px solid #3f3f46; border-radius: 8px;
+            padding: 20px; width: 85%; max-width: 320px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8); transform: translateY(15px); transition: transform 0.3s ease;
         }
-
-        .modal-overlay.open .modal-content {
-            transform: translateY(0);
-        }
-
+        .modal-overlay.open .modal-content { transform: translateY(0); }
         .modal-title {
-            color: #fff;
-            font-size: 16px;
-            margin: 0 0 20px 0;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #27272a;
-            text-align: center;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            color: #fff; font-size: 13px; margin: 0 0 15px 0; padding-bottom: 8px;
+            border-bottom: 1px solid #27272a; text-align: center; text-transform: uppercase;
         }
-
-        .guide-item {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 20px;
-            color: #e4e4e7;
-        }
-
-        .guide-icon {
-            font-size: 20px;
-            width: 30px;
-            text-align: center;
-            flex-shrink: 0;
-        }
-
-        .guide-item strong {
-            color: var(--accent);
-            display: block;
-            margin-bottom: 4px;
-            font-size: 13px;
-        }
-
-        .guide-item p {
-            margin: 0;
-            font-size: 12px;
-            color: #a1a1aa;
-            line-height: 1.5;
-        }
-
+        .guide-item { display: flex; gap: 10px; margin-bottom: 12px; color: #e4e4e7; }
+        .guide-icon { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
+        .guide-item strong { color: var(--accent); display: block; margin-bottom: 2px; font-size: 11px; }
+        .guide-item p { margin: 0; font-size: 10px; color: #a1a1aa; line-height: 1.3; }
         .modal-close-btn {
-            width: 100%;
-            padding: 12px;
-            background: var(--accent);
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 10px;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        .modal-close-btn:hover {
-            filter: brightness(1.1);
+            width: 100%; padding: 8px; background: var(--accent); color: white;
+            border: none; border-radius: 4px; font-weight: bold; cursor: pointer;
+            margin-top: 5px; font-size: 10px; text-transform: uppercase;
         }
 
         /* FOOTER */
         footer {
-            height: 35px;
-            background: #000;
-            border-top: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 11px;
-            color: #52525b;
-            font-weight: 500;
-            letter-spacing: 0.5px;
-            flex-shrink: 0;
-            z-index: 60;
-            padding: 0;
+            height: 25px; background: #000; border-top: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 9px; color: #52525b; font-weight: 500; letter-spacing: 0.5px;
+            flex-shrink: 0; z-index: 60; padding: 0;
         }
+        .footer-link { display: flex; align-items: center; justify-content: center; gap: 6px; color: #52525b; text-decoration: none; width: 100%; height: 100%; }
+        .footer-link:hover { color: var(--accent); }
+        .footer-icon { width: 10px; height: 10px; fill: currentColor; }
 
-        .footer-link {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            color: #52525b;
-            text-decoration: none;
-            width: 100%;
-            height: 100%;
-            transition: color 0.2s;
-        }
-        .footer-link:hover {
-            color: var(--accent);
-        }
-        .footer-icon {
-            width: 14px;
-            height: 14px;
-            fill: currentColor;
-        }
-
-        /* --- MOBILE RESPONSIVE STYLES (SPLIT VIEW) --- */
+        /* MOBILE RESPONSIVE */
         @media (max-width: 768px) {
-            header {
-                padding: 0 15px;
-            }
-
-            .logo-img { height: 35px; }
-
-            h1 { font-size: 14px; }
-            h1 span { font-size: 9px; }
-
-            #main-layout {
-                flex-direction: column; /* Stack Vertically */
-            }
-
-            /* FIXED CANVAS ON TOP - 45% of screen */
-            #viewport {
-                flex: none; /* Do not grow */
-                width: 100%;
-                height: 45vh; /* Fixed percentage */
-                min-height: 0;
-                order: 1;
-                border-bottom: 1px solid var(--border);
-            }
-
-            /* SCROLLABLE CONTROLS BELOW */
+            header { height: 40px; padding: 0 8px; }
+            h1 { font-size: 11px; }
+            #main-layout { display: block; position: relative; height: calc(100vh - 40px - 25px); }
+            #viewport { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
             #controles {
-                flex: 1; /* Take remaining space */
-                width: 100%;
-                height: auto; /* Let flex handle height */
-                order: 2;
-                border-right: none;
-                padding-bottom: 40px;
+                position: absolute; bottom: 0; left: 0; width: 100%; height: 45%; max-height: 350px;
+                box-sizing: border-box; border-right: none; border-top: 1px solid var(--border);
+                z-index: 20; background: rgba(8, 8, 10, 0.85); padding-bottom: 20px;
             }
-
-            /* FULLSCREEN MODE OVERRIDES */
-            body.fullscreen-mode header { display: none; }
-            body.fullscreen-mode footer { display: none; }
-            body.fullscreen-mode #controles { display: none; }
-            
-            body.fullscreen-mode #main-layout {
-                height: 100vh;
-            }
-            body.fullscreen-mode #viewport {
-                height: 100%;
-                min-height: 100%;
-                border-bottom: none;
-            }
-
-            /* Touch Optimizations */
-            button {
-                padding: 12px 14px; 
-                font-size: 11px;
-            }
-
-            .pol-btn {
-                min-height: 50px; 
-            }
-
-            input[type=range]::-webkit-slider-thumb {
-                width: 24px;
-                height: 24px;
-                margin-top: -10px;
-            }
-            input[type=range]::-webkit-slider-runnable-track {
-                height: 6px;
-            }
-
-            /* HUD Tweaks */
-            .hud-panel {
-                top: 10px;
-                left: 10px;
-                width: 150px;
-                padding: 10px;
-            }
-            .legend-panel {
-                right: 10px;
-                padding: 5px;
-                width: 40px;
-            }
-            .legend-text { font-size: 8px; }
-            .color-bar { width: 8px; }
+            .hud-panel { top: 5px; left: 5px; width: 110px; padding: 6px; }
+            #btn-fullscreen { display: none; }
         }
-
     </style>
 <link rel="stylesheet" href="/index.css">
 </head>
@@ -646,244 +350,124 @@
                 <img src="https://raw.githubusercontent.com/MauroCasarin/SONIDO/refs/heads/main/MC%2048%20N.png" alt="MC Logo" class="logo-img">
             </a>
             <h1>
-                SIMULADOR DE ARREGLOS
-                <span>DE SONIDO GRAVES</span>
+                SIMULADOR
+                <span>SUBGRAVES</span>
             </h1>
         </div>
-        <!-- BOTÓN DE GUÍA -->
         <button class="btn-help" onclick="app.toggleGuide()" title="Guía Técnica">?</button>
     </header>
 
-    <!-- MODAL GUÍA TÉCNICA -->
+    <div id="tooltip" class="custom-tooltip"></div>
+
     <div id="modal-guide" class="modal-overlay">
         <div class="modal-content">
-            <h3 class="modal-title">Guía Técnica de Diseño</h3>
-            
+            <h3 class="modal-title">Guía Técnica</h3>
             <div class="guide-item">
                 <span class="guide-icon">⚡</span>
-                <div>
-                    <strong>Suma Total (+6dB)</strong>
-                    <p>Separa los subwoofers a <strong>λ/4</strong> (ej: 1.07m a 80Hz). Esto garantiza que las ondas se sumen perfectamente al frente, logrando el máximo impacto.</p>
-                </div>
+                <div><strong>Suma Total (+6dB)</strong><p>Separa a <strong>λ/4</strong> (ej: 1.07m @ 80Hz). Suma frontal.</p></div>
             </div>
-
             <div class="guide-item">
                 <span class="guide-icon">🎯</span>
-                <div>
-                    <strong>Control de Directividad</strong>
-                    <p>Separa a <strong>λ/2</strong> (ej: 2.14m a 80Hz). A esta distancia, el arreglo comienza a cancelar energía lateralmente, "enfocando" el sonido hacia adelante.</p>
-                </div>
+                <div><strong>Directividad</strong><p>Separa a <strong>λ/2</strong> (ej: 2.14m @ 80Hz). Rechazo lateral.</p></div>
             </div>
-
             <div class="guide-item">
                 <span class="guide-icon">🌊</span>
-                <div>
-                    <strong>Coherencia de Fase</strong>
-                    <p>Observa el <em>Analizador de Fase</em> (esquina inf. derecha). Busca que las ondas (Cian/Magenta) estén alineadas (pico con pico). Si se cruzan, hay cancelación.</p>
-                </div>
+                <div><strong>Fase</strong><p>Alinea las ondas (Cian/Magenta) usando Auto-Focus para sumar en el micro.</p></div>
             </div>
-
-            <button class="modal-close-btn" onclick="app.toggleGuide()">Entendido</button>
+            <button class="modal-close-btn" onclick="app.toggleGuide()">Cerrar</button>
         </div>
     </div>
 
     <div id="main-layout">
         
-        <!-- CONTROLES SIDEBAR (Scrollable on Mobile) -->
-        <div id="controles">
+        <div id="viewport">
+            <button id="btn-fullscreen" onclick="app.toggleFullscreen()" title="Pantalla Completa">⛶</button>
+            <canvas id="simCanvas" width="800" height="600" data-tooltip="Visor de Predicción: Colores cálidos = mayor presión sonora. Arrastra el micrófono para medir."></canvas>
             
+            <div id="hud-panel" class="hud-panel">
+                <div class="hud-row"><span class="hud-label">Longitud Onda:</span><span class="hud-value" id="hud-lambda">--</span></div>
+                <div class="hud-row"><span class="hud-label">Estado:</span><span class="hud-value" id="hud-status">--</span></div>
+                <div class="hud-row" id="row-delay"><span class="hud-label">Delay E.F.:</span><span class="hud-value" id="hud-delay" style="color:var(--warning)">--</span></div>
+            </div>
+        </div>
+
+        <div id="controles">
             <!-- Global Params -->
             <div class="control-group">
-                <div class="group-title">PARÁMETROS DE FUENTE</div>
-                
-                <div class="slider-row">
-                    <div class="slider-label">
-                        <span>Frecuencia</span>
-                        <span class="slider-val" id="disp-freq">80 Hz</span>
-                    </div>
+                <div class="group-title">FUENTE</div>
+                <div class="slider-row" data-tooltip="<strong>FRECUENCIA</strong><br>Define la longitud de onda. 80Hz es ideal para subgraves estándar.">
+                    <div class="slider-label"><span>Freq</span><span class="slider-val" id="disp-freq">80 Hz</span></div>
                     <input type="range" id="input-freq" min="20" max="200" value="80">
                 </div>
-
-                <div class="slider-row" id="row-count">
-                    <div class="slider-label">
-                        <span>Cant. Bafles (N)</span>
-                        <span class="slider-val" id="disp-count">2</span>
-                    </div>
-                    <!-- Permite bajar a 1 -->
+                <div class="slider-row" id="row-count" data-tooltip="<strong>CANTIDAD</strong><br>Número total de bafles por arreglo.">
+                    <div class="slider-label"><span>Bafles (N)</span><span class="slider-val" id="disp-count">2</span></div>
                     <input type="range" id="input-count" min="1" max="16" step="1" value="2">
                 </div>
-
-                <div class="slider-row" id="row-dist">
-                    <div class="slider-label">
-                        <span>Separación</span>
-                        <span class="slider-val" id="disp-dist">1.07 m</span>
-                    </div>
+                <div class="slider-row" id="row-dist" data-tooltip="<strong>SEPARACIÓN</strong><br>Distancia entre centros acústicos. Afecta directamente la interacción de fase.">
+                    <div class="slider-label"><span>Separación</span><span class="slider-val" id="disp-dist">1.07 m</span></div>
                     <input type="range" id="input-dist" min="0.2" max="4.0" step="0.01" value="1.07">
-                    <!-- Quick Separation Buttons -->
-                    <div class="btn-row" style="margin-top:6px;">
-                        <button class="small-btn" style="flex:1" onclick="app.setLambdaFraction(0.25)">Sep λ/4 (Suma Frontal)</button>
-                        <button class="small-btn" style="flex:1" onclick="app.setLambdaFraction(0.5)">Sep λ/2 (Rechazo Lat)</button>
+                    <div class="btn-row" style="margin-top:2px;">
+                        <button class="small-btn" style="flex:1" onclick="app.setLambdaFraction(0.25)" data-tooltip="<strong>PRESET λ/4</strong><br>Suma perfecta frontal (+6dB). Poca directividad.">λ/4 (Max)</button>
+                        <button class="small-btn" style="flex:1" onclick="app.setLambdaFraction(0.5)" data-tooltip="<strong>PRESET λ/2</strong><br>Máxima cancelación lateral. Arreglo más directivo.">λ/2 (Dir)</button>
                     </div>
                 </div>
             </div>
 
             <!-- Configuration -->
             <div class="control-group">
-                <div class="group-title">CONFIGURACIÓN DE ARREGLO</div>
-                
+                <div class="group-title">CONFIGURACIÓN</div>
                 <div class="btn-row">
-                    <button id="btn-broad" class="active" style="flex:1" onclick="app.setMode('broadside')">BROADSIDE</button>
-                    <button id="btn-end" style="flex:1" onclick="app.setMode('endfire')">END-FIRE</button>
+                    <button id="btn-broad" class="active" style="flex:1" onclick="app.setMode('broadside')" data-tooltip="<strong>BROADSIDE</strong><br>Línea de fuentes. Cobertura ancha.">BROADSIDE</button>
+                    <button id="btn-end" style="flex:1" onclick="app.setMode('endfire')" data-tooltip="<strong>END-FIRE</strong><br>Fuentes en línea de tiro. Máxima direccionalidad y rechazo trasero.">END-FIRE</button>
                 </div>
-
-                <button id="btn-lr" style="width:100%; margin-top:8px;" onclick="app.toggleLR()">
-                    MODO: MONO CENTRAL
-                </button>
-                
-                <!-- Margin Slider -->
-                <div class="slider-row" style="margin-top:12px">
-                    <div class="slider-label">
-                        <span>Margen Lateral (L/R)</span>
-                        <span class="slider-val" id="disp-lat-margin">0.5 m</span>
-                    </div>
+                <button id="btn-lr" style="width:100%; margin-top:4px;" onclick="app.toggleLR()" data-tooltip="<strong>L/R STEREO</strong><br>Divide el arreglo en dos clusters separados (Izquierda/Derecha).">MODO: MONO CENTRAL</button>
+                <div class="slider-row" style="margin-top:4px" data-tooltip="<strong>SEPARACIÓN L/R</strong><br>Distancia desde el centro del escenario a cada cluster.">
+                    <div class="slider-label"><span>Margen L/R</span><span class="slider-val" id="disp-lat-margin">0.5 m</span></div>
                     <input type="range" id="input-lat-margin" min="0" max="5.0" step="0.1" value="0.5">
                 </div>
-
-                <div class="btn-row" style="margin-top:12px;">
-                    <button class="danger" style="flex:1" onclick="app.setupCardioid()">CARDIOIDE CSA</button>
-                    <button style="flex:1; border-color:var(--accent); color:var(--accent);" onclick="app.optimizeSpacing()">AUTO ESPACIO</button>
+                <div class="btn-row" style="margin-top:4px;">
+                    <button class="danger" style="flex:1" onclick="app.setupCardioid()" data-tooltip="<strong>CARDIOIDE CSA</strong><br>Configuración de 3 cajas (2 frente, 1 invertida atrás) para cancelar sonido trasero.">CARDIOIDE CSA</button>
                 </div>
             </div>
 
-            <!-- Optimization & Mic -->
+            <!-- Optimization -->
             <div class="control-group">
-                <div class="group-title">MICRÓFONO & OPTIMIZACIÓN</div>
-                <div style="font-size:10px; color:#a1a1aa; margin-bottom:8px;">
-                    Posiciona el micrófono para ver el Analizador de Fase.
-                </div>
-                <button class="magic" style="width:100%; padding:10px;" onclick="app.autoOptimize()">
-                    ✨ AUTO-OPTIMIZAR (FOCUS)
-                </button>
-                <div id="opt-status" style="display:none; text-align:center; color:#a3e635; font-size:10px; margin-top:5px; font-weight:bold;">
-                    SISTEMA OPTIMIZADO A MIC
-                </div>
+                <div class="group-title">MIC & OPTIMIZACIÓN</div>
+                <button class="magic" style="width:100%; padding:6px;" onclick="app.autoOptimize()" data-tooltip="<strong>AUTO-FOCUS</strong><br>Calcula delays electrónicos para alinear la llegada de señal al micrófono.">✨ AUTO-FOCUS (FASE)</button>
+                <div id="opt-status" style="display:none; text-align:center; color:#a3e635; font-size:9px; margin-top:2px; font-weight:bold;">OPTIMIZADO</div>
             </div>
 
             <!-- Stage Control -->
             <div class="control-group">
-                <div class="group-title">ESCENARIO (REFLEXIÓN)</div>
-                <div class="slider-row">
-                    <div class="slider-label">
-                        <span>Ancho</span>
-                        <span class="slider-val" id="disp-stg-w">10.0 m</span>
-                    </div>
+                <div class="group-title">ESCENARIO (-18dB)</div>
+                <div class="slider-row" data-tooltip="<strong>ANCHO ESCENARIO</strong><br>Bloquea el sonido creando sombra acústica.">
+                    <div class="slider-label"><span>Ancho</span><span class="slider-val" id="disp-stg-w">10.0 m</span></div>
                     <input type="range" id="input-stg-w" min="2" max="30" step="0.5" value="10">
                 </div>
-                <div class="slider-row">
-                    <div class="slider-label">
-                        <span>Profundidad</span>
-                        <span class="slider-val" id="disp-stg-d">6.0 m</span>
-                    </div>
+                <div class="slider-row" data-tooltip="<strong>PROFUNDIDAD</strong><br>Espacio físico ocupado por el escenario.">
+                    <div class="slider-label"><span>Profundidad</span><span class="slider-val" id="disp-stg-d">6.0 m</span></div>
                     <input type="range" id="input-stg-d" min="2" max="15" step="0.5" value="6">
                 </div>
-                <div class="slider-row">
-                    <div class="slider-label">
-                        <span>Posición X (Centro)</span>
-                        <span class="slider-val" id="disp-stg-x">0.0 m</span>
-                    </div>
-                    <input type="range" id="input-stg-x" min="-10" max="10" step="0.5" value="0">
-                </div>
-                <div class="slider-row">
-                    <div class="slider-label">
-                        <span>Distancia Array (d)</span>
-                        <span class="slider-val" id="disp-stg-gap" style="color:var(--warning)">--</span>
-                    </div>
+                <div class="slider-row" data-tooltip="<strong>GAP</strong><br>Distancia física entre el escenario y los subwoofers.">
+                    <div class="slider-label"><span>Distancia Bafle</span><span class="slider-val" id="disp-stg-gap" style="color:var(--warning)">--</span></div>
                     <input type="range" id="input-stg-gap" min="0" max="10" step="0.1" value="1.0">
                 </div>
-                
-                <button style="width:100%; margin-top:8px; border-color:var(--success); color:var(--success);" onclick="app.optimizeStageDist()">
-                    PEGAR AL ESCENARIO
-                </button>
+                <button style="width:100%; margin-top:2px; border-color:var(--success); color:var(--success);" onclick="app.optimizeStageDist()" data-tooltip="Coloca los subs pegados al escenario (0.1m) para minimizar cancelaciones por rebote.">PEGAR</button>
             </div>
 
-            <!-- Audience Zones -->
-            <div class="control-group">
-                <div class="group-title">ZONAS DE PÚBLICO</div>
+             <!-- Audience Zones -->
+             <div class="control-group">
+                <div class="group-title">ZONAS PÚBLICO</div>
                 <div class="btn-row">
-                    <button onclick="app.addZone()" style="flex:2; color:var(--success); border-color:rgba(34,197,94,0.3);">+ AÑADIR ZONA</button>
-                    <button onclick="app.clearZones()" class="danger" style="flex:1;">BORRAR</button>
-                </div>
-                <div style="font-size:9px; color:#555; margin-top:6px;">
-                    Haz clic en una zona para ver Análisis de Pérdida.
+                    <button onclick="app.addZone()" style="flex:2; color:var(--success); border-color:rgba(34,197,94,0.3);" data-tooltip="Crea un rectángulo para visualizar la cobertura en el área de audiencia.">+ AÑADIR</button>
+                    <button onclick="app.clearZones()" class="danger" style="flex:1;" data-tooltip="Borra todas las zonas de audiencia.">BORRAR</button>
                 </div>
             </div>
 
             <!-- Polarity -->
             <div class="control-group">
-                <div class="group-title">MATRIZ DE POLARIDAD (POR LADO)</div>
-                <div id="polarity-container" class="polarity-grid">
-                    <!-- Generated by JS -->
-                </div>
-            </div>
-
-            <div style="font-size:10px; color:#555; text-align:center;">
-                <strong>Micrófono Virtual:</strong> Arrastra el círculo para medir.<br>
-                Rueda: Zoom • Arrastrar fondo: Panorámica
-            </div>
-        </div>
-
-        <!-- VISUALIZER AREA (Fixed Top on Mobile) -->
-        <div id="viewport">
-            <!-- Fullscreen Toggle Button -->
-            <button id="btn-fullscreen" onclick="app.toggleFullscreen()" title="Pantalla Completa">
-                ⛶
-            </button>
-
-            <canvas id="simCanvas" width="800" height="600"></canvas>
-            
-            <!-- HUD OVERLAY (Left) -->
-            <div class="hud-panel" style="top:20px; left:20px;">
-                <div class="hud-row">
-                    <span class="hud-label">Velocidad Sonido:</span>
-                    <span class="hud-value" id="hud-speed">343 m/s</span>
-                </div>
-                <div class="hud-row">
-                    <span class="hud-label">Longitud de Onda (λ):</span>
-                    <span class="hud-value" id="hud-lambda">--</span>
-                </div>
-                <div style="height:1px; background:#333; margin:8px 0;"></div>
-                <div class="hud-row">
-                    <span class="hud-label">Alineación de Fase:</span>
-                    <span class="hud-value" id="hud-status">CALCULANDO...</span>
-                </div>
-                <div class="hud-row" id="row-delay">
-                    <span class="hud-label">Retardo E.F.:</span>
-                    <span class="hud-value" id="hud-delay" style="color:var(--warning)">0.00 ms</span>
-                </div>
-                <div class="hud-row">
-                    <span class="hud-label">Interf. Rebote:</span>
-                    <span class="hud-value" id="hud-bounce" style="color:#aaa;">--</span>
-                </div>
-                
-                <div style="height:1px; background:#333; margin:8px 0;"></div>
-                <div class="hud-row">
-                    <span class="hud-label">Cobertura Público:</span>
-                    <span class="hud-value" id="hud-coverage">--</span>
-                </div>
-                <div style="font-size:9px; color:#555; text-align:right;">(±3dB del Máx)</div>
-            </div>
-
-            <!-- COLOR LEGEND (Right) -->
-            <div class="legend-panel">
-                <div class="legend-text">
-                    <span style="color:#fff;">+6dB<br>(Suma)</span>
-                    <span style="color:#ff0000;">+3dB</span>
-                    <span style="color:#ffff00;">0dB</span>
-                    <span style="color:#00ff00;">-6dB</span>
-                    <span style="color:#0000ff;">-12dB</span>
-                    <span style="color:#444;">-20dB</span>
-                </div>
-                <div class="color-bar"></div>
+                <div class="group-title">POLARIDAD (INVERTIR)</div>
+                <div id="polarity-container" class="polarity-grid" data-tooltip="<strong>POLARIDAD</strong><br>Toca un número para invertir la polaridad (180°) de esa caja específica. Rojo = Invertido."></div>
             </div>
         </div>
 
@@ -891,105 +475,53 @@
 
     <footer>
         <a href="https://www.instagram.com/3d_mc_3d/" target="_blank" class="footer-link">
-            <!-- Instagram Icon (Simple SVG) -->
-            <svg class="footer-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-            </svg>
+            <svg class="footer-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
             <span>Creado por Mauro Casarin</span>
         </a>
     </footer>
 
     <script>
-        /**
-         * SINGLE FILE APPLICATION LOGIC
-         * Encapsulated in a window.onload function as requested.
-         */
-        
         window.onload = function() {
             
-            const SPEED_OF_SOUND = 343; // Constants fixed as per request
+            const SPEED_OF_SOUND = 343;
 
-            // --- STATE MANAGEMENT ---
             const state = {
-                freq: 80, // Default 80Hz
-                dist: 1.07, // Default 1.07m (lambda/4 at 80Hz with c=343 -> 343/80/4 = 1.0718)
-                count: 2, // Default 2 baffles
-                // temp: 20, // Removed temperature as speed is fixed to 343
-                mode: 'broadside', 
-                lrMode: false,     
-                stageGap: 1.0,     
-                lateralMargin: 0.5, 
+                freq: 80, dist: 1.07, count: 2,
+                mode: 'broadside', lrMode: false,     
+                stageGap: 1.0, lateralMargin: 0.5, 
                 polarities: new Array(16).fill(false),
-                isOptimized: false, 
-                customPhases: [],   
-                viewGain: 1.0,      
-                isFullscreen: false,
-                isGuideOpen: false, // New state for modal
-                view: {
-                    scale: 30, // Pixels per meter
-                    x: 0,      
-                    y: 150,    
-                    dragging: false,
-                    lastX: 0,
-                    lastY: 0,
-                    dragType: null, 
-                    dragIndex: -1
-                },
-                mic: {
-                    x: 0, 
-                    y: -5, 
-                },
-                stage: {
-                    w: 10,
-                    h: 6, 
-                    x: 0, 
-                    y: 2, 
-                },
-                zones: [],
-                selectedZoneIndex: -1, 
-                coverageStats: 0
+                isOptimized: false, customPhases: [],   
+                viewGain: 1.0, isFullscreen: false, isGuideOpen: false,
+                view: { scale: 30, x: 0, y: 150, dragging: false, lastX: 0, lastY: 0, dragType: null, dragIndex: -1 },
+                mic: { x: 0, y: -5 },
+                stage: { w: 10, h: 6, x: 0, y: 2 },
+                zones: [], selectedZoneIndex: -1, coverageStats: 0
             };
 
-            // --- DOM CACHE ---
             const els = {
                 canvas: document.getElementById('simCanvas'),
+                controls: document.getElementById('controles'),
+                hudPanel: document.getElementById('hud-panel'),
+                tooltip: document.getElementById('tooltip'),
                 inputs: {
-                    freq: document.getElementById('input-freq'),
-                    dist: document.getElementById('input-dist'),
-                    count: document.getElementById('input-count'),
-                    // temp: document.getElementById('input-temp'), // Removed
-                    stgW: document.getElementById('input-stg-w'),
+                    freq: document.getElementById('input-freq'), dist: document.getElementById('input-dist'),
+                    count: document.getElementById('input-count'), stgW: document.getElementById('input-stg-w'),
                     stgD: document.getElementById('input-stg-d'),
-                    stgX: document.getElementById('input-stg-x'),
-                    stgGap: document.getElementById('input-stg-gap'),
-                    latMargin: document.getElementById('input-lat-margin')
+                    stgGap: document.getElementById('input-stg-gap'), latMargin: document.getElementById('input-lat-margin')
                 },
                 displays: {
-                    freq: document.getElementById('disp-freq'),
-                    dist: document.getElementById('disp-dist'),
-                    count: document.getElementById('disp-count'),
-                    // temp: document.getElementById('disp-temp'), // Removed
-                    stgW: document.getElementById('disp-stg-w'),
+                    freq: document.getElementById('disp-freq'), dist: document.getElementById('disp-dist'),
+                    count: document.getElementById('disp-count'), stgW: document.getElementById('disp-stg-w'),
                     stgD: document.getElementById('disp-stg-d'),
-                    stgX: document.getElementById('disp-stg-x'),
-                    stgGap: document.getElementById('disp-stg-gap'),
-                    latMargin: document.getElementById('disp-lat-margin')
+                    stgGap: document.getElementById('disp-stg-gap'), latMargin: document.getElementById('disp-lat-margin')
                 },
-                rows: {
-                    dist: document.getElementById('row-dist')
-                },
+                rows: { dist: document.getElementById('row-dist') },
                 hud: {
-                    speed: document.getElementById('hud-speed'),
-                    lambda: document.getElementById('hud-lambda'),
-                    status: document.getElementById('hud-status'),
-                    delay: document.getElementById('hud-delay'),
-                    delayRow: document.getElementById('row-delay'),
-                    coverage: document.getElementById('hud-coverage'),
-                    bounce: document.getElementById('hud-bounce')
+                    lambda: document.getElementById('hud-lambda'), status: document.getElementById('hud-status'),
+                    delay: document.getElementById('hud-delay'), delayRow: document.getElementById('row-delay')
                 },
                 btns: {
-                    broad: document.getElementById('btn-broad'),
-                    end: document.getElementById('btn-end'),
+                    broad: document.getElementById('btn-broad'), end: document.getElementById('btn-end'),
                     lr: document.getElementById('btn-lr')
                 },
                 polContainer: document.getElementById('polarity-container'),
@@ -999,119 +531,80 @@
 
             const ctx = els.canvas.getContext('2d', { alpha: false });
 
-            // --- APP API (Global exposure for HTML onclicks) ---
             window.app = {
                 setMode: (m) => {
-                    state.mode = m;
-                    state.isOptimized = false;
-                    resetGain();
+                    state.mode = m; state.isOptimized = false; resetGain();
                     els.optStatus.style.display = 'none';
                     els.btns.broad.className = m === 'broadside' ? 'active' : '';
                     els.btns.end.className = m === 'endfire' ? 'active' : '';
-                    updateUI();
-                    requestAnimationFrame(draw);
+                    updateUI(); requestAnimationFrame(draw);
                 },
                 toggleLR: () => {
-                    state.lrMode = !state.lrMode;
-                    state.isOptimized = false; 
-                    resetGain();
+                    state.lrMode = !state.lrMode; state.isOptimized = false; resetGain();
                     els.optStatus.style.display = 'none';
                     els.btns.lr.innerText = state.lrMode ? "MODO: STEREO L/R" : "MODO: MONO CENTRAL";
                     els.btns.lr.className = state.lrMode ? 'active' : '';
-                    updateUI();
-                    requestAnimationFrame(draw);
+                    updateUI(); requestAnimationFrame(draw);
                 },
                 togglePolarity: (i) => {
                     state.polarities[i] = !state.polarities[i];
-                    renderPolarityGrid();
-                    requestAnimationFrame(draw);
+                    renderPolarityGrid(); requestAnimationFrame(draw);
                 },
                 toggleFullscreen: () => {
                     state.isFullscreen = !state.isFullscreen;
-                    if(state.isFullscreen) {
-                        document.body.classList.add('fullscreen-mode');
-                    } else {
-                        document.body.classList.remove('fullscreen-mode');
-                    }
                     handleResize(); 
                 },
                 toggleGuide: () => {
                     state.isGuideOpen = !state.isGuideOpen;
-                    if (state.isGuideOpen) {
-                        els.modalGuide.classList.add('open');
-                    } else {
-                        els.modalGuide.classList.remove('open');
-                    }
+                    els.modalGuide.classList.toggle('open', state.isGuideOpen);
                 },
                 setLambdaFraction: (frac) => {
                     const c = SPEED_OF_SOUND;
                     let optimal = (c / state.freq) * frac;
                     optimal = Math.min(4.0, Math.max(0.2, optimal));
-                    state.dist = optimal;
-                    els.inputs.dist.value = optimal;
-                    // Auto optimization is cleared when manually adjusting separation
-                    state.isOptimized = false; 
-                    els.optStatus.style.display = 'none';
-                    updateUI();
-                    requestAnimationFrame(draw);
+                    state.dist = optimal; els.inputs.dist.value = optimal;
+                    state.isOptimized = false; els.optStatus.style.display = 'none';
+                    updateUI(); requestAnimationFrame(draw);
                 },
                 applyPreset: (hz) => {
-                    state.freq = hz;
-                    state.isOptimized = false;
-                    resetGain();
-                    els.optStatus.style.display = 'none';
-                    els.inputs.freq.value = hz;
+                    state.freq = hz; state.isOptimized = false; resetGain();
+                    els.optStatus.style.display = 'none'; els.inputs.freq.value = hz;
                     const v = SPEED_OF_SOUND;
                     let optimal = (v / hz) / 4;
                     optimal = Math.min(4.0, Math.max(0.2, optimal));
-                    state.dist = optimal;
-                    els.inputs.dist.value = optimal;
-                    updateUI();
-                    requestAnimationFrame(draw);
+                    state.dist = optimal; els.inputs.dist.value = optimal;
+                    updateUI(); requestAnimationFrame(draw);
                 },
                 setupCardioid: () => {
-                    state.count = 2;
-                    els.inputs.count.value = 2;
-                    window.app.setMode('endfire');
-                    state.polarities.fill(false);
-                    state.polarities[0] = true;
-                    window.app.applyPreset(state.freq);
+                    state.count = 2; els.inputs.count.value = 2;
+                    window.app.setMode('endfire'); state.polarities.fill(false);
+                    state.polarities[0] = true; window.app.applyPreset(state.freq);
                 },
                 optimizeSpacing: () => {
                      const v = SPEED_OF_SOUND;
                      let optimal = (v / state.freq) / 4;
                      optimal = Math.min(4.0, Math.max(0.2, optimal));
-                     state.dist = optimal;
-                     els.inputs.dist.value = optimal;
-                     updateUI();
-                     requestAnimationFrame(draw);
+                     state.dist = optimal; els.inputs.dist.value = optimal;
+                     updateUI(); requestAnimationFrame(draw);
                 },
                 optimizeStageDist: () => {
-                    state.stageGap = 0.1;
-                    els.inputs.stgGap.value = 0.1;
-                    updateUI();
-                    requestAnimationFrame(draw);
+                    state.stageGap = 0.1; els.inputs.stgGap.value = 0.1;
+                    updateUI(); requestAnimationFrame(draw);
                 },
                 autoOptimize: () => {
                     const v = SPEED_OF_SOUND;
-                    let optimal = (v / state.freq) / 4;
-                    optimal = Math.min(4.0, Math.max(0.2, optimal));
-                    state.dist = optimal;
-                    els.inputs.dist.value = optimal;
-
                     const k = (2 * Math.PI * state.freq) / v; 
                     const tempSources = generateSourcesForLogic();
                     
+                    // Auto-Focus: Calculate delay to align phases at mic
                     state.customPhases = tempSources.map(s => {
                         const d = Math.hypot(state.mic.x - s.x, state.mic.y - s.y);
-                        return k * d; 
+                        // Phase required to arrive at 0 relative phase
+                        return -k * d; 
                     });
                     
-                    state.isOptimized = true;
-                    els.optStatus.style.display = 'block';
-                    resetGain();
-                    updateUI();
-                    requestAnimationFrame(draw);
+                    state.isOptimized = true; els.optStatus.style.display = 'block';
+                    resetGain(); updateUI(); requestAnimationFrame(draw);
                 },
                 addZone: () => {
                     state.zones.push({ x: -4, y: -8, w: 8, h: 5 });
@@ -1119,22 +612,16 @@
                     requestAnimationFrame(draw);
                 },
                 clearZones: () => {
-                    state.zones = [];
-                    state.selectedZoneIndex = -1;
+                    state.zones = []; state.selectedZoneIndex = -1;
                     requestAnimationFrame(draw);
                 }
             };
 
-            // --- HELPER ---
-            function resetGain() {
-                // Calibrate so that at standard distance it visualizes nicely
-                state.viewGain = 1.0; 
-            }
+            function resetGain() { state.viewGain = 1.0; }
 
             function getPointerPos(e) {
                 const rect = els.canvas.getBoundingClientRect();
                 let clientX, clientY;
-                
                 if (e.changedTouches && e.changedTouches.length > 0) {
                     clientX = e.changedTouches[0].clientX;
                     clientY = e.changedTouches[0].clientY;
@@ -1142,94 +629,147 @@
                     clientX = e.clientX;
                     clientY = e.clientY;
                 }
-                
-                return {
-                    x: clientX - rect.left,
-                    y: clientY - rect.top,
-                    clientX: clientX,
-                    clientY: clientY
-                };
+                return { x: clientX - rect.left, y: clientY - rect.top, clientX, clientY };
             }
 
-            // --- EVENT LISTENERS ---
-            
+            // --- SMART TOOLTIPS (DELAYED + ANIMATED) ---
+            let tooltipTimer = null;
+            const TOOLTIP_DELAY = 2000; // 2 seconds
+
+            function showTooltip(target) {
+                const text = target.getAttribute('data-tooltip');
+                if (!text) return;
+                
+                els.tooltip.innerHTML = text;
+                const rect = target.getBoundingClientRect();
+                
+                // Position logic
+                let top = rect.top - 40;
+                let left = rect.left + 10;
+                
+                // Boundaries check
+                if (left + 200 > window.innerWidth) left = window.innerWidth - 210;
+                if (top < 10) top = rect.bottom + 10;
+
+                els.tooltip.style.left = left + 'px';
+                els.tooltip.style.top = top + 'px';
+                
+                els.tooltip.style.display = 'block';
+                // Trigger animation in next frame
+                requestAnimationFrame(() => {
+                    els.tooltip.classList.add('visible');
+                });
+            }
+
+            function hideTooltip() {
+                els.tooltip.classList.remove('visible');
+                // Wait for animation before display:none
+                setTimeout(() => {
+                    if (!els.tooltip.classList.contains('visible')) {
+                         els.tooltip.style.display = 'none';
+                    }
+                }, 300);
+            }
+
+            // Desktop Events
+            document.addEventListener('mouseover', e => {
+                const target = e.target.closest('[data-tooltip]');
+                if (target) {
+                    clearTimeout(tooltipTimer);
+                    tooltipTimer = setTimeout(() => showTooltip(target), TOOLTIP_DELAY);
+                }
+            });
+            document.addEventListener('mouseout', e => {
+                const target = e.target.closest('[data-tooltip]');
+                if (target) {
+                    clearTimeout(tooltipTimer);
+                    hideTooltip();
+                }
+            });
+            // Mobile Events
+            document.addEventListener('touchstart', e => {
+                const target = e.target.closest('[data-tooltip]');
+                if (target) {
+                    clearTimeout(tooltipTimer);
+                    tooltipTimer = setTimeout(() => {
+                        // Mobile centering
+                        const text = target.getAttribute('data-tooltip');
+                        if(text) {
+                            els.tooltip.innerHTML = text;
+                            els.tooltip.style.display = 'block';
+                            els.tooltip.style.left = '50%';
+                            els.tooltip.style.top = '20%';
+                            els.tooltip.style.transform = 'translate(-50%, 0)';
+                            requestAnimationFrame(() => els.tooltip.classList.add('visible'));
+                        }
+                    }, TOOLTIP_DELAY);
+                }
+            }, {passive: true});
+            document.addEventListener('touchend', () => {
+                clearTimeout(tooltipTimer);
+                hideTooltip();
+            });
+
+
             Object.keys(els.inputs).forEach(key => {
-                if(!els.inputs[key]) return; // Guard against removed elements
+                if(!els.inputs[key]) return;
                 els.inputs[key].addEventListener('input', (e) => {
                     const val = parseFloat(e.target.value);
                     if (key === 'stgW') state.stage.w = val;
                     else if (key === 'stgD') state.stage.h = val;
-                    else if (key === 'stgX') state.stage.x = val;
                     else if (key === 'stgGap') state.stageGap = val;
                     else if (key === 'latMargin') state.lateralMargin = val;
                     else state[key] = val;
                     
-                    if (['freq', 'dist', 'stgX', 'stgGap', 'latMargin', 'count'].includes(key)) {
+                    if (['freq', 'dist', 'stgGap', 'latMargin', 'count'].includes(key)) {
                          if(state.isOptimized) {
-                             state.isOptimized = false;
-                             els.optStatus.style.display = 'none';
-                             resetGain();
+                             state.isOptimized = false; els.optStatus.style.display = 'none'; resetGain();
                          }
                          if(key === 'count') resetGain();
                     }
-
-                    updateUI();
-                    requestAnimationFrame(draw);
+                    updateUI(); requestAnimationFrame(draw);
                 });
             });
 
-            // Pointer Handlers...
             function handleStart(e) {
                 if(e.type === 'touchstart') e.preventDefault();
+                // AUTO-HIDE LOGIC
+                els.controls.classList.add('controls-hidden');
+                els.hudPanel.style.opacity = '0.2';
+
                 const pos = getPointerPos(e);
-                const mouseX = pos.x;
-                const mouseY = pos.y;
+                const mouseX = pos.x; const mouseY = pos.y;
                 const cx = els.canvas.width / 2 + state.view.x;
                 const cy = els.canvas.height / 2 + state.view.y;
                 const ppm = state.view.scale;
                 const toScreen = (mx, my) => ({ x: cx + mx * ppm, y: cy + my * ppm });
 
                 const ms = toScreen(state.mic.x, state.mic.y);
-                if (Math.hypot(mouseX - ms.x, mouseY - ms.y) < 25) {
-                    state.view.dragType = 'mic';
-                    state.view.dragging = true;
-                    state.view.lastX = pos.clientX;
-                    state.view.lastY = pos.clientY;
+                if (Math.hypot(mouseX - ms.x, mouseY - ms.y) < 30) {
+                    state.view.dragType = 'mic'; state.view.dragging = true;
+                    state.view.lastX = pos.clientX; state.view.lastY = pos.clientY;
                     return;
                 }
 
                 for(let i=state.zones.length-1; i>=0; i--) {
                     const z = state.zones[i];
                     const zs = toScreen(z.x, z.y);
-                    const zw = z.w * ppm;
-                    const zh = z.h * ppm;
-                    if (mouseX > zs.x + zw - 25 && mouseX < zs.x + zw + 25 &&
-                        mouseY > zs.y + zh - 25 && mouseY < zs.y + zh + 25) {
-                        state.view.dragType = 'zone-resize';
-                        state.view.dragIndex = i;
-                        state.selectedZoneIndex = i;
-                        state.view.dragging = true;
-                        state.view.lastX = pos.clientX;
-                        state.view.lastY = pos.clientY;
-                        requestAnimationFrame(draw);
-                        return;
+                    const zw = z.w * ppm; const zh = z.h * ppm;
+                    if (mouseX > zs.x + zw - 25 && mouseX < zs.x + zw + 25 && mouseY > zs.y + zh - 25 && mouseY < zs.y + zh + 25) {
+                        state.view.dragType = 'zone-resize'; state.view.dragIndex = i;
+                        state.selectedZoneIndex = i; state.view.dragging = true;
+                        state.view.lastX = pos.clientX; state.view.lastY = pos.clientY;
+                        requestAnimationFrame(draw); return;
                     }
                     if (mouseX >= zs.x && mouseX <= zs.x + zw && mouseY >= zs.y && mouseY <= zs.y + zh) {
-                        state.view.dragType = 'zone';
-                        state.view.dragIndex = i;
-                        state.selectedZoneIndex = i;
-                        state.view.dragging = true;
-                        state.view.lastX = pos.clientX;
-                        state.view.lastY = pos.clientY;
-                        requestAnimationFrame(draw);
-                        return;
+                        state.view.dragType = 'zone'; state.view.dragIndex = i;
+                        state.selectedZoneIndex = i; state.view.dragging = true;
+                        state.view.lastX = pos.clientX; state.view.lastY = pos.clientY;
+                        requestAnimationFrame(draw); return;
                     }
                 }
-                state.selectedZoneIndex = -1;
-                state.view.dragType = 'view';
-                state.view.dragging = true;
-                state.view.lastX = pos.clientX;
-                state.view.lastY = pos.clientY;
+                state.selectedZoneIndex = -1; state.view.dragType = 'view';
+                state.view.dragging = true; state.view.lastX = pos.clientX; state.view.lastY = pos.clientY;
                 requestAnimationFrame(draw);
             }
 
@@ -1243,37 +783,37 @@
                     const dyM = dyPix / state.view.scale;
 
                     if (state.view.dragType === 'view') {
-                        state.view.x += dxPix;
-                        state.view.y += dyPix;
+                        state.view.x += dxPix; state.view.y += dyPix;
                     } 
                     else if (state.view.dragType === 'mic') {
-                        state.mic.x += dxM;
-                        state.mic.y += dyM;
+                        state.mic.x += dxM; state.mic.y += dyM;
                         if(state.isOptimized) {
-                            state.isOptimized = false;
-                            els.optStatus.style.display = 'none';
-                            resetGain();
+                             const v = SPEED_OF_SOUND;
+                             const k = (2 * Math.PI * state.freq) / v; 
+                             const tempSources = generateSourcesForLogic();
+                             state.customPhases = tempSources.map(s => {
+                                const d = Math.hypot(state.mic.x - s.x, state.mic.y - s.y);
+                                return -k * d; 
+                             });
                         }
                     }
                     else if (state.view.dragType === 'zone') {
-                        const z = state.zones[state.view.dragIndex];
-                        z.x += dxM;
-                        z.y += dyM;
+                        const z = state.zones[state.view.dragIndex]; z.x += dxM; z.y += dyM;
                     }
                     else if (state.view.dragType === 'zone-resize') {
                         const z = state.zones[state.view.dragIndex];
-                        z.w = Math.max(0.5, z.w + dxM);
-                        z.h = Math.max(0.5, z.h + dyM);
+                        z.w = Math.max(0.5, z.w + dxM); z.h = Math.max(0.5, z.h + dyM);
                     }
-                    state.view.lastX = pos.clientX;
-                    state.view.lastY = pos.clientY;
+                    state.view.lastX = pos.clientX; state.view.lastY = pos.clientY;
                     requestAnimationFrame(draw);
                 }
             }
 
             function handleEnd(e) {
-                state.view.dragging = false;
-                state.view.dragType = null;
+                state.view.dragging = false; state.view.dragType = null;
+                // RESTORE CONTROLS
+                els.controls.classList.remove('controls-hidden');
+                els.hudPanel.style.opacity = '1';
             }
 
             els.canvas.addEventListener('mousedown', handleStart);
@@ -1285,13 +825,10 @@
             els.canvas.addEventListener('wheel', e => {
                 e.preventDefault();
                 const factor = e.deltaY > 0 ? 0.9 : 1.1;
-                state.view.scale *= factor;
-                state.view.scale = Math.max(5, Math.min(100, state.view.scale));
+                state.view.scale *= factor; state.view.scale = Math.max(5, Math.min(100, state.view.scale));
                 requestAnimationFrame(draw);
             });
             window.addEventListener('resize', handleResize);
-
-            // --- LOGIC ---
 
             function handleResize() {
                 const parent = els.canvas.parentElement;
@@ -1304,68 +841,33 @@
                 els.displays.freq.innerText = state.freq + ' Hz';
                 els.displays.dist.innerText = state.dist.toFixed(2) + ' m';
                 els.displays.count.innerText = state.count;
-                // els.displays.temp.innerText = state.temp + ' °C'; // Removed
                 els.displays.stgW.innerText = state.stage.w.toFixed(1) + ' m';
                 els.displays.stgD.innerText = state.stage.h.toFixed(1) + ' m';
-                els.displays.stgX.innerText = state.stage.x.toFixed(1) + ' m';
                 els.displays.stgGap.innerText = state.stageGap.toFixed(2) + ' m';
                 els.displays.latMargin.innerText = state.lateralMargin.toFixed(1) + ' m';
 
-                if (state.count === 1) {
-                    els.rows.dist.classList.add('disabled');
-                } else {
-                    els.rows.dist.classList.remove('disabled');
-                }
+                if (state.count === 1) els.rows.dist.classList.add('disabled');
+                else els.rows.dist.classList.remove('disabled');
 
                 const c = SPEED_OF_SOUND;
                 const lambda = c / state.freq;
                 const delay = (state.dist / c) * 1000;
 
-                // els.hud.speed.innerText = c.toFixed(1) + ' m/s'; // Already hardcoded in HTML
                 els.hud.lambda.innerText = lambda.toFixed(2) + ' m';
                 
-                const limit = (2/3) * lambda; 
-                const optimal = lambda / 4; 
-
+                const limit = (2/3) * lambda; const optimal = lambda / 4; 
                 if (state.dist > limit && state.count > 1) {
-                    els.hud.status.innerText = "ALERTA: ALIASING";
-                    els.hud.status.className = "hud-value status-danger";
+                    els.hud.status.innerText = "ALIASING"; els.hud.status.className = "hud-value status-danger";
                 } else if (Math.abs(state.dist - optimal) < optimal * 0.15 && state.count > 1) {
-                    els.hud.status.innerText = "ÓPTIMO (λ/4)";
-                    els.hud.status.className = "hud-value status-ok";
+                    els.hud.status.innerText = "OPTIMO λ/4"; els.hud.status.className = "hud-value status-ok";
                 } else {
-                    els.hud.status.innerText = state.count === 1 ? "FUENTE PUNTUAL" : "ESTÁNDAR";
+                    els.hud.status.innerText = state.count === 1 ? "PUNTUAL" : "ESTANDAR";
                     els.hud.status.className = "hud-value";
                 }
 
-                let bounceText = "Baja";
-                let bounceColor = "#22c55e";
-                if (state.stageGap < 0.5) {
-                    bounceText = "CRÍTICA (Comb)";
-                    bounceColor = "#ef4444";
-                } else if (state.stageGap < 2.0) {
-                    bounceText = "MEDIA";
-                    bounceColor = "#f59e0b";
-                }
-                els.hud.bounce.innerText = bounceText;
-                els.hud.bounce.style.color = bounceColor;
-
                 if (state.mode === 'endfire' && state.count > 1) {
-                    els.hud.delayRow.style.display = 'flex';
-                    els.hud.delay.innerText = delay.toFixed(2) + ' ms / caja';
-                } else {
-                    els.hud.delayRow.style.display = 'none';
-                }
-
-                if (state.zones.length > 0) {
-                     els.hud.coverage.innerText = state.coverageStats.toFixed(1) + '%';
-                     if (state.coverageStats > 80) els.hud.coverage.className = "hud-value status-ok";
-                     else if (state.coverageStats > 50) els.hud.coverage.className = "hud-value status-warn";
-                     else els.hud.coverage.className = "hud-value status-danger";
-                } else {
-                    els.hud.coverage.innerText = "N/A";
-                    els.hud.coverage.className = "hud-value";
-                }
+                    els.hud.delayRow.style.display = 'flex'; els.hud.delay.innerText = delay.toFixed(2) + ' ms';
+                } else els.hud.delayRow.style.display = 'none';
 
                 renderPolarityGrid();
             }
@@ -1383,10 +885,8 @@
             }
 
             function generateSourcesForLogic() {
-                const stageFrontY = state.stage.y;
-                const c = SPEED_OF_SOUND;
+                const stageFrontY = state.stage.y; const c = SPEED_OF_SOUND;
                 const k = (2 * Math.PI * state.freq) / c;
-                
                 const sources = [];
                 let xOffsets = [state.stage.x];
                 if (state.lrMode) {
@@ -1394,146 +894,83 @@
                     const offset = halfW + state.lateralMargin;
                     xOffsets = [state.stage.x - offset, state.stage.x + offset];
                 }
-                
                 xOffsets.forEach(xOff => {
                     const startY = stageFrontY - state.stageGap; 
-                    
                     if (state.mode === 'broadside') {
-                        const totalW = (state.count - 1) * state.dist;
-                        const startX = xOff - totalW / 2;
-                        
+                        const totalW = (state.count - 1) * state.dist; const startX = xOff - totalW / 2;
                         for(let i=0; i<state.count; i++) {
-                            sources.push({
-                                x: startX + (i * state.dist),
-                                y: startY, 
-                                phase: 0,
-                                inv: state.polarities[i]
-                            });
+                            sources.push({ x: startX + (i * state.dist), y: startY, phase: 0, inv: state.polarities[i] });
                         }
                     } else {
-                        // End-Fire: Sum forward (towards audience, +y)
-                        // Rear speaker (i=0) is at startY.
-                        // Front speaker (i=N-1) is at startY + (N-1)*dist.
-                        // For constructive interference forward, subsequent speakers must be delayed.
-                        // Delay = distance / c.
                         for(let i=0; i<state.count; i++) {
-                            const yPos = startY + (i * state.dist); 
-                            const delayMeters = i * state.dist; // Forward summation delay
-                            sources.push({
-                                x: xOff,
-                                y: yPos,
-                                phase: k * delayMeters,
-                                inv: state.polarities[i]
-                            });
+                            const yPos = startY + (i * state.dist); const delayMeters = i * state.dist;
+                            sources.push({ x: xOff, y: yPos, phase: k * delayMeters, inv: state.polarities[i] });
                         }
                     }
                 });
                 return sources;
             }
 
+            // Updated Color Mapping for better Inverse Square Law visualization
             function getHeatmapColor(db) {
-                // dB mapping to RGB
-                // +6dB or more -> White (255,255,255)
-                // +3dB -> Red (255,0,0)
-                // 0dB -> Yellow (255,255,0)
-                // -6dB -> Green (0,255,0)
-                // -12dB -> Blue (0,0,255)
-                // -20dB -> Black (0,0,0)
-
+                // Expanded range to show falloff better (-6dB per double distance)
+                // Hot > +3dB
+                // +0dB
+                // -6dB (Double distance)
+                // -12dB (Quadruple distance)
+                // -24dB (Far field)
+                
                 let r=0, g=0, b=0;
 
-                if (db >= 6) {
-                    // White
+                if (db >= 3) {
+                    // White hot
                     r=255; g=255; b=255;
-                } else if (db >= 3) {
-                    // Red to White
-                    // 3 -> 255,0,0
-                    // 6 -> 255,255,255
-                    const t = (db - 3) / 3;
-                    r=255; 
-                    g=Math.floor(t * 255); 
-                    b=Math.floor(t * 255);
                 } else if (db >= 0) {
-                    // Yellow to Red
-                    // 0 -> 255,255,0
-                    // 3 -> 255,0,0
-                    const t = (db - 0) / 3;
-                    r=255;
-                    g=Math.floor((1-t) * 255);
-                    b=0;
+                    // Red to White
+                    const t = db / 3.0; // 0 to 1
+                    r=255; g=Math.floor(t*255); b=Math.floor(t*255);
                 } else if (db >= -6) {
-                    // Green to Yellow
-                    // -6 -> 0,255,0
-                    // 0 -> 255,255,0
-                    const t = (db - (-6)) / 6;
-                    r=Math.floor(t * 255);
-                    g=255;
-                    b=0;
+                    // Yellow to Red
+                    const t = (db + 6) / 6.0; 
+                    r=255; g=Math.floor(t*255); b=0;
                 } else if (db >= -12) {
-                    // Blue to Green
-                    // -12 -> 0,0,255
-                    // -6 -> 0,255,0
-                    const t = (db - (-12)) / 6;
-                    r=0;
-                    g=Math.floor(t * 255);
-                    b=Math.floor((1-t) * 255);
-                } else if (db >= -20) {
+                    // Green to Yellow
+                    const t = (db + 12) / 6.0;
+                    r=Math.floor(t*255); g=255; b=0;
+                } else if (db >= -24) {
+                    // Blue to Green (Wide range for falloff)
+                    const t = (db + 24) / 12.0;
+                    r=0; g=Math.floor(t*255); b=Math.floor((1-t)*255);
+                } else if (db >= -40) {
                     // Black to Blue
-                    // -20 -> 0,0,0
-                    // -12 -> 0,0,255
-                    const t = (db - (-20)) / 8;
-                    r=0; g=0; b=Math.floor(t * 255);
+                    const t = (db + 40) / 16.0;
+                    r=0; g=0; b=Math.floor(t*255);
                 } else {
-                    // Black
                     r=0; g=0; b=0;
                 }
                 return {r, g, b};
             }
 
             function draw() {
-                const w = els.canvas.width;
-                const h = els.canvas.height;
-                const cx = w/2 + state.view.x;
-                const cy = h/2 + state.view.y;
+                const w = els.canvas.width; const h = els.canvas.height;
+                const cx = w/2 + state.view.x; const cy = h/2 + state.view.y;
                 const ppm = state.view.scale;
-                
-                const c = SPEED_OF_SOUND;
-                const k = (2 * Math.PI * state.freq) / c;
+                const c = SPEED_OF_SOUND; const k = (2 * Math.PI * state.freq) / c;
 
-                // --- 0. BACKGROUND & GRID ---
-                ctx.fillStyle = '#09090b';
-                ctx.fillRect(0,0,w,h);
+                ctx.fillStyle = '#09090b'; ctx.fillRect(0,0,w,h);
+                // Grid
+                ctx.save(); ctx.beginPath(); ctx.strokeStyle = '#222'; ctx.lineWidth = 1;
+                const startX = Math.floor((-cx) / ppm); const endX = Math.ceil((w - cx) / ppm);
+                const startY = Math.floor((-cy) / ppm); const endY = Math.ceil((h - cy) / ppm);
+                for(let gx=startX; gx<=endX; gx++) { const sx = cx + gx * ppm; ctx.moveTo(sx, 0); ctx.lineTo(sx, h); }
+                for(let gy=startY; gy<=endY; gy++) { const sy = cy + gy * ppm; ctx.moveTo(0, sy); ctx.lineTo(w, sy); }
+                ctx.stroke(); ctx.restore();
 
-                ctx.save();
-                ctx.beginPath();
-                ctx.strokeStyle = '#222';
-                ctx.lineWidth = 1;
-                const startX = Math.floor((-cx) / ppm);
-                const endX = Math.ceil((w - cx) / ppm);
-                const startY = Math.floor((-cy) / ppm);
-                const endY = Math.ceil((h - cy) / ppm);
-
-                for(let gx=startX; gx<=endX; gx++) {
-                    const sx = cx + gx * ppm;
-                    ctx.moveTo(sx, 0); ctx.lineTo(sx, h);
-                }
-                for(let gy=startY; gy<=endY; gy++) {
-                    const sy = cy + gy * ppm;
-                    ctx.moveTo(0, sy); ctx.lineTo(w, sy);
-                }
-                ctx.stroke();
-                ctx.restore();
-
-                // --- 1. GENERATE SOURCES ---
                 let sources = generateSourcesForLogic();
-                
                 if (state.isOptimized && state.customPhases.length === sources.length) {
-                    sources.forEach((s, i) => {
-                        s.phase = state.customPhases[i];
-                    });
+                    sources.forEach((s, i) => { s.phase = state.customPhases[i]; });
                 }
 
-                // --- 2. REFLECTIONS & SHADOWS ---
                 const stageFrontY = state.stage.y;
                 const allSources = [...sources.map(s => ({...s, ampScale: 1.0}))];
                 const stageArea = state.stage.w * state.stage.h;
@@ -1542,147 +979,73 @@
                 sources.forEach(s => {
                     if (s.y < stageFrontY) {
                         const imgY = 2 * stageFrontY - s.y;
-                        allSources.push({
-                            x: s.x,
-                            y: imgY,
-                            phase: s.phase,
-                            inv: s.inv,
-                            isReflection: true,
-                            ampScale: refCoef 
-                        });
+                        allSources.push({ x: s.x, y: imgY, phase: s.phase, inv: s.inv, isReflection: true, ampScale: refCoef });
                     }
                 });
-
-                // --- 3. HEATMAP RENDER ---
-                const activeZones = state.zones.map(z => ({
-                    left: cx + z.x * ppm,
-                    right: cx + (z.x + z.w) * ppm,
-                    top: cy + z.y * ppm,
-                    bottom: cy + (z.y + z.h) * ppm,
-                    areaPoints: 0,
-                    goodPoints: 0,
-                    sLeft: Math.floor(cx + z.x * ppm),
-                    sRight: Math.ceil(cx + (z.x + z.w) * ppm),
-                    sTop: Math.floor(cy + z.y * ppm),
-                    sBottom: Math.ceil(cy + (z.y + z.h) * ppm),
-                    zTop: z.y 
-                }));
 
                 const stgLeftPx = cx + (state.stage.x - state.stage.w/2)*ppm;
                 const stgRightPx = cx + (state.stage.x + state.stage.w/2)*ppm;
                 const stgFrontPx = cy + state.stage.y * ppm;
-                
                 const gain = state.viewGain; 
 
                 const screenSources = allSources.map(s => ({
-                    sx: s.x * ppm,
-                    sy: s.y * ppm,
-                    ph: s.phase,
-                    inv: s.inv,
-                    ampScale: s.ampScale
+                    sx: s.x * ppm, sy: s.y * ppm, ph: s.phase, inv: s.inv, ampScale: s.ampScale
                 }));
 
                 const imgData = ctx.getImageData(0, 0, w, h);
                 const data = imgData.data;
-
-                // 18dB Attenuation factor: 10^(-18/20) approx 0.1259
-                const shadowAtten = 0.1259;
+                const shadowAtten = 0.1259; 
 
                 for(let y=0; y<h; y+=2) { 
-                    const wy = y - cy;
-                    const rowOff = y * w * 4;
-                    
-                    // Simple Shadow Check: If pixel is 'behind' the stage structure relative to sources (top).
-                    // Stage Front is stgFrontPx. If y > stgFrontPx, it might be in shadow.
+                    const wy = y - cy; const rowOff = y * w * 4;
                     const behindStage = (y > stgFrontPx);
-
                     for(let x=0; x<w; x++) {
-                        const wx = x - cx;
-                        let rSum = 0;
-                        let iSum = 0;
-                        
-                        // Vector Summation
+                        const wx = x - cx; let rSum = 0; let iSum = 0;
                         for(let i=0; i<screenSources.length; i++) {
                             const s = screenSources[i];
-                            const dx = wx - s.sx;
-                            const dy = wy - s.sy;
-                            // Physical distance in meters
+                            const dx = wx - s.sx; const dy = wy - s.sy;
                             const distMeters = Math.sqrt(dx*dx + dy*dy) / ppm;
-
-                            // STRICT INVERSE SQUARE LAW: Amplitude = 1 / d
+                            
+                            // INVERSE SQUARE LAW IMPLEMENTATION
+                            // Amplitude is 1/d, Power is 1/d^2.
+                            // We sum amplitudes (pressure), convert to dB which is 20log10(P/P0).
+                            // A doubling of distance halves the amplitude (0.5), which is 20log(0.5) = -6dB.
                             const dClamped = Math.max(0.1, distMeters);
                             const amp = (1.0 / dClamped) * s.ampScale; 
                             
                             const phi = (k * distMeters) - s.ph + (s.inv ? Math.PI : 0);
-
-                            rSum += Math.cos(phi) * amp;
-                            iSum += Math.sin(phi) * amp;
+                            rSum += Math.cos(phi) * amp; iSum += Math.sin(phi) * amp;
                         }
-
-                        // Magnitude of vector sum
                         let mag = Math.sqrt(rSum*rSum + iSum*iSum) * gain;
+                        if (behindStage && x > stgLeftPx && x < stgRightPx) mag *= shadowAtten; 
                         
-                        // Apply Stage Shadow (-18dB)
-                        // This applies if pixel is within the horizontal bounds of the stage and "behind" it.
-                        if (behindStage && x > stgLeftPx && x < stgRightPx) {
-                             mag *= shadowAtten; 
-                        }
-
-                        // Convert to Decibels
-                        const db = 20 * Math.log10(mag + 0.000001);
-
-                        // Check zones coverage
-                        for (let z of activeZones) {
-                            if (x >= z.sLeft && x <= z.sRight && y >= z.sTop && y <= z.sBottom) {
-                                z.areaPoints++;
-                                // Simple absorption calc
-                                const depthMeters = (wy/ppm) - z.zTop;
-                                const absDB = Math.min(0, -(depthMeters * 0.5)); // loss per meter depth
-                                if (db + absDB >= -6) z.goodPoints++;
-                            }
-                        }
-
+                        const db = 20 * Math.log10(mag + 0.0000001);
                         const {r,g,b} = getHeatmapColor(db);
-
+                        
                         const idx = rowOff + (x * 4);
                         data[idx] = r; data[idx+1] = g; data[idx+2] = b; 
                         
-                        // Transparency for very low levels
-                        if (db < -30) data[idx+3] = 0; 
-                        else if (db < -20) data[idx+3] = Math.floor(255 * ((db + 30) / 10));
+                        // Transparency falloff for aesthetic
+                        if (db < -50) data[idx+3] = 0; 
+                        else if (db < -30) data[idx+3] = Math.floor(255 * ((db + 50) / 20));
                         else data[idx+3] = 230; 
                     }
                 }
                 ctx.putImageData(imgData, 0, 0);
 
-                // --- 4. OVERLAYS (Stage, Sources, Zones, Mic) ---
-                ctx.save();
-                ctx.translate(cx, cy);
-                ctx.scale(ppm, ppm);
-
+                ctx.save(); ctx.translate(cx, cy); ctx.scale(ppm, ppm);
                 // Stage
                 const stgLeft = state.stage.x - state.stage.w/2;
-                ctx.fillStyle = '#3f3f46';
-                ctx.strokeStyle = '#71717a';
-                ctx.lineWidth = 0.05;
+                ctx.fillStyle = '#3f3f46'; ctx.strokeStyle = '#71717a'; ctx.lineWidth = 0.05;
                 ctx.fillRect(stgLeft, state.stage.y, state.stage.w, state.stage.h);
                 ctx.strokeRect(stgLeft, state.stage.y, state.stage.w, state.stage.h);
-                // Visual shadow hint (darker overlay)
-                ctx.fillStyle = 'rgba(0,0,0,0.6)'; 
-                ctx.fillRect(stgLeft, state.stage.y, state.stage.w, state.stage.h);
-                
-                ctx.fillStyle = '#d4d4d8';
-                ctx.font = '0.4px sans-serif';
-                ctx.textAlign = 'center';
-                ctx.fillText(`ESCENARIO (-18dB)`, state.stage.x, state.stage.y + state.stage.h/2);
+                ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(stgLeft, state.stage.y, state.stage.w, state.stage.h);
                 
                 // Sources
                 sources.forEach((s, i) => {
                     const size = 0.4;
-                    ctx.fillStyle = s.inv ? '#450a0a' : '#18181b';
-                    ctx.strokeStyle = s.inv ? '#ef4444' : '#a1a1aa';
-                    ctx.lineWidth = 0.05;
-                    ctx.fillRect(s.x - size/2, s.y - size/2, size, size);
+                    ctx.fillStyle = s.inv ? '#450a0a' : '#18181b'; ctx.strokeStyle = s.inv ? '#ef4444' : '#a1a1aa';
+                    ctx.lineWidth = 0.05; ctx.fillRect(s.x - size/2, s.y - size/2, size, size);
                     ctx.strokeRect(s.x - size/2, s.y - size/2, size, size);
                 });
 
@@ -1692,199 +1055,91 @@
                     ctx.fillStyle = isSelected ? 'rgba(34, 197, 94, 0.3)' : 'rgba(34, 197, 94, 0.1)'; 
                     ctx.strokeStyle = isSelected ? '#4ade80' : '#22c55e';
                     ctx.lineWidth = isSelected ? 0.08 : 0.03;
-                    ctx.fillRect(z.x, z.y, z.w, z.h);
-                    ctx.strokeRect(z.x, z.y, z.w, z.h);
-                    ctx.fillStyle = '#fff';
-                    ctx.font = 'bold 0.4px sans-serif';
-                    ctx.textAlign = 'left';
-                    ctx.fillText(`Público ${i+1}`, z.x, z.y - 0.2);
+                    ctx.fillRect(z.x, z.y, z.w, z.h); ctx.strokeRect(z.x, z.y, z.w, z.h);
+                    ctx.fillStyle = '#fff'; ctx.font = 'bold 0.4px sans-serif'; ctx.textAlign = 'left';
+                    ctx.fillText(`Z${i+1}`, z.x, z.y - 0.2);
                 });
 
-                // Mic Bubble Stats
-                let micR=0, micI=0;
-                let micSumAmp = 0; 
+                // Mic
+                let micR=0, micI=0; let micSumAmp = 0; 
                 allSources.forEach(s => {
-                    const dx = state.mic.x - s.x;
-                    const dy = state.mic.y - s.y;
-                    const d = Math.sqrt(dx*dx + dy*dy);
-                    const dClamped = Math.max(0.1, d);
-                    const amp = (1.0/dClamped) * s.ampScale;
-                    
-                    micSumAmp += amp; 
-
+                    const dx = state.mic.x - s.x; const dy = state.mic.y - s.y;
+                    const d = Math.sqrt(dx*dx + dy*dy); const dClamped = Math.max(0.1, d);
+                    const amp = (1.0/dClamped) * s.ampScale; micSumAmp += amp; 
                     const phi = (k*d) - s.phase + (s.inv?Math.PI:0);
-                    micR += Math.cos(phi)*amp;
-                    micI += Math.sin(phi)*amp;
+                    micR += Math.cos(phi)*amp; micI += Math.sin(phi)*amp;
                 });
-                
                 const micVectorMag = Math.sqrt(micR*micR + micI*micI);
                 const micMag = micVectorMag * gain; 
                 const micDB = 20 * Math.log10(micMag + 0.000001);
-
-                // Efficiency (Vector Sum / Scalar Sum)
                 const efficiency = micSumAmp > 0 ? (micVectorMag / micSumAmp) * 100 : 0;
                 
-                // Draw Mic
                 ctx.translate(state.mic.x, state.mic.y);
                 const micColor = micDB > -6 ? '#22c55e' : (micDB < -12 ? '#ef4444' : '#fbbf24');
-                ctx.strokeStyle = micColor;
-                ctx.lineWidth = 0.05;
-                ctx.beginPath();
-                ctx.arc(0, 0, 0.2, 0, Math.PI * 2);
-                ctx.stroke();
+                ctx.strokeStyle = micColor; ctx.lineWidth = 0.05; ctx.beginPath();
+                ctx.arc(0, 0, 0.2, 0, Math.PI * 2); ctx.stroke();
                 ctx.beginPath(); ctx.moveTo(-0.15, 0); ctx.lineTo(0.15, 0); ctx.stroke();
                 ctx.beginPath(); ctx.moveTo(0, -0.15); ctx.lineTo(0, 0.15); ctx.stroke();
-                ctx.restore(); // Undo mic translate
-                
-                // Floating dB readout near mic
-                ctx.font = 'bold 0.6px sans-serif';
-                ctx.fillStyle = '#fff';
-                ctx.textAlign = 'left';
-                // A bit offset to top-right of the mic center
-                const labelText = (micDB > 0 ? "+" : "") + micDB.toFixed(1) + " dB";
-                ctx.fillText(labelText, state.mic.x + 0.3, state.mic.y - 0.3);
-
-                // Overlay Text (Mic HUD)
-                const mx = cx + state.mic.x * ppm;
-                const my = cy + state.mic.y * ppm;
-                ctx.save();
-                ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform for pixel drawing
-                
-                ctx.fillStyle = 'rgba(0,0,0,0.85)';
-                ctx.strokeStyle = '#444';
-                ctx.lineWidth = 1;
-                ctx.beginPath();
-                ctx.roundRect(mx + 20, my - 35, 120, 60, 6);
-                ctx.fill();
-                ctx.stroke();
-                ctx.font = 'bold 10px sans-serif';
-                ctx.textAlign = 'left';
-                ctx.textBaseline = 'middle';
-                ctx.fillStyle = '#fff';
-                ctx.fillText(`Nivel: ${micDB.toFixed(1)} dB`, mx + 30, my - 15);
-                
-                let effColor = '#ef4444';
-                if(efficiency > 90) effColor = '#22c55e';
-                else if(efficiency > 70) effColor = '#fbbf24';
-                ctx.fillStyle = effColor;
-                ctx.fillText(`Suma: ${efficiency.toFixed(1)}%`, mx + 30, my + 5);
                 ctx.restore();
 
-                // --- 5. PHASE ANALYZER HUD (New) ---
-                // Only if we have at least 1 source
+                // Mic dB Label
+                const mx = cx + state.mic.x * ppm; const my = cy + state.mic.y * ppm;
+                ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+                ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.strokeStyle = '#444';
+                ctx.beginPath(); ctx.roundRect(mx + 15, my - 30, 90, 40, 4); ctx.fill(); ctx.stroke();
+                ctx.font = 'bold 9px sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+                ctx.fillStyle = '#fff'; ctx.fillText(`${micDB.toFixed(1)} dB`, mx + 25, my - 16);
+                let effColor = '#ef4444'; if(efficiency > 90) effColor = '#22c55e'; else if(efficiency > 70) effColor = '#fbbf24';
+                ctx.fillStyle = effColor; ctx.fillText(`${efficiency.toFixed(1)}% Sum`, mx + 25, my);
+                ctx.restore();
+
+                // --- PHASE ANALYZER (COMPACT) ---
                 if (sources.length > 0) {
-                    const analyzerW = 140;
-                    const analyzerH = 80;
-                    const ax = w - analyzerW - 20; // Bottom right
-                    const ay = h - analyzerH - 20;
+                    const analyzerW = 100; const analyzerH = 60;
+                    const ax = w - analyzerW - 10; const ay = h - analyzerH - 10;
 
-                    // Background
-                    ctx.save();
-                    ctx.setTransform(1, 0, 0, 1, 0, 0);
-                    ctx.translate(ax, ay);
-                    ctx.fillStyle = 'rgba(0,0,0,0.85)';
-                    ctx.strokeStyle = '#333';
-                    ctx.lineWidth = 1;
-                    ctx.beginPath();
-                    ctx.roundRect(0, 0, analyzerW, analyzerH, 6);
-                    ctx.fill();
-                    ctx.stroke();
+                    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.translate(ax, ay);
+                    ctx.fillStyle = 'rgba(10, 10, 12, 0.7)'; ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+                    ctx.lineWidth = 1; ctx.beginPath(); ctx.roundRect(0, 0, analyzerW, analyzerH, 4); ctx.fill(); ctx.stroke();
 
-                    // Title
-                    ctx.fillStyle = '#aaa';
-                    ctx.font = '9px sans-serif';
-                    ctx.textAlign = 'left';
-                    ctx.fillText("ANALIZADOR DE FASE (MIC)", 10, 15);
+                    const s1 = sources[0]; const s2 = sources.length > 1 ? sources[1] : null;
+                    const plotW = analyzerW - 10; const plotH = analyzerH - 10;
+                    const plotX = 5; const plotY = 5; const midY = plotY + plotH/2;
 
-                    // Get Source 1 and Source 2 data relative to Mic
-                    const s1 = sources[0];
-                    const s2 = sources.length > 1 ? sources[1] : null;
-
-                    const plotW = analyzerW - 20;
-                    const plotH = analyzerH - 30;
-                    const plotX = 10;
-                    const plotY = 25;
-                    const midY = plotY + plotH/2;
-
-                    // Helper to get mic phase/amp
                     const getMicData = (s) => {
-                        const dx = state.mic.x - s.x;
-                        const dy = state.mic.y - s.y;
-                        const d = Math.sqrt(dx*dx + dy*dy);
-                        const dClamped = Math.max(0.1, d);
-                        const amp = (1.0 / dClamped);
-                        const ph = (k * d) - s.phase + (s.inv ? Math.PI : 0);
+                        const dx = state.mic.x - s.x; const dy = state.mic.y - s.y;
+                        const d = Math.sqrt(dx*dx + dy*dy); const dClamped = Math.max(0.1, d);
+                        const amp = (1.0 / dClamped); const ph = (k * d) - s.phase + (s.inv ? Math.PI : 0);
                         return { amp, ph };
                     };
+                    const d1 = getMicData(s1); const d2 = s2 ? getMicData(s2) : { amp: 0, ph: 0 };
+                    const maxAmp = Math.max(d1.amp, d2.amp, 0.001) * 2.5; const scaleY = (plotH / 2) / maxAmp;
 
-                    const d1 = getMicData(s1);
-                    const d2 = s2 ? getMicData(s2) : { amp: 0, ph: 0 };
+                    ctx.beginPath(); ctx.strokeStyle = '#333'; ctx.moveTo(plotX, midY); ctx.lineTo(plotX + plotW, midY); ctx.stroke();
 
-                    // Find max amp to scale
-                    const maxAmp = Math.max(d1.amp, d2.amp, 0.001) * 2.5; 
-                    const scaleY = (plotH / 2) / maxAmp;
-
-                    ctx.beginPath();
-                    ctx.strokeStyle = '#444'; // Center line
-                    ctx.moveTo(plotX, midY);
-                    ctx.lineTo(plotX + plotW, midY);
-                    ctx.stroke();
-
-                    // Draw Wave 1 (Cyan)
-                    ctx.beginPath();
-                    ctx.strokeStyle = '#06b6d4'; // Cyan
-                    ctx.lineWidth = 1.5;
+                    ctx.beginPath(); ctx.strokeStyle = '#06b6d4'; ctx.lineWidth = 1.5;
                     for(let i=0; i<=plotW; i++) {
-                        const t = (i / plotW) * 2 * Math.PI; // 0 to 2PI
-                        const y = d1.amp * Math.sin(t - d1.ph);
+                        const t = (i / plotW) * 2 * Math.PI; const y = d1.amp * Math.sin(t - d1.ph);
                         ctx.lineTo(plotX + i, midY - y * scaleY);
-                    }
-                    ctx.stroke();
+                    } ctx.stroke();
 
                     if (s2) {
-                        // Draw Wave 2 (Magenta)
-                        ctx.beginPath();
-                        ctx.strokeStyle = '#d946ef'; // Fuchsia
-                        ctx.lineWidth = 1.5;
+                        ctx.beginPath(); ctx.strokeStyle = '#d946ef'; ctx.lineWidth = 1.5;
                         for(let i=0; i<=plotW; i++) {
-                            const t = (i / plotW) * 2 * Math.PI;
-                            const y = d2.amp * Math.sin(t - d2.ph);
+                            const t = (i / plotW) * 2 * Math.PI; const y = d2.amp * Math.sin(t - d2.ph);
                             ctx.lineTo(plotX + i, midY - y * scaleY);
-                        }
-                        ctx.stroke();
-
-                        // Draw Sum (White, Dashed)
-                        ctx.beginPath();
-                        ctx.strokeStyle = '#fff';
-                        ctx.lineWidth = 2;
+                        } ctx.stroke();
+                        ctx.beginPath(); ctx.strokeStyle = 'rgba(255,255,255,0.8)'; ctx.setLineDash([2, 2]); ctx.lineWidth = 1;
                         for(let i=0; i<=plotW; i++) {
                             const t = (i / plotW) * 2 * Math.PI;
-                            const y1 = d1.amp * Math.sin(t - d1.ph);
-                            const y2 = d2.amp * Math.sin(t - d2.ph);
-                            const ySum = y1 + y2;
-                            ctx.lineTo(plotX + i, midY - ySum * scaleY);
-                        }
-                        ctx.stroke();
-                        
-                        // Legend
-                        ctx.font = '8px sans-serif';
-                        ctx.fillStyle = '#06b6d4'; ctx.fillText("1", plotX, plotY + plotH + 8);
-                        ctx.fillStyle = '#d946ef'; ctx.fillText("2", plotX + 10, plotY + plotH + 8);
-                        ctx.fillStyle = '#fff'; ctx.fillText("SUM", plotX + 25, plotY + plotH + 8);
-                    } else {
-                         // Legend for single source
-                        ctx.font = '8px sans-serif';
-                        ctx.fillStyle = '#06b6d4'; ctx.fillText("1", plotX, plotY + plotH + 8);
+                            const y1 = d1.amp * Math.sin(t - d1.ph); const y2 = d2.amp * Math.sin(t - d2.ph);
+                            ctx.lineTo(plotX + i, midY - (y1 + y2) * scaleY);
+                        } ctx.stroke(); ctx.setLineDash([]);
                     }
-
                     ctx.restore();
                 }
             }
-
-            // Init
-            resetGain();
-            handleResize();
-            updateUI();
+            resetGain(); handleResize(); updateUI();
         };
     </script>
 <script type="module" src="/index.tsx"></script>
