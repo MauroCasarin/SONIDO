@@ -147,9 +147,8 @@
         canvas {
             display: block;
             touch-action: none;
-            /* SUAVIZADO VISUAL (Anti-aliasing sutil) */
-            /* El renderizado interno ahora es de alta calidad, mantenemos un blur mínimo para blending */
-            filter: blur(0.3px) contrast(1.1); 
+            /* SUAVIZADO VISUAL (Difracción simulada y look orgánico) */
+            filter: blur(0.5px) contrast(1.2); 
             image-rendering: optimizeQuality;
         }
 
@@ -184,8 +183,8 @@
         /* CUSTOM TOOLTIP (ANIMATED & DELAYED) */
         .custom-tooltip {
             position: fixed;
-            background: rgba(0, 0, 0, 0.7); /* Semitransparente */
-            border: 1px solid rgba(59, 130, 246, 0.4);
+            background: rgba(0, 0, 0, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             color: #fff;
             padding: 8px 12px;
             border-radius: 6px;
@@ -466,7 +465,6 @@
                     <div class="slider-label"><span>Distancia Bafle</span><span class="slider-val" id="disp-stg-gap" style="color:var(--warning)">--</span></div>
                     <input type="range" id="input-stg-gap" min="0" max="10" step="0.1" value="1.0">
                 </div>
-                <button style="width:100%; margin-top:2px; border-color:var(--success); color:var(--success);" onclick="app.optimizeStageDist()" data-tooltip="Coloca los subs pegados al escenario (0.1m) para minimizar cancelaciones por rebote.">PEGAR</button>
             </div>
 
              <!-- Audience Zones -->
@@ -545,7 +543,6 @@
             };
 
             const ctx = els.canvas.getContext('2d', { alpha: false });
-            // Enable smooth scaling for any zoom operations, though we are doing 1:1 render.
             ctx.imageSmoothingEnabled = true;
 
             window.app = {
@@ -643,7 +640,7 @@
                 return { x: clientX - rect.left, y: clientY - rect.top, clientX, clientY };
             }
 
-            // --- SMART TOOLTIPS ---
+            // --- SMART TOOLTIPS (STRICT 2 SEC DELAY) ---
             let tooltipTimer = null;
             const TOOLTIP_DELAY = 2000; 
 
@@ -667,6 +664,7 @@
                 }, 400);
             }
 
+            // Use capture to ensure we catch events
             document.addEventListener('mouseover', e => {
                 const target = e.target.closest('[data-tooltip]');
                 if (target) {
@@ -695,17 +693,23 @@
             }, {passive: true});
             document.addEventListener('touchend', () => { clearTimeout(tooltipTimer); hideTooltip(); });
 
-            // --- INPUT HANDLERS ---
+            // --- INPUT HANDLERS (AUTO-TRANSPARENCY) ---
             function setControlsTransparent() { els.controls.classList.add('controls-hidden'); }
             function removeControlsTransparent() { els.controls.classList.remove('controls-hidden'); }
+
+            // Apply transparency handlers to all interactive elements in sidebar
+            const interactiveElements = els.controls.querySelectorAll('input, button');
+            interactiveElements.forEach(el => {
+                el.addEventListener('mousedown', setControlsTransparent);
+                el.addEventListener('touchstart', setControlsTransparent, {passive: true});
+                el.addEventListener('mouseup', removeControlsTransparent);
+                el.addEventListener('touchend', removeControlsTransparent);
+                el.addEventListener('mouseleave', removeControlsTransparent);
+            });
 
             Object.keys(els.inputs).forEach(key => {
                 if(!els.inputs[key]) return;
                 const input = els.inputs[key];
-                input.addEventListener('mousedown', setControlsTransparent);
-                input.addEventListener('touchstart', setControlsTransparent, {passive: true});
-                input.addEventListener('mouseup', removeControlsTransparent);
-                input.addEventListener('touchend', removeControlsTransparent);
                 input.addEventListener('change', removeControlsTransparent);
                 input.addEventListener('input', (e) => {
                     const val = parseFloat(e.target.value);
@@ -754,7 +758,6 @@
                 }
                 state.selectedZoneIndex = -1; state.view.dragType = 'view';
                 state.view.dragging = true; state.view.lastX = pos.clientX; state.view.lastY = pos.clientY;
-                
             }
 
             function handleMove(e) {
@@ -781,7 +784,6 @@
                     else if (state.view.dragType === 'zone') { const z = state.zones[state.view.dragIndex]; z.x += dxM; z.y += dyM; }
                     else if (state.view.dragType === 'zone-resize') { const z = state.zones[state.view.dragIndex]; z.w = Math.max(0.5, z.w + dxM); z.h = Math.max(0.5, z.h + dyM); }
                     state.view.lastX = pos.clientX; state.view.lastY = pos.clientY;
-                    
                 }
             }
 
@@ -800,7 +802,6 @@
                 e.preventDefault();
                 const factor = e.deltaY > 0 ? 0.9 : 1.1;
                 state.view.scale *= factor; state.view.scale = Math.max(5, Math.min(100, state.view.scale));
-                
             });
             window.addEventListener('resize', handleResize);
 
@@ -809,7 +810,6 @@
                 if(parent.clientWidth > 0 && parent.clientHeight > 0) {
                     els.canvas.width = parent.clientWidth;
                     els.canvas.height = parent.clientHeight;
-                    
                 }
             }
 
@@ -881,41 +881,40 @@
                 return sources;
             }
 
-            // Optimized color picker for smoother gradients and no object creation spam
+            // Smooth continuous color palette (Organic Look)
             function fillHeatmapColor(db, data, idx) {
                 let r=0, g=0, b=0, a=230;
                 
-                // Decay logic is handled by calculating dB from pressure.
-                // We just need a smooth palette here.
+                // Continuous gradient mapping based on dB
                 if (db > 0) {
-                     // White to Yellow hot
+                     // White to Yellow hot (0 to +inf)
                      r = 255; 
                      g = 255; 
-                     b = Math.min(255, Math.floor(db * 20)); // Subtle tint
+                     b = Math.min(255, Math.floor(db * 20)); 
                 } else if (db > -6) {
-                    // Yellow/Orange
+                    // Yellow/Orange (-6 to 0)
                     const t = (db + 6) / 6; // 0 to 1
                     r = 255; 
                     g = Math.floor(200 + t * 55); 
                     b = 0;
                 } else if (db > -12) {
-                    // Red/Orange
+                    // Orange/Red (-12 to -6)
                     const t = (db + 12) / 6;
                     r = 255; 
                     g = Math.floor(t * 200); 
                     b = 0;
                 } else if (db > -24) {
-                    // Blue to Red (transition)
+                    // Blue to Red transition (-24 to -12)
                     const t = (db + 24) / 12;
                     r = Math.floor(t * 255); 
                     g = 0; 
                     b = Math.floor((1-t) * 255);
                 } else if (db > -60) {
-                    // Fade out Blue
+                    // Deep Blue fade out (-60 to -24)
                     const t = (db + 60) / 36;
                     r = 0; g = 0; 
                     b = Math.floor(t * 255);
-                    a = Math.floor(t * 230); // Fade alpha
+                    a = Math.floor(t * 230); // Alpha fade
                 } else {
                     r=0; g=0; b=0; a=0;
                 }
@@ -960,8 +959,8 @@
                 
                 const gain = state.viewGain; 
 
-                // --- REFLECTION SETUP ---
-                const REFLECTION_ATTENUATION = 0.7; // 30% absorption
+                // --- REFLECTION SETUP (MIRROR SOURCES) ---
+                const REFLECTION_ATTENUATION = 0.707; // Approx -3dB (1/sqrt(2))
                 
                 // Pre-calculate source positions in pixels to speed up loop
                 const screenSources = [];
@@ -974,9 +973,10 @@
                     // Real Source
                     screenSources.push({ sx, sy, ph: s.phase, inv: s.inv });
 
-                    // Virtual Source (Reflection)
-                    // Math: VirtualY_meters = StageY + (StageY - SourceY)
-                    const vY_meters = state.stage.y + (state.stage.y - s.y);
+                    // Virtual Mirror Source (Reflected on Front Face of Stage)
+                    // The stage front is at Y = state.stage.y (relative meters)
+                    // Virtual Pos = Wall + (Wall - Source) = 2*Wall - Source
+                    const vY_meters = 2 * state.stage.y - s.y;
                     const vSy = cy + vY_meters * ppm; 
                     
                     virtualSources.push({ sx: sx, sy: vSy, ph: s.phase, inv: s.inv });
@@ -985,26 +985,24 @@
                 const imgData = ctx.getImageData(0, 0, w, h);
                 const data = imgData.data;
 
-                // --- 1:1 PIXEL RENDERING (NO SKIPPING) FOR EXACT FREQUENCY SCALE ---
+                // --- 1:1 PIXEL RENDERING FOR ORGANIC LOOK ---
                 for(let y=0; y<h; y++) { 
                     const rowOff = y * w * 4;
-                    // Pre-calc Y related checks
-                    const inStageY = (y >= stgFrontPx && y <= stgBackPx);
-
+                    // Pre-calc: Check if Y is potentially inside stage shadow area (behind front face)
+                    const isYBehindFront = y >= stgFrontPx;
+                    
                     for(let x=0; x<w; x++) {
                         const idx = rowOff + (x * 4);
 
-                        // 1. STAGE SHADOW
-                        if (inStageY && x >= stgLeftPx && x <= stgRightPx) {
-                             data[idx] = 0;   // R
-                             data[idx+1] = 0; // G
-                             data[idx+2] = 20; // B
-                             data[idx+3] = 255; // A
+                        // 1. ACOUSTIC SHADOW / OBSTACLE
+                        // Strictly inside the stage width and behind the front line
+                        if (isYBehindFront && x >= stgLeftPx && x <= stgRightPx) {
+                             // Dark Blue "Shadow"
+                             data[idx] = 0; data[idx+1] = 0; data[idx+2] = 20; data[idx+3] = 255;
                              continue;
                         }
 
                         // 2. WAVE PHYSICS
-                        // We use exact pixel coordinates.
                         let pSum = 0; 
 
                         // Direct Sound
@@ -1012,20 +1010,18 @@
                             const s = screenSources[i];
                             const dx = x - s.sx; 
                             const dy = y - s.sy;
-                            // Distance in pixels -> meters
                             const distMeters = Math.sqrt(dx*dx + dy*dy) / ppm;
                             
-                            // Physics: Amplitude decay 1/d
+                            // 1/d Decay
                             const dClamped = Math.max(0.1, distMeters);
                             const amp = (1.0 / dClamped); 
                             
-                            // Wave function
                             const totalPhase = (k * distMeters) - timePhase - s.ph + (s.inv ? Math.PI : 0);
                             pSum += amp * Math.sin(totalPhase);
                         }
 
                         // Reflected Sound (Virtual Sources)
-                        // Sums into the SAME pSum to create interference/cancellation
+                        // Adds to pSum to create interference (Constructive/Destructive)
                         for(let i=0; i<virtualSources.length; i++) {
                             const vs = virtualSources[i];
                             const dx = x - vs.sx; 
@@ -1033,7 +1029,7 @@
                             const distMeters = Math.sqrt(dx*dx + dy*dy) / ppm;
                             
                             const dClamped = Math.max(0.1, distMeters);
-                            // Attenuated
+                            // Attenuation (-3dB)
                             const amp = (1.0 / dClamped) * REFLECTION_ATTENUATION; 
                             
                             const totalPhase = (k * distMeters) - timePhase - vs.ph + (vs.inv ? Math.PI : 0);
@@ -1041,10 +1037,48 @@
                         }
                         
                         const absPressure = Math.abs(pSum) * gain;
-                        // Logarithmic scale for color
                         const db = 20 * Math.log10(absPressure + 0.0000001);
                         
-                        fillHeatmapColor(db, data, idx);
+                        let r=0, g=0, b=0, a=230;
+                
+                        // Continuous gradient mapping based on dB
+                        if (db > 0) {
+                             // White to Yellow hot (0 to +inf)
+                             r = 255; 
+                             g = 255; 
+                             b = Math.min(255, Math.floor(db * 20)); 
+                        } else if (db > -6) {
+                            // Yellow/Orange (-6 to 0)
+                            const t = (db + 6) / 6; // 0 to 1
+                            r = 255; 
+                            g = Math.floor(200 + t * 55); 
+                            b = 0;
+                        } else if (db > -12) {
+                            // Orange/Red (-12 to -6)
+                            const t = (db + 12) / 6;
+                            r = 255; 
+                            g = Math.floor(t * 200); 
+                            b = 0;
+                        } else if (db > -24) {
+                            // Blue to Red transition (-24 to -12)
+                            const t = (db + 24) / 12;
+                            r = Math.floor(t * 255); 
+                            g = 0; 
+                            b = Math.floor((1-t) * 255);
+                        } else if (db > -60) {
+                            // Deep Blue fade out (-60 to -24)
+                            const t = (db + 60) / 36;
+                            r = 0; g = 0; 
+                            b = Math.floor(t * 255);
+                            a = Math.floor(t * 230); // Alpha fade
+                        } else {
+                            r=0; g=0; b=0; a=0;
+                        }
+
+                        data[idx] = r; 
+                        data[idx+1] = g; 
+                        data[idx+2] = b; 
+                        data[idx+3] = a;
                     }
                 }
                 ctx.putImageData(imgData, 0, 0);
@@ -1082,7 +1116,7 @@
                 // Add virtuals to mic calc for dB accuracy with reflections
                 const allSourcesForMic = [...sources.map(s=>({...s, ampFactor:1.0}))];
                  sources.forEach(s => {
-                    const vY = state.stage.y + (state.stage.y - s.y);
+                    const vY = 2 * state.stage.y - s.y;
                     allSourcesForMic.push({ x: s.x, y: vY, phase: s.phase, inv: s.inv, ampFactor: REFLECTION_ATTENUATION });
                 });
 
