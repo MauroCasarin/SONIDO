@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acoustic Array Simulator - Pro Tools</title>
+    <style>
+        :root {
+            --bg-dark: #09090b; /* Zinc 950 */
+            --bg-panel: #18181b; /* Zinc 900 */
+            --border: #27272a;   /* Zinc 800 */
+            --accent: #3b82f6;   /* Blue 500 */
+            --accent-glow: rgba(59, 130, 246, 0.2);
+            --text-main: #e4e4e7;
+            --text-dim: #a1a1aa;
+            --danger: #ef4444;
+            --success: #22c55e;
+            --warning: #f59e0b;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* HEADER */
+        header {
+            height: 50px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            background: #000;
+        }
+
+        h1 {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .led-indicator {
+            width: 8px; 
+            height: 8px; 
+            background: var(--success); 
+            border-radius: 50%; 
+            box-shadow: 0 0 8px var(--success);
+        }
+
+        /* LAYOUT */
+        #main-layout {
+            display: flex;
+            flex: 1;
+            height: calc(100vh - 50px);
+        }
+
+        /* SIDEBAR (CONTROLES) */
+        #controles {
+            width: 320px;
+            background: var(--bg-panel);
+            border-right: 1px solid var(--border);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        /* CANVAS AREA */
+        #viewport {
+            flex: 1;
+            position: relative;
+            background: #000;
+            overflow: hidden;
+            cursor: crosshair;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        canvas {
+            display: block;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+        }
+
+        /* UI ELEMENTS */
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background: rgba(255,255,255,0.03);
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .group-title {
+            font-size: 10px;
+            font-weight: bold;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .slider-row {
+            margin-bottom: 8px;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: var(--text-dim);
+            margin-bottom: 4px;
+        }
+
+        .slider-val {
+            color: var(--accent);
+            font-family: monospace;
+            font-weight: bold;
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        
+        input[type=range]:focus { outline: none; }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 14px;
+            width: 14px;
+            border-radius: 50%;
+            background: #e4e4e7;
+            cursor: pointer;
+            margin-top: -5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #3f3f46;
+            border-radius: 2px;
+        }
+
+        /* BOTONES */
+        .btn-row { display: flex; gap: 8px; }
+        .btn-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+
+        button {
+            background: #27272a;
+            border: 1px solid #3f3f46;
+            color: var(--text-dim);
+            padding: 8px 12px;
+            font-size: 10px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+        }
+
+        button:hover {
+            background: #3f3f46;
+            color: #fff;
+        }
+
+        button.active {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent);
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        button.danger {
+            color: var(--danger);
+            border-color: rgba(239, 68, 68, 0.3);
+            background: rgba(239, 68, 68, 0.05);
+        }
+        button.danger:hover {
+            background: var(--danger);
+            color: white;
+        }
+
+        /* POLARIDAD */
+        .polarity-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+        }
+
+        .pol-btn {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        .pol-btn span:first-child { font-size: 12px; margin-bottom: 2px; }
+        
+        .pol-btn.normal { background: #27272a; color: #71717a; border: 1px solid #3f3f46; }
+        .pol-btn.inverted { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid var(--danger); }
+
+        /* OVERLAYS */
+        .hud-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(9, 9, 11, 0.9);
+            border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            padding: 15px;
+            border-radius: 8px;
+            width: 200px;
+            pointer-events: none;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .hud-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            margin-bottom: 6px;
+            font-family: monospace;
+        }
+
+        .hud-label { color: #71717a; }
+        .hud-value { color: #fff; font-weight: bold; }
+        
+        .status-ok { color: var(--success); }
+        .status-warn { color: var(--warning); }
+        .status-danger { color: var(--danger); }
+
+        .legend-gradient {
+            height: 6px;
+            background: linear-gradient(90deg, #000 0%, #0000ff 25%, #00ffff 50%, #ffffff 75%, #ff0000 100%);
+            border-radius: 3px;
+            margin-top: 10px;
+        }
+        .legend-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 9px;
+            color: #52525b;
+            margin-top: 4px;
+        }
+
+        /* FOOTER */
+        footer {
+            height: 24px;
+            background: #000;
+            border-top: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: #3f3f46;
+        }
+
+    </style>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body>
+
+    <header>
+        <h1>
+            <div class="led-indicator"></div>
+            &nbsp;ACOUSTIC ARRAY SIM
+        </h1>
+        <div style="font-size:10px; color:#555; font-weight:bold;">ENGINE: VANILLA JS</div>
+    </header>
+
+    <div id="main-layout">
+        
+        <!-- CONTROLS SIDEBAR -->
+        <div id="controles">
+            
+            <!-- Global Params -->
+            <div class="control-group">
+                <div class="group-title">Source Parameters</div>
+                
+                <div class="slider-row">
+                    <div class="slider-label">
+                        <span>Frequency</span>
+                        <span class="slider-val" id="disp-freq">60 Hz</span>
+                    </div>
+                    <input type="range" id="input-freq" min="20" max="200" value="60">
+                </div>
+
+                <div class="slider-row">
+                    <div class="slider-label">
+                        <span>Separation</span>
+                        <span class="slider-val" id="disp-dist">1.00 m</span>
+                    </div>
+                    <input type="range" id="input-dist" min="0.2" max="4.0" step="0.01" value="1.00">
+                </div>
+
+                <div class="slider-row">
+                    <div class="slider-label">
+                        <span>Elements (N)</span>
+                        <span class="slider-val" id="disp-count">4</span>
+                    </div>
+                    <input type="range" id="input-count" min="2" max="16" step="1" value="4">
+                </div>
+
+                <div class="slider-row">
+                    <div class="slider-label">
+                        <span>Temperature</span>
+                        <span class="slider-val" id="disp-temp" style="color:var(--warning)">20 °C</span>
+                    </div>
+                    <input type="range" id="input-temp" min="-10" max="45" value="20">
+                </div>
+            </div>
+
+            <!-- Configuration -->
+            <div class="control-group">
+                <div class="group-title">Array Config</div>
+                
+                <div class="btn-row">
+                    <button id="btn-broad" class="active" style="flex:1" onclick="app.setMode('broadside')">BROADSIDE</button>
+                    <button id="btn-end" style="flex:1" onclick="app.setMode('endfire')">END-FIRE</button>
+                </div>
+
+                <div style="margin-top:12px; margin-bottom:6px; font-size:9px; font-weight:bold; color:#52525b;">AUTO PRESETS (λ/4)</div>
+                <div class="btn-grid">
+                    <button onclick="app.applyPreset(40)">40Hz</button>
+                    <button onclick="app.applyPreset(50)">50Hz</button>
+                    <button onclick="app.applyPreset(63)">63Hz</button>
+                    <button onclick="app.applyPreset(80)">80Hz</button>
+                </div>
+
+                <div class="btn-row" style="margin-top:12px;">
+                    <button class="danger" style="flex:1" onclick="app.setupCardioid()">CSA CARDIOID</button>
+                    <button style="flex:1; border-color:var(--accent); color:var(--accent);" onclick="app.optimizeSpacing()">AUTO SPACE</button>
+                </div>
+            </div>
+
+            <!-- Polarity -->
+            <div class="control-group">
+                <div class="group-title">Polarity Matrix</div>
+                <div id="polarity-container" class="polarity-grid">
+                    <!-- Generated by JS -->
+                </div>
+            </div>
+
+            <div style="font-size:10px; color:#555; text-align:center;">
+                Mouse Wheel: Zoom • Drag: Pan
+            </div>
+        </div>
+
+        <!-- VISUALIZER AREA -->
+        <div id="viewport">
+            <canvas id="simCanvas" width="800" height="600"></canvas>
+            
+            <!-- HUD OVERLAY -->
+            <div class="hud-panel">
+                <div class="hud-row">
+                    <span class="hud-label">Speed of Sound:</span>
+                    <span class="hud-value" id="hud-speed">--</span>
+                </div>
+                <div class="hud-row">
+                    <span class="hud-label">Wavelength (λ):</span>
+                    <span class="hud-value" id="hud-lambda">--</span>
+                </div>
+                <div style="height:1px; background:#333; margin:8px 0;"></div>
+                <div class="hud-row">
+                    <span class="hud-label">Phase Align:</span>
+                    <span class="hud-value" id="hud-status">CHECKING...</span>
+                </div>
+                <div class="hud-row" id="row-delay">
+                    <span class="hud-label">E.F. Delay:</span>
+                    <span class="hud-value" id="hud-delay" style="color:var(--warning)">0.00 ms</span>
+                </div>
+                
+                <div class="legend-gradient"></div>
+                <div class="legend-labels">
+                    <span>-INF</span>
+                    <span>0dB</span>
+                    <span>CLIP</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <footer>
+        NO EXTERNAL LIBRARIES • PURE JS/HTML5
+    </footer>
+
+    <script>
+        /**
+         * SINGLE FILE APPLICATION LOGIC
+         * Encapsulated in a window.onload function as requested.
+         */
+        
+        window.onload = function() {
+            
+            // --- STATE MANAGEMENT ---
+            const state = {
+                freq: 60,
+                dist: 1.0,
+                count: 4,
+                temp: 20,
+                mode: 'broadside', // 'broadside' | 'endfire'
+                polarities: new Array(16).fill(false),
+                view: {
+                    scale: 30, // Pixels per meter
+                    x: 0,      // Offset X
+                    y: 0,      // Offset Y
+                    dragging: false,
+                    lastX: 0,
+                    lastY: 0
+                }
+            };
+
+            // --- DOM CACHE ---
+            const els = {
+                canvas: document.getElementById('simCanvas'),
+                inputs: {
+                    freq: document.getElementById('input-freq'),
+                    dist: document.getElementById('input-dist'),
+                    count: document.getElementById('input-count'),
+                    temp: document.getElementById('input-temp')
+                },
+                displays: {
+                    freq: document.getElementById('disp-freq'),
+                    dist: document.getElementById('disp-dist'),
+                    count: document.getElementById('disp-count'),
+                    temp: document.getElementById('disp-temp')
+                },
+                hud: {
+                    speed: document.getElementById('hud-speed'),
+                    lambda: document.getElementById('hud-lambda'),
+                    status: document.getElementById('hud-status'),
+                    delay: document.getElementById('hud-delay'),
+                    delayRow: document.getElementById('row-delay')
+                },
+                btns: {
+                    broad: document.getElementById('btn-broad'),
+                    end: document.getElementById('btn-end')
+                },
+                polContainer: document.getElementById('polarity-container')
+            };
+
+            const ctx = els.canvas.getContext('2d', { alpha: false });
+
+            // --- APP API (Global exposure for HTML onclicks) ---
+            window.app = {
+                setMode: (m) => {
+                    state.mode = m;
+                    els.btns.broad.className = m === 'broadside' ? 'active' : '';
+                    els.btns.end.className = m === 'endfire' ? 'active' : '';
+                    updateUI();
+                    requestAnimationFrame(draw);
+                },
+                togglePolarity: (i) => {
+                    state.polarities[i] = !state.polarities[i];
+                    renderPolarityGrid();
+                    requestAnimationFrame(draw);
+                },
+                applyPreset: (hz) => {
+                    state.freq = hz;
+                    els.inputs.freq.value = hz;
+                    // Auto λ/4 spacing
+                    const v = 331.3 * Math.sqrt(1 + state.temp / 273.15);
+                    let optimal = (v / hz) / 4;
+                    // Clamp
+                    optimal = Math.min(4.0, Math.max(0.2, optimal));
+                    state.dist = optimal;
+                    els.inputs.dist.value = optimal;
+                    
+                    updateUI();
+                    requestAnimationFrame(draw);
+                },
+                setupCardioid: () => {
+                    // CSA Preset: 2 Elements, End-Fire, Rear Inv, Spaced λ/4
+                    state.count = 2;
+                    els.inputs.count.value = 2;
+                    window.app.setMode('endfire');
+                    
+                    // Polarity: Rear is element 0 (bottom/back)
+                    state.polarities.fill(false);
+                    state.polarities[0] = true;
+                    
+                    // Set Spacing
+                    window.app.applyPreset(state.freq);
+                },
+                optimizeSpacing: () => {
+                     const v = 331.3 * Math.sqrt(1 + state.temp / 273.15);
+                     let optimal = (v / state.freq) / 4;
+                     optimal = Math.min(4.0, Math.max(0.2, optimal));
+                     state.dist = optimal;
+                     els.inputs.dist.value = optimal;
+                     updateUI();
+                     requestAnimationFrame(draw);
+                }
+            };
+
+            // --- EVENT LISTENERS ---
+            
+            // Inputs
+            Object.keys(els.inputs).forEach(key => {
+                els.inputs[key].addEventListener('input', (e) => {
+                    state[key] = parseFloat(e.target.value);
+                    updateUI();
+                    requestAnimationFrame(draw);
+                });
+            });
+
+            // Canvas Zoom/Pan
+            els.canvas.addEventListener('mousedown', e => {
+                state.view.dragging = true;
+                state.view.lastX = e.clientX;
+                state.view.lastY = e.clientY;
+            });
+            window.addEventListener('mouseup', () => state.view.dragging = false);
+            window.addEventListener('mousemove', e => {
+                if(state.view.dragging) {
+                    const dx = e.clientX - state.view.lastX;
+                    const dy = e.clientY - state.view.lastY;
+                    state.view.x += dx;
+                    state.view.y += dy;
+                    state.view.lastX = e.clientX;
+                    state.view.lastY = e.clientY;
+                    requestAnimationFrame(draw);
+                }
+            });
+            els.canvas.addEventListener('wheel', e => {
+                e.preventDefault();
+                const factor = e.deltaY > 0 ? 0.9 : 1.1;
+                state.view.scale *= factor;
+                // Clamp zoom
+                state.view.scale = Math.max(5, Math.min(100, state.view.scale));
+                requestAnimationFrame(draw);
+            });
+
+            // Resize
+            window.addEventListener('resize', handleResize);
+
+            // --- CORE FUNCTIONS ---
+
+            function handleResize() {
+                const parent = els.canvas.parentElement;
+                els.canvas.width = parent.clientWidth;
+                els.canvas.height = parent.clientHeight;
+                requestAnimationFrame(draw);
+            }
+
+            function updateUI() {
+                // Texts
+                els.displays.freq.innerText = state.freq + ' Hz';
+                els.displays.dist.innerText = state.dist.toFixed(2) + ' m';
+                els.displays.count.innerText = state.count;
+                els.displays.temp.innerText = state.temp + ' °C';
+
+                // Physics Calcs for HUD
+                const c = 331.3 * Math.sqrt(1 + state.temp / 273.15);
+                const lambda = c / state.freq;
+                const delay = (state.dist / c) * 1000;
+
+                els.hud.speed.innerText = c.toFixed(1) + ' m/s';
+                els.hud.lambda.innerText = lambda.toFixed(2) + ' m';
+                
+                // Status Check
+                const limit = (2/3) * lambda; // Aliasing
+                const optimal = lambda / 4;   // Coupling
+
+                if (state.dist > limit) {
+                    els.hud.status.innerText = "ALIASING WARNING";
+                    els.hud.status.className = "hud-value status-danger";
+                } else if (Math.abs(state.dist - optimal) < optimal * 0.15) {
+                    els.hud.status.innerText = "OPTIMAL (λ/4)";
+                    els.hud.status.className = "hud-value status-ok";
+                } else {
+                    els.hud.status.innerText = "STANDARD";
+                    els.hud.status.className = "hud-value";
+                }
+
+                if (state.mode === 'endfire') {
+                    els.hud.delayRow.style.display = 'flex';
+                    els.hud.delay.innerText = delay.toFixed(2) + ' ms / box';
+                } else {
+                    els.hud.delayRow.style.display = 'none';
+                }
+
+                renderPolarityGrid();
+            }
+
+            function renderPolarityGrid() {
+                els.polContainer.innerHTML = '';
+                for(let i=0; i<state.count; i++) {
+                    const btn = document.createElement('div');
+                    const inv = state.polarities[i];
+                    btn.className = inv ? 'pol-btn inverted' : 'pol-btn normal';
+                    btn.innerHTML = `<span>${i+1}</span><span>${inv ? 'INV' : 'NOR'}</span>`;
+                    btn.onclick = () => window.app.togglePolarity(i);
+                    els.polContainer.appendChild(btn);
+                }
+            }
+
+            function draw() {
+                const w = els.canvas.width;
+                const h = els.canvas.height;
+                const cx = w/2 + state.view.x;
+                const cy = h/2 + state.view.y;
+                
+                // Physics
+                const c = 331.3 * Math.sqrt(1 + state.temp / 273.15);
+                const k = (2 * Math.PI * state.freq) / c;
+
+                // Sources setup
+                const sources = [];
+                // Pixels per meter conversion
+                const ppm = state.view.scale; 
+
+                if (state.mode === 'broadside') {
+                    const totalW = (state.count - 1) * state.dist;
+                    const startX = -totalW / 2;
+                    for(let i=0; i<state.count; i++) {
+                        sources.push({
+                            x: startX + (i * state.dist),
+                            y: 0,
+                            phase: 0,
+                            inv: state.polarities[i]
+                        });
+                    }
+                } else {
+                    // End-fire (Vertical layout on screen, firing UP (-Y))
+                    // Rear is bottom (positive Y rel to center), Front is top.
+                    const totalH = (state.count - 1) * state.dist;
+                    const startY = totalH / 2; // Bottom
+                    
+                    for(let i=0; i<state.count; i++) {
+                        // i=0 is Rear
+                        const yPos = startY - (i * state.dist);
+                        // Delay logic for Endfire: Front elements wait for rear wave.
+                        // Distance from rear element = i * dist.
+                        // Delay needed = dist / c.
+                        // Phase delay = k * dist.
+                        const delayMeters = i * state.dist;
+                        sources.push({
+                            x: 0,
+                            y: yPos,
+                            phase: k * delayMeters,
+                            inv: state.polarities[i]
+                        });
+                    }
+                }
+
+                // --- HEATMAP RENDERING (PIXEL MANIPULATION) ---
+                // We draw a black background first
+                ctx.fillStyle = '#000';
+                ctx.fillRect(0,0,w,h);
+
+                const imgData = ctx.getImageData(0, 0, w, h);
+                const data = imgData.data;
+
+                // Optimization: Pre-calculate source screen coords and phases
+                const screenSources = sources.map(s => ({
+                    sx: s.x * ppm,
+                    sy: s.y * ppm,
+                    ph: s.phase,
+                    inv: s.inv
+                }));
+
+                const gain = 1.0 / (state.count * 0.85); // Normalization factor
+
+                // Loop every pixel
+                for(let y=0; y<h; y++) {
+                    // World Y relative to center
+                    const wy = y - cy;
+                    const rowOff = y * w * 4;
+
+                    for(let x=0; x<w; x++) {
+                        const wx = x - cx;
+
+                        let rSum = 0;
+                        let iSum = 0;
+
+                        // Summation
+                        for(let i=0; i<screenSources.length; i++) {
+                            const s = screenSources[i];
+                            const dx = wx - s.sx;
+                            const dy = wy - s.sy;
+                            
+                            // Distance in meters requires dividing by ppm, but let's do phase logic
+                            // Phase = k * distance_meters
+                            // distance_meters = distance_pixels / ppm
+                            // so Phase = (k / ppm) * distance_pixels
+                            
+                            // Let's stick to meters for precision
+                            // dist_meters = sqrt(dx^2 + dy^2) / ppm
+                            const distPix = Math.sqrt(dx*dx + dy*dy);
+                            const distMeters = distPix / ppm;
+
+                            // Attenuation 1/r
+                            const amp = 1.0 / (1.0 + distMeters); 
+
+                            // Total phase
+                            const phi = (k * distMeters) - s.ph + (s.inv ? Math.PI : 0);
+
+                            rSum += Math.cos(phi) * amp;
+                            iSum += Math.sin(phi) * amp;
+                        }
+
+                        const mag = Math.sqrt(rSum*rSum + iSum*iSum) * gain;
+                        
+                        // Color Mapping
+                        // Palette: Black(0) -> Blue(0.25) -> Cyan(0.5) -> White(0.75) -> Red(1.0)
+                        
+                        let r=0, g=0, b=0;
+                        
+                        if (mag < 0.25) {
+                            // 0.0 to 0.25: Black to Blue
+                            b = (mag / 0.25) * 128; 
+                        } else if (mag < 0.5) {
+                            // 0.25 to 0.5: Blue to Cyan
+                            const t = (mag - 0.25) / 0.25;
+                            g = t * 255;
+                            b = 128 + (t * 127);
+                        } else if (mag < 0.75) {
+                            // 0.5 to 0.75: Cyan to White
+                            const t = (mag - 0.5) / 0.25;
+                            r = t * 255;
+                            g = 255;
+                            b = 255;
+                        } else {
+                            // 0.75 to 1.0+: White to Red
+                            const t = Math.min(1, (mag - 0.75) / 0.25);
+                            r = 255;
+                            g = 255 * (1 - t);
+                            b = 255 * (1 - t);
+                        }
+
+                        // Simple Grid (1 meter lines)
+                        // world pos modulo ppm
+                        // wx and wy are pixels from center
+                        // if abs(wx) % ppm < 1...
+                        const gridX = Math.abs(wx / ppm);
+                        const gridY = Math.abs(wy / ppm);
+                        if (Math.abs(gridX - Math.round(gridX)) < 0.02 || Math.abs(gridY - Math.round(gridY)) < 0.02) {
+                            r += 30; g += 30; b += 30;
+                        }
+
+                        const idx = rowOff + (x * 4);
+                        data[idx] = r;
+                        data[idx+1] = g;
+                        data[idx+2] = b;
+                        data[idx+3] = 255;
+                    }
+                }
+
+                ctx.putImageData(imgData, 0, 0);
+
+                // --- VECTOR OVERLAYS ---
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.scale(ppm, ppm); // Draw in meters
+
+                sources.forEach((s, i) => {
+                    const size = 0.4; // box size meters
+                    ctx.fillStyle = s.inv ? '#450a0a' : '#18181b';
+                    ctx.strokeStyle = s.inv ? '#ef4444' : '#a1a1aa';
+                    ctx.lineWidth = 0.05;
+                    
+                    ctx.fillRect(s.x - size/2, s.y - size/2, size, size);
+                    ctx.strokeRect(s.x - size/2, s.y - size/2, size, size);
+                    
+                    // Text needs to be unscaled to look good? 
+                    // Canvas transforms affect text size.
+                    // Easier to just draw basic rects here.
+                });
+
+                ctx.restore();
+                
+                // Draw Text Labels on top (Screen Space)
+                ctx.save();
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.font = 'bold 10px sans-serif';
+                ctx.fillStyle = '#fff';
+                
+                sources.forEach((s, i) => {
+                    const sx = cx + s.x * ppm;
+                    const sy = cy + s.y * ppm;
+                    ctx.fillText(s.inv ? 'Ø' : (i+1), sx, sy);
+                });
+                ctx.restore();
+            }
+
+            // Init
+            handleResize();
+            updateUI();
+        };
+    </script>
+<script type="module" src="/index.tsx"></script>
+</body>
+</html>
