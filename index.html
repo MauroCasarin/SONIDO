@@ -7,7 +7,7 @@
     <style>
         :root {
             --bg-dark: #09090b; /* Zinc 950 */
-            --bg-panel: rgba(10, 10, 12, 0.95);
+            --bg-panel: rgba(10, 10, 12, 1.0); /* 100% Opaque initially */
             --border: rgba(255, 255, 255, 0.1);
             --accent: #3b82f6;   /* Blue 500 */
             --accent-glow: rgba(59, 130, 246, 0.3);
@@ -95,7 +95,6 @@
         #controles {
             width: 280px;
             background: var(--bg-panel);
-            backdrop-filter: blur(12px);
             border-right: 1px solid var(--border);
             padding: 10px;
             display: flex;
@@ -105,7 +104,7 @@
             flex-shrink: 0;
             z-index: 20;
             overscroll-behavior: contain;
-            transition: opacity 0.3s ease;
+            transition: opacity 0.2s ease;
         }
 
         /* Top Controls Bar */
@@ -124,9 +123,21 @@
             font-size: 14px;
         }
 
-        /* CLASE PARA AUTO-OCULTAR (30% OPACIDAD) */
-        .controls-hidden {
-            opacity: 0.3 !important;
+        /* Animation for Play Button when Paused */
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.0); transform: scale(1); border-color: rgba(80, 80, 90, 0.5); }
+            50% { box-shadow: 0 0 12px 2px rgba(59, 130, 246, 0.4); transform: scale(1.02); border-color: var(--accent); color: #fff; text-shadow: 0 0 8px var(--accent); }
+            100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.0); transform: scale(1); border-color: rgba(80, 80, 90, 0.5); }
+        }
+
+        .vp-btn.paused {
+            animation: pulse-glow 2.5s infinite;
+        }
+
+        /* CLASE PARA AUTO-OCULTAR (70% OPACIDAD) */
+        .controls-dimmed {
+            opacity: 0.7 !important;
+            pointer-events: none; /* Prevent interaction while dragging canvas */
         }
 
         /* CANVAS AREA */
@@ -248,17 +259,85 @@
         button.active { background: var(--accent); color: #fff; border-color: var(--accent); box-shadow: 0 0 8px var(--accent-glow); }
         button.danger { color: var(--danger); border-color: rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.05); }
         button.magic { background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: white; border: none; box-shadow: 0 0 8px rgba(124, 58, 237, 0.3); }
+        button.red-magic { background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%); color: white; border: none; box-shadow: 0 0 8px rgba(239, 68, 68, 0.3); }
         button.small-btn { padding: 4px; font-size: 8px; }
 
-        /* POLARIDAD */
-        .polarity-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; }
-        .pol-btn {
-            aspect-ratio: 1.3; display: flex; flex-direction: column; align-items: center; justify-content: center;
-            border-radius: 2px; font-size: 8px; font-weight: bold; cursor: pointer;
+        /* BAFFLE CONTROL GRID */
+        .baffle-list {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
         }
-        .pol-btn span:first-child { font-size: 9px; margin-bottom: 0px; }
-        .pol-btn.normal { background: rgba(40, 40, 45, 0.7); color: #71717a; border: 1px solid rgba(80, 80, 90, 0.3); }
-        .pol-btn.inverted { background: rgba(239, 68, 68, 0.2); color: var(--danger); border: 1px solid var(--danger); }
+        .baffle-row {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(0,0,0,0.2);
+            padding: 4px 6px;
+            border-radius: 3px;
+            justify-content: space-between;
+        }
+        .baffle-info {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .baffle-controls {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex: 1;
+        }
+        .baffle-num {
+            font-size: 9px;
+            color: #a1a1aa;
+            width: 12px;
+            font-weight: bold;
+        }
+        .baffle-btn {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 20px;
+            font-size: 9px;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 2px;
+            cursor: pointer;
+            background: rgba(255,255,255,0.05);
+            color: #71717a;
+            padding: 0 4px;
+        }
+        .baffle-btn.active {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border-color: #ef4444;
+            font-weight: bold;
+        }
+        .baffle-btn.dir-active {
+            background: rgba(59, 130, 246, 0.2);
+            color: #3b82f6;
+            border-color: #3b82f6;
+            font-weight: bold;
+        }
+        /* Delay Slider in Baffle Row */
+        .delay-slider-container {
+            flex: 1.5;
+            display: flex;
+            flex-direction: column;
+            margin-left: 2px;
+        }
+        .delay-slider-container input {
+            height: 2px;
+            margin: 2px 0;
+        }
+        .delay-val {
+            font-size: 8px;
+            color: var(--warning);
+            text-align: right;
+            font-family: monospace;
+            line-height: 1;
+        }
 
         /* HUD & OVERLAYS */
         .hud-panel {
@@ -293,6 +372,15 @@
         .guide-icon { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
         .guide-item strong { color: var(--accent); display: block; margin-bottom: 2px; font-size: 11px; }
         .guide-item p { margin: 0; font-size: 10px; color: #a1a1aa; line-height: 1.3; }
+        
+        /* Visual Wave Examples */
+        .wave-example {
+            height: 35px; width: 100%; background: #000; border: 1px solid #333;
+            margin-top: 4px; border-radius: 4px; position: relative; overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .wave-svg { width: 100%; height: 100%; display: block; }
+        
         .modal-close-btn {
             width: 100%; padding: 8px; background: var(--accent); color: white;
             border: none; border-radius: 4px; font-weight: bold; cursor: pointer;
@@ -319,7 +407,7 @@
             #controles {
                 position: absolute; bottom: 0; left: 0; width: 100%; height: 45%; max-height: 350px;
                 box-sizing: border-box; border-right: none; border-top: 1px solid var(--border);
-                z-index: 20; background: rgba(8, 8, 10, 0.85); padding-bottom: 20px;
+                z-index: 20; background: rgba(8, 8, 10, 0.95); padding-bottom: 20px;
             }
             .hud-panel { top: 5px; left: 5px; width: 110px; padding: 6px; }
         }
@@ -345,18 +433,48 @@
     <div id="modal-guide" class="modal-overlay">
         <div class="modal-content">
             <h3 class="modal-title">Guía Técnica</h3>
+            
             <div class="guide-item">
-                <span class="guide-icon">⚡</span>
-                <div><strong>Suma Total (+6dB)</strong><p>Separa a <strong>λ/4</strong> (ej: 1.07m @ 80Hz). Suma frontal.</p></div>
+                <span class="guide-icon">🖱️</span>
+                <div>
+                    <strong>Navegación</strong>
+                    <p>Haz <b>doble clic</b> en el micrófono para centrarlo horizontalmente. <br>Arrastra los bafles verticalmente para cambiar la separación y el delay dinámico.</p>
+                </div>
             </div>
+
             <div class="guide-item">
-                <span class="guide-icon">🎯</span>
-                <div><strong>Directividad</strong><p>Separa a <strong>λ/2</strong> (ej: 2.14m @ 80Hz). Rechazo lateral.</p></div>
+                <span class="guide-icon">❤️</span>
+                <div>
+                    <strong>Auto-Cardioid & Delay Dinámico</strong>
+                    <p>Activa CARDIOID para vincular distancia y delay. <br>Al mover los bafles, el sistema recalcula: <b>Delay = Distancia / 344</b> para cancelar el sonido trasero.</p>
+                </div>
             </div>
+
             <div class="guide-item">
-                <span class="guide-icon">🌊</span>
-                <div><strong>Fase</strong><p>Alinea las ondas (Cian/Magenta) usando Auto-Focus para sumar en el micro.</p></div>
+                <span class="guide-icon">📈</span>
+                <div>
+                    <strong>Interpretación de Ondas</strong>
+                    <p>Observa el analizador junto al micrófono:</p>
+                    <div style="margin-top:5px;">
+                        <span style="font-size:9px; color:#22c55e;">Suma Total (Onda Limpia):</span>
+                        <div class="wave-example">
+                             <svg class="wave-svg" viewBox="0 0 100 30" preserveAspectRatio="none">
+                                 <path d="M0 15 Q 12.5 0 25 15 T 50 15 T 75 15 T 100 15" fill="none" stroke="#22c55e" stroke-width="2"/>
+                                 <path d="M0 15 H100" stroke="#333" stroke-width="0.5" stroke-dasharray="2"/>
+                             </svg>
+                        </div>
+                    </div>
+                    <div style="margin-top:5px;">
+                        <span style="font-size:9px; color:#ef4444;">Cancelación/Desfase (Plana/Ruido):</span>
+                        <div class="wave-example">
+                            <svg class="wave-svg" viewBox="0 0 100 30" preserveAspectRatio="none">
+                                <path d="M0 15 L 100 15" fill="none" stroke="#ef4444" stroke-width="2" stroke-dasharray="4"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
             </div>
+
             <button class="modal-close-btn" onclick="app.toggleGuide()">Cerrar</button>
         </div>
     </div>
@@ -364,7 +482,7 @@
     <div id="main-layout">
         
         <div id="viewport">
-            <canvas id="simCanvas" width="800" height="600" data-tooltip="Visor de Predicción: Colores cálidos = mayor presión sonora. Arrastra el micrófono para medir. Doble clic para centrar mic."></canvas>
+            <canvas id="simCanvas" width="800" height="600" data-tooltip="Visor de Predicción: Colores cálidos = mayor presión sonora. Arrastra bafles para ajustar distancia/delay."></canvas>
             
             <div id="hud-panel" class="hud-panel">
                 <div class="hud-row"><span class="hud-label">Longitud Onda:</span><span class="hud-value" id="hud-lambda">--</span></div>
@@ -382,7 +500,7 @@
 
             <!-- Global Params -->
             <div class="control-group">
-                <div class="group-title">FUENTE (UPWARD)</div>
+                <div class="group-title">FUENTE (SUBGRAVES)</div>
                 <div class="slider-row" data-tooltip="<strong>FRECUENCIA</strong><br>Define la longitud de onda. 80Hz es ideal para subgraves estándar.">
                     <div class="slider-label"><span>Freq</span><span class="slider-val" id="disp-freq">80 Hz</span></div>
                     <input type="range" id="input-freq" min="20" max="200" value="80">
@@ -392,17 +510,17 @@
                     <input type="range" id="input-count" min="1" max="8" step="1" value="2">
                 </div>
                 <!-- DISPERSION CONTROL -->
-                <div class="slider-row" data-tooltip="<strong>COBERTURA</strong><br>Ángulo de dispersión (10° a 180°). Controla el haz hacia arriba.">
+                <div class="slider-row" data-tooltip="<strong>COBERTURA</strong><br>Ángulo de dispersión (10° a 180°). Controla el haz principal.">
                     <div class="slider-label"><span>Cobertura</span><span class="slider-val" id="disp-angle">90°</span></div>
                     <input type="range" id="input-angle" min="10" max="180" value="90">
                 </div>
 
-                <div class="slider-row" id="row-dist" data-tooltip="<strong>SEPARACIÓN</strong><br>Distancia entre centros acústicos. Afecta directamente la interacción de fase.">
+                <div class="slider-row" id="row-dist" data-tooltip="<strong>SEPARACIÓN FÍSICA</strong><br>Distancia entre centros acústicos. Arrastra los bafles para cambiar.">
                     <div class="slider-label"><span>Separación</span><span class="slider-val" id="disp-dist">1.07 m</span></div>
                     <input type="range" id="input-dist" min="0.2" max="4.0" step="0.01" value="1.07">
                     <div class="btn-row" style="margin-top:2px;">
-                        <button class="small-btn" style="flex:1" onclick="app.setLambdaFraction(0.25)" data-tooltip="<strong>PRESET λ/4</strong><br>Suma perfecta frontal (+6dB). Poca directividad.">λ/4 (Max)</button>
-                        <button class="small-btn" style="flex:1" onclick="app.setLambdaFraction(0.5)" data-tooltip="<strong>PRESET λ/2</strong><br>Máxima cancelación lateral. Arreglo más directivo.">λ/2 (Dir)</button>
+                        <button class="small-btn" style="flex:1" onclick="app.setLambdaFraction(0.25)" data-tooltip="<strong>PRESET λ/4</strong><br>Suma perfecta frontal (+6dB).">λ/4 (Max)</button>
+                        <button class="small-btn" style="flex:1" onclick="app.setLambdaFraction(0.5)" data-tooltip="<strong>PRESET λ/2</strong><br>Máxima cancelación lateral.">λ/2 (Dir)</button>
                     </div>
                 </div>
             </div>
@@ -412,38 +530,40 @@
                 <div class="group-title">CONFIGURACIÓN</div>
                 <div class="btn-row">
                     <button id="btn-broad" class="active" style="flex:1" onclick="app.setMode('broadside')" data-tooltip="<strong>BROADSIDE</strong><br>Línea de fuentes. Cobertura ancha.">BROADSIDE</button>
-                    <button id="btn-end" style="flex:1" onclick="app.setMode('endfire')" data-tooltip="<strong>END-FIRE</strong><br>Fuentes en línea de tiro. Máxima direccionalidad y rechazo trasero.">END-FIRE</button>
+                    <button id="btn-end" style="flex:1" onclick="app.setMode('endfire')" data-tooltip="<strong>END-FIRE</strong><br>Fuentes en línea de tiro. Rechazo trasero.">END-FIRE</button>
                 </div>
-                <button id="btn-lr" style="width:100%; margin-top:4px;" onclick="app.toggleLR()" data-tooltip="<strong>L/R STEREO</strong><br>Divide el arreglo en dos clusters separados (Izquierda/Derecha).">MODO: MONO CENTRAL</button>
-                <div class="slider-row" style="margin-top:4px" data-tooltip="<strong>SEPARACIÓN L/R</strong><br>Distancia desde el centro del escenario a cada cluster.">
+                <button id="btn-lr" style="width:100%; margin-top:4px;" onclick="app.toggleLR()" data-tooltip="<strong>L/R STEREO</strong><br>Divide el arreglo en dos clusters (Izquierda/Derecha) espejados.">MODO: MONO CENTRAL</button>
+                <div class="slider-row" style="margin-top:4px" data-tooltip="<strong>SEPARACIÓN L/R</strong><br>Distancia desde el centro (0m = Pegados).">
                     <div class="slider-label"><span>Margen L/R</span><span class="slider-val" id="disp-lat-margin">0.5 m</span></div>
                     <input type="range" id="input-lat-margin" min="0" max="5.0" step="0.1" value="0.5">
-                </div>
-                <div class="btn-row" style="margin-top:4px;">
-                    <button class="danger" style="flex:1" onclick="app.setupCardioid()" data-tooltip="<strong>CARDIOIDE CSA</strong><br>Configuración de 3 cajas (2 frente, 1 invertida atrás) para cancelar sonido trasero.">CARDIOIDE CSA</button>
                 </div>
             </div>
 
             <!-- Optimization -->
             <div class="control-group">
                 <div class="group-title">MIC & OPTIMIZACIÓN</div>
-                <button class="magic" style="width:100%; padding:6px;" onclick="app.autoOptimize()" data-tooltip="<strong>AUTO-FOCUS</strong><br>Calcula delays electrónicos para alinear la llegada de señal al micrófono.">✨ AUTO-FOCUS (FASE)</button>
+                <div style="display:flex; gap:4px;">
+                    <button class="magic" style="flex:1; padding:6px;" onclick="app.autoOptimize()" data-tooltip="<strong>AUTO-FOCUS</strong><br>Alinea tiempos y fases para el micrófono.">✨ FOCUS</button>
+                    <button class="red-magic" style="flex:1; padding:6px;" onclick="app.autoCardioid()" data-tooltip="<strong>CÁLCULO RÁPIDO CARDIOIDE</strong><br>Vínculo Dinámico: Ajusta Delay automáticamente al mover bafles.">❤️ CARDIOID</button>
+                </div>
                 <div id="opt-status" style="display:none; text-align:center; color:#a3e635; font-size:9px; margin-top:2px; font-weight:bold;">OPTIMIZADO</div>
             </div>
 
             <!-- Stage Control -->
             <div class="control-group">
                 <div class="group-title">ESCENARIO (REFLECTOR -18dB)</div>
-                <div class="slider-row" data-tooltip="<strong>GAP</strong><br>Distancia entre bafles y pared trasera.">
-                    <div class="slider-label"><span>Distancia Pared</span><span class="slider-val" id="disp-stg-gap" style="color:var(--warning)">--</span></div>
+                <div class="slider-row" data-tooltip="<strong>DISTANCIA PARED</strong><br>Profundidad del escenario (4m). Distancia entre bafles y pared trasera.">
+                    <div class="slider-label"><span>Dist. Bafles-Escenario</span><span class="slider-val" id="disp-stg-gap" style="color:var(--warning)">--</span></div>
                     <input type="range" id="input-stg-gap" min="0" max="10" step="0.1" value="1.0">
                 </div>
             </div>
 
-            <!-- Polarity -->
+            <!-- Baffle Control (Polarity & Direction) -->
             <div class="control-group">
-                <div class="group-title">POLARIDAD (INVERTIR)</div>
-                <div id="polarity-container" class="polarity-grid" data-tooltip="<strong>POLARIDAD</strong><br>Toca un número para invertir la polaridad (180°) de esa caja específica. Rojo = Invertido."></div>
+                <div class="group-title">CONTROLES POR BAFLE (DELAY BIDIRECCIONAL)</div>
+                <div id="baffle-control-list" class="baffle-list" data-tooltip="<strong>CONTROLES INDIVIDUALES</strong><br>Ø: Polaridad. ⟲: Dirección.<br>Slider: Delay electrónico (ms).">
+                    <!-- JS generated rows -->
+                </div>
             </div>
         </div>
 
@@ -457,11 +577,11 @@
     </footer>
 
     <script>
-        // Define app globally immediately to avoid reference errors in HTML
         window.app = {
             togglePlay: () => {}, toggleGuide: () => {}, setMode: () => {}, 
-            toggleLR: () => {}, togglePolarity: () => {}, setLambdaFraction: () => {},
-            setupCardioid: () => {}, autoOptimize: () => {}, addZone: () => {}, clearZones: () => {}
+            toggleLR: () => {}, togglePolarity: () => {}, toggleDirection: () => {},
+            setLambdaFraction: () => {}, setupCardioid: () => {}, autoOptimize: () => {}, 
+            autoCardioid: () => {}, setDelay: () => {}
         };
 
         window.onload = function() {
@@ -473,16 +593,16 @@
                 mode: 'broadside', lrMode: false,     
                 stageGap: 1.0, lateralMargin: 0.5, 
                 polarities: new Array(16).fill(false),
-                isOptimized: false, 
+                directions: new Array(16).fill(false), // false = Up, true = Down
+                delays: new Array(16).fill(0), // ms
+                isOptimized: false, isCardioidMode: false,
                 customPhases: [],   
-                sourceDelays: [], // Stores delay in MS for visualization
-                viewGain: 1.0, isFullscreen: false, isGuideOpen: false, 
+                sourceDelays: [], // This is now derived from state.delays for rendering
+                viewGain: 1.0, isGuideOpen: false, 
                 isPlaying: false, 
                 time: 0,
-                // View: Sources at y=0 (Center of Physics World).
                 view: { scale: 30, x: 0, y: 0, dragging: false, lastX: 0, lastY: 0, dragType: null, dragIndex: -1 },
-                mic: { x: 0, y: -4 }, // 4 meters UP from center
-                // Physics geometry: Upward propagation (-Y).
+                mic: { x: 0, y: -4 },
                 stage: { w: 10, h: 4, x: 0, y: 4 }
             };
 
@@ -510,7 +630,7 @@
                     broad: document.getElementById('btn-broad'), end: document.getElementById('btn-end'),
                     lr: document.getElementById('btn-lr'), play: document.getElementById('btn-play')
                 },
-                polContainer: document.getElementById('polarity-container'),
+                baffleList: document.getElementById('baffle-control-list'),
                 optStatus: document.getElementById('opt-status'),
                 modalGuide: document.getElementById('modal-guide')
             };
@@ -518,16 +638,16 @@
             const ctx = els.canvas.getContext('2d', { alpha: false });
             ctx.imageSmoothingEnabled = true;
 
-            // Implement Global App Methods
+            // Global Methods
             window.app.setMode = (m) => {
-                state.mode = m; state.isOptimized = false; resetGain();
+                state.mode = m; state.isOptimized = false; state.isCardioidMode = false; resetGain();
                 els.optStatus.style.display = 'none';
                 els.btns.broad.className = m === 'broadside' ? 'active' : '';
                 els.btns.end.className = m === 'endfire' ? 'active' : '';
                 updateUI(); 
             };
             window.app.toggleLR = () => {
-                state.lrMode = !state.lrMode; state.isOptimized = false; resetGain();
+                state.lrMode = !state.lrMode; state.isOptimized = false; state.isCardioidMode = false; resetGain();
                 els.optStatus.style.display = 'none';
                 els.btns.lr.innerText = state.lrMode ? "MODO: STEREO L/R" : "MODO: MONO CENTRAL";
                 els.btns.lr.className = state.lrMode ? 'active' : '';
@@ -535,7 +655,18 @@
             };
             window.app.togglePolarity = (i) => {
                 state.polarities[i] = !state.polarities[i];
-                renderPolarityGrid(); 
+                renderBaffleGrid(); 
+            };
+            window.app.toggleDirection = (i) => {
+                state.directions[i] = !state.directions[i];
+                renderBaffleGrid();
+            };
+            window.app.setDelay = (i, val) => {
+                state.delays[i] = parseFloat(val);
+                state.isOptimized = false; // Manual override disables auto-opt
+                // If Cardioid mode active, maybe disable it or keep it?
+                // For now, let user override.
+                updateUI();
             };
             window.app.togglePlay = () => {
                 state.isPlaying = !state.isPlaying;
@@ -551,8 +682,18 @@
                 let optimal = (c / state.freq) * frac;
                 optimal = Math.min(4.0, Math.max(0.2, optimal));
                 state.dist = optimal; els.inputs.dist.value = optimal;
-                state.isOptimized = false; els.optStatus.style.display = 'none';
+                if(state.isCardioidMode) updateCardioidDelay();
                 updateUI(); 
+            };
+            window.app.setupCardioid = () => {
+                // Manual setup helper (Preset)
+                state.count = 2; els.inputs.count.value = 2;
+                window.app.setMode('endfire'); 
+                state.polarities.fill(false); state.directions.fill(false);
+                state.delays.fill(0);
+                state.polarities[0] = true; // Invert Rear
+                // No auto logic here, just preset
+                window.app.applyPreset(state.freq);
             };
             window.app.applyPreset = (hz) => {
                 state.freq = hz; state.isOptimized = false; resetGain();
@@ -561,181 +702,152 @@
                 let optimal = (v / hz) / 4;
                 optimal = Math.min(4.0, Math.max(0.2, optimal));
                 state.dist = optimal; els.inputs.dist.value = optimal;
+                if(state.isCardioidMode) updateCardioidDelay();
                 updateUI(); 
-            };
-            window.app.setupCardioid = () => {
-                state.count = 2; els.inputs.count.value = 2;
-                window.app.setMode('endfire'); state.polarities.fill(false);
-                state.polarities[0] = true; window.app.applyPreset(state.freq);
             };
             window.app.autoOptimize = () => {
                 const c = SPEED_OF_SOUND;
+                let optimalDist = (c / state.freq) / 4;
+                optimalDist = Math.min(4.0, Math.max(0.2, optimalDist));
+                state.dist = optimalDist; els.inputs.dist.value = optimalDist;
+                
+                // Focus Logic
                 const k = (2 * Math.PI * state.freq) / c; 
                 const tempSources = generateSourcesForLogic();
-                
-                // Calculate time of flight
                 const dists = tempSources.map(s => Math.hypot(state.mic.x - s.x, state.mic.y - s.y));
                 const maxDist = Math.max(...dists);
                 
-                // Delay closest sources to align with furthest
-                state.sourceDelays = dists.map(d => {
-                    const diffMeters = maxDist - d;
-                    return (diffMeters / c) * 1000; // ms
-                });
-                
-                // Convert delay to phase shift
-                state.customPhases = state.sourceDelays.map(ms => {
-                    const seconds = ms / 1000;
-                    return -k * (seconds * c); // phase shift
-                });
-                
-                state.isOptimized = true; 
+                const calcDelays = dists.map(d => ((maxDist - d) / c) * 1000);
+                // Apply to sliders
+                for(let i=0; i<state.count; i++) state.delays[i] = calcDelays[i] || 0;
+
+                state.isOptimized = true; state.isCardioidMode = false;
                 els.optStatus.style.display = 'block';
+                els.optStatus.innerHTML = 'OPTIMIZADO (FOCUS)';
                 resetGain(); updateUI(); 
             };
-            window.app.addZone = () => {};
-            window.app.clearZones = () => {};
+            
+            function updateCardioidDelay() {
+                const c = SPEED_OF_SOUND;
+                // Rule: Delay = Distance / C.
+                const delaySec = state.dist / c;
+                const delayMs = delaySec * 1000;
+                // Rear (0) is Ref. Front (1) is delayed.
+                state.delays[0] = 0;
+                state.delays[1] = delayMs;
+                // Update others if any (ignore for now, usually count=2)
+            }
+
+            window.app.autoCardioid = () => {
+                // Cardioid Recipe: Rear Inverted + Front Delayed based on Dist.
+                state.count = 2; els.inputs.count.value = 2;
+                window.app.setMode('endfire');
+                
+                state.polarities.fill(false);
+                state.directions.fill(false);
+                state.delays.fill(0);
+                
+                state.polarities[0] = true; // Rear Inverted
+                
+                state.isCardioidMode = true; 
+                state.isOptimized = true;
+                
+                updateCardioidDelay();
+
+                els.optStatus.style.display = 'block';
+                els.optStatus.innerHTML = 'OPTIMIZADO (CARDIOID DINÁMICO)';
+                resetGain(); updateUI();
+            };
 
             function resetGain() { state.viewGain = 1.0; }
 
             function getPointerPos(e) {
                 const rect = els.canvas.getBoundingClientRect();
-                let clientX, clientY;
+                let cx, cy;
                 if (e.changedTouches && e.changedTouches.length > 0) {
-                    clientX = e.changedTouches[0].clientX;
-                    clientY = e.changedTouches[0].clientY;
+                    cx = e.changedTouches[0].clientX; cy = e.changedTouches[0].clientY;
                 } else {
-                    clientX = e.clientX;
-                    clientY = e.clientY;
+                    cx = e.clientX; cy = e.clientY;
                 }
-                return { x: clientX - rect.left, y: clientY - rect.top, clientX, clientY };
+                return { x: cx - rect.left, y: cy - rect.top, clientX: cx, clientY: cy };
             }
 
-            // --- SMART TOOLTIPS ---
-            let tooltipTimer = null;
-            const TOOLTIP_DELAY = 2000; 
-
-            function showTooltip(target) {
-                const text = target.getAttribute('data-tooltip');
-                if (!text) return;
-                els.tooltip.innerHTML = text;
-                const rect = target.getBoundingClientRect();
-                let top = rect.top - 40; let left = rect.left + 10;
-                if (left + 200 > window.innerWidth) left = window.innerWidth - 210;
-                if (top < 10) top = rect.bottom + 10;
-                els.tooltip.style.left = left + 'px'; els.tooltip.style.top = top + 'px';
-                els.tooltip.style.display = 'block';
-                requestAnimationFrame(() => els.tooltip.classList.add('visible'));
-            }
-
-            function hideTooltip() {
-                els.tooltip.classList.remove('visible');
-                setTimeout(() => {
-                    if (!els.tooltip.classList.contains('visible')) els.tooltip.style.display = 'none';
-                }, 400);
-            }
-
-            function forceHideTooltip() {
-                clearTimeout(tooltipTimer);
-                hideTooltip();
-            }
-            window.addEventListener('mousedown', forceHideTooltip);
-            window.addEventListener('touchstart', forceHideTooltip, {passive: true});
-            window.addEventListener('input', forceHideTooltip); 
-            window.addEventListener('scroll', forceHideTooltip); 
-
-            document.addEventListener('mouseover', e => {
-                const target = e.target.closest('[data-tooltip]');
-                if (target) {
-                    clearTimeout(tooltipTimer);
-                    tooltipTimer = setTimeout(() => showTooltip(target), TOOLTIP_DELAY);
-                }
-            });
-            document.addEventListener('mouseout', e => {
-                const target = e.target.closest('[data-tooltip]');
-                if (target) { clearTimeout(tooltipTimer); hideTooltip(); }
-            });
-            document.addEventListener('touchstart', e => {
-                const target = e.target.closest('[data-tooltip]');
-                if (target) {
-                    clearTimeout(tooltipTimer);
-                    tooltipTimer = setTimeout(() => {
-                        const text = target.getAttribute('data-tooltip');
-                        if(text) {
-                            els.tooltip.innerHTML = text; els.tooltip.style.display = 'block';
-                            els.tooltip.style.left = '50%'; els.tooltip.style.top = '20%';
-                            els.tooltip.style.transform = 'translate(-50%, 0)';
-                            requestAnimationFrame(() => els.tooltip.classList.add('visible'));
-                        }
-                    }, TOOLTIP_DELAY);
-                }
-            }, {passive: true});
-            
-
-            // --- INPUT HANDLERS ---
-            // Only set transparent when dragging on canvas, not when using controls.
-            function setControlsTransparent() { els.controls.classList.add('controls-hidden'); }
-            function removeControlsTransparent() { els.controls.classList.remove('controls-hidden'); }
+            // --- SMART TOOLTIPS & INPUTS ---
+            function setControlsDimmed() { els.controls.classList.add('controls-dimmed'); }
+            function removeControlsDimmed() { els.controls.classList.remove('controls-dimmed'); }
 
             Object.keys(els.inputs).forEach(key => {
                 if(!els.inputs[key]) return;
                 const input = els.inputs[key];
-                // input.addEventListener('change', removeControlsTransparent); // Removed transparency logic on inputs
                 input.addEventListener('input', (e) => {
                     const val = parseFloat(e.target.value);
-                    if (key === 'stgW') state.stage.w = val;
-                    else if (key === 'stgGap') state.stageGap = val;
+                    if (key === 'stgGap') state.stageGap = val;
                     else if (key === 'latMargin') state.lateralMargin = val;
                     else state[key] = val;
                     
+                    if(key === 'dist' && state.isCardioidMode) {
+                        updateCardioidDelay();
+                    }
+
                     if (['freq', 'dist', 'stgGap', 'latMargin', 'count', 'angle'].includes(key)) {
-                         if(state.isOptimized) { state.isOptimized = false; els.optStatus.style.display = 'none'; resetGain(); }
+                         if(state.isOptimized && !state.isCardioidMode) { 
+                             state.isOptimized = false; els.optStatus.style.display = 'none'; resetGain(); 
+                         }
                          if(key === 'count') resetGain();
                     }
                     updateUI(); 
                 });
             });
 
-            // Double click to center mic
             els.canvas.addEventListener('dblclick', (e) => {
                 const pos = getPointerPos(e);
                 const cx = els.canvas.width / 2 + state.view.x;
                 const cy = els.canvas.height / 2 + state.view.y;
                 const ppm = state.view.scale;
-                
-                // Calculate mic distance in pixels to pointer
                 const mx = cx + state.mic.x * ppm;
                 const my = cy + state.mic.y * ppm;
-                const dist = Math.hypot(pos.x - mx, pos.y - my);
-
-                // If close to mic, snap to x=0
-                if(dist < 50) {
-                    state.mic.x = 0;
-                }
+                if(Math.hypot(pos.x - mx, pos.y - my) < 50) state.mic.x = 0;
             });
 
             function handleStart(e) {
                 if(e.type === 'touchstart') e.preventDefault();
-                
-                forceHideTooltip(); 
-                
                 const pos = getPointerPos(e);
                 const cx = els.canvas.width / 2 + state.view.x;
                 const cy = els.canvas.height / 2 + state.view.y;
                 const ppm = state.view.scale;
-                const toScreen = (mx, my) => ({ x: cx + mx * ppm, y: cy + my * ppm });
-                const ms = toScreen(state.mic.x, state.mic.y);
+                const mx = cx + state.mic.x * ppm;
+                const my = cy + state.mic.y * ppm;
                 
-                if (Math.hypot(pos.x - ms.x, pos.y - ms.y) < 50) {
+                // Mic Hit Test
+                if (Math.hypot(pos.x - mx, pos.y - my) < 50) {
                     state.view.dragType = 'mic'; state.view.dragging = true;
+                    setControlsDimmed();
                     state.view.lastX = pos.clientX; state.view.lastY = pos.clientY;
-                    setControlsTransparent(); // Only transparent when dragging on canvas
                     return;
                 }
-                
-                state.view.dragType = 'view';
-                state.view.dragging = true; state.view.lastX = pos.clientX; state.view.lastY = pos.clientY;
-                setControlsTransparent(); // Only transparent when dragging on canvas
+
+                // Baffle Hit Test
+                // Just check proximity to generated sources
+                let sources = generateSourcesForLogic();
+                let closest = -1;
+                let minD = 50; 
+                sources.forEach((s, i) => {
+                    const sx = cx + s.x * ppm;
+                    const sy = cy + s.y * ppm;
+                    const d = Math.hypot(pos.x - sx, pos.y - sy);
+                    if(d < minD) { minD = d; closest = i; }
+                });
+
+                if (closest !== -1) {
+                    state.view.dragType = 'baffle'; 
+                    state.view.dragging = true;
+                    state.view.dragIndex = closest; // Note: Dragging one affects global dist usually
+                    setControlsDimmed();
+                } else {
+                    state.view.dragType = 'view'; state.view.dragging = true;
+                    setControlsDimmed();
+                }
+                state.view.lastX = pos.clientX; state.view.lastY = pos.clientY;
             }
 
             function handleMove(e) {
@@ -744,12 +856,32 @@
                     const pos = getPointerPos(e);
                     const dxPix = pos.clientX - state.view.lastX;
                     const dyPix = pos.clientY - state.view.lastY;
-                    const dxM = dxPix / state.view.scale;
-                    const dyM = dyPix / state.view.scale;
-
-                    if (state.view.dragType === 'view') { state.view.x += dxPix; state.view.y += dyPix; } 
-                    else if (state.view.dragType === 'mic') {
-                        state.mic.x += dxM; state.mic.y += dyM;
+                    
+                    if (state.view.dragType === 'view') { 
+                        state.view.x += dxPix; state.view.y += dyPix; 
+                    } else if (state.view.dragType === 'mic') {
+                        state.mic.x += dxPix / state.view.scale; state.mic.y += dyPix / state.view.scale;
+                    } else if (state.view.dragType === 'baffle') {
+                        // Dragging a baffle adjusts separation (dist)
+                        // This assumes symmetrical expansion for Broadside or Endfire depth.
+                        // Simplified: Vertical movement adjusts dist if Endfire, Horizontal if Broadside?
+                        // Let's make Vertical movement adjust dist generally since user asked "Arrastrar bafle verticalmente".
+                        const dM = -dyPix / state.view.scale; // Up is -Y
+                        // Sensitivity adjustment
+                        if (Math.abs(dM) > 0) {
+                            let newDist = state.dist + (dM * 0.5); 
+                            newDist = Math.max(0.2, Math.min(4.0, newDist));
+                            state.dist = newDist;
+                            els.inputs.dist.value = newDist;
+                            
+                            if (state.isCardioidMode) {
+                                updateCardioidDelay();
+                            } else if (state.isOptimized) {
+                                // Break optimization if moved manually
+                                state.isOptimized = false; els.optStatus.style.display = 'none';
+                            }
+                            updateUI();
+                        }
                     }
                     state.view.lastX = pos.clientX; state.view.lastY = pos.clientY;
                 }
@@ -757,8 +889,7 @@
 
             function handleEnd(e) {
                 state.view.dragging = false; state.view.dragType = null;
-                removeControlsTransparent(); 
-                els.hudPanel.style.opacity = '1';
+                removeControlsDimmed(); 
             }
 
             els.canvas.addEventListener('mousedown', handleStart);
@@ -770,17 +901,12 @@
             els.canvas.addEventListener('wheel', e => {
                 e.preventDefault();
                 const factor = e.deltaY > 0 ? 0.9 : 1.1;
-                state.view.scale *= factor; state.view.scale = Math.max(5, Math.min(100, state.view.scale));
+                state.view.scale = Math.max(5, Math.min(100, state.view.scale * factor));
             });
-            window.addEventListener('resize', handleResize);
-
-            function handleResize() {
-                const parent = els.canvas.parentElement;
-                if(parent.clientWidth > 0 && parent.clientHeight > 0) {
-                    els.canvas.width = parent.clientWidth;
-                    els.canvas.height = parent.clientHeight;
-                }
-            }
+            window.addEventListener('resize', () => {
+                els.canvas.width = els.canvas.parentElement.clientWidth;
+                els.canvas.height = els.canvas.parentElement.clientHeight;
+            });
 
             function updateUI() {
                 els.displays.freq.innerText = state.freq + ' Hz';
@@ -791,10 +917,12 @@
                 els.displays.latMargin.innerText = state.lateralMargin.toFixed(1) + ' m';
                 if (state.count === 1) els.rows.dist.classList.add('disabled');
                 else els.rows.dist.classList.remove('disabled');
+                
                 const c = SPEED_OF_SOUND;
                 const lambda = c / state.freq;
                 const delay = (state.dist / c) * 1000;
                 els.hud.lambda.innerText = lambda.toFixed(2) + ' m';
+                
                 const limit = (2/3) * lambda; const optimal = lambda / 4; 
                 if (state.dist > limit && state.count > 1) {
                     els.hud.status.innerText = "ALIASING"; els.hud.status.className = "hud-value status-danger";
@@ -804,48 +932,88 @@
                     els.hud.status.innerText = state.count === 1 ? "PUNTUAL" : "ESTANDAR";
                     els.hud.status.className = "hud-value";
                 }
+                
                 if (state.mode === 'endfire' && state.count > 1) {
                     els.hud.delayRow.style.display = 'flex'; els.hud.delay.innerText = delay.toFixed(2) + ' ms';
                 } else els.hud.delayRow.style.display = 'none';
-                renderPolarityGrid();
+                
+                renderBaffleGrid();
             }
 
-            function renderPolarityGrid() {
-                els.polContainer.innerHTML = '';
+            function renderBaffleGrid() {
+                els.baffleList.innerHTML = '';
                 for(let i=0; i<state.count; i++) {
-                    const btn = document.createElement('div');
+                    const row = document.createElement('div');
+                    row.className = 'baffle-row';
                     const inv = state.polarities[i];
-                    btn.className = inv ? 'pol-btn inverted' : 'pol-btn normal';
-                    btn.innerHTML = `<span>${i+1}</span><span>${inv ? 'INV' : 'NOR'}</span>`;
-                    btn.onclick = () => window.app.togglePolarity(i);
-                    els.polContainer.appendChild(btn);
+                    const dirDown = state.directions[i]; // true = down
+                    const delay = state.delays[i] || 0;
+                    
+                    row.innerHTML = `
+                        <div class="baffle-info">
+                            <div class="baffle-num">${i+1}</div>
+                        </div>
+                        <div class="baffle-controls">
+                            <button class="baffle-btn ${inv ? 'active' : ''}" onclick="app.togglePolarity(${i})">
+                                Ø
+                            </button>
+                            <button class="baffle-btn ${dirDown ? 'dir-active' : ''}" onclick="app.toggleDirection(${i})">
+                                ⟲
+                            </button>
+                        </div>
+                        <div class="delay-slider-container">
+                             <input type="range" min="0" max="20" step="0.01" value="${delay.toFixed(2)}" oninput="app.setDelay(${i}, this.value)">
+                             <div class="delay-val">${delay.toFixed(2)} ms</div>
+                        </div>
+                    `;
+                    els.baffleList.appendChild(row);
                 }
             }
 
             function generateSourcesForLogic() {
-                // PHYSICS: Wall at Y = +gap (relative to source y=0). Sound goes UP (-Y).
                 const srcY = 0; 
-                
-                const c = SPEED_OF_SOUND;
-                const k = (2 * Math.PI * state.freq) / c;
                 const sources = [];
                 let xOffsets = [0];
+                
                 if (state.lrMode) {
-                    // Margin acts as direct offset from center.
-                    const offset = state.lateralMargin;
-                    xOffsets = [-offset, offset];
+                    // Left Cluster centered at -margin, Right at +margin
+                    xOffsets = [-state.lateralMargin, state.lateralMargin];
                 }
-                xOffsets.forEach(xOff => {
+
+                xOffsets.forEach((xOff, clusterIdx) => {
+                    const isLeft = (xOff < 0);
+                    const isRight = (xOff > 0);
+                    
                     if (state.mode === 'broadside') {
-                        const totalW = (state.count - 1) * state.dist; const startX = xOff - totalW / 2;
                         for(let i=0; i<state.count; i++) {
-                            sources.push({ x: startX + (i * state.dist), y: srcY, phase: 0, inv: state.polarities[i] });
+                            let xPos;
+                            if (isLeft) {
+                                xPos = xOff - (i * state.dist);
+                            } else if (isRight) {
+                                xPos = xOff + (i * state.dist);
+                            } else {
+                                const totalW = (state.count - 1) * state.dist;
+                                xPos = xOff - totalW/2 + (i * state.dist);
+                            }
+                            
+                            sources.push({ 
+                                x: xPos, y: srcY, phase: 0, 
+                                inv: state.polarities[i], 
+                                dirDown: state.directions[i],
+                                delay: state.delays[i] || 0
+                            });
                         }
                     } else {
-                        // Endfire: i=0 is Back (lowest).
+                        // Endfire: Line along Y (Depth).
+                        // Standard: i=0 is Back (lowest).
                         for(let i=0; i<state.count; i++) {
                             const yPos = srcY - (i * state.dist); // -Y is Up.
-                            sources.push({ x: xOff, y: yPos, phase: 0, inv: state.polarities[i] });
+                            sources.push({ 
+                                x: xOff, y: yPos, phase: 0, 
+                                inv: state.polarities[i], 
+                                dirDown: state.directions[i],
+                                delay: state.delays[i] || 0
+                            });
                         }
                     }
                 });
@@ -878,6 +1046,8 @@
                 const ppm = state.view.scale;
                 const c = SPEED_OF_SOUND; 
                 const k = (2 * Math.PI * state.freq) / c;
+                // Harmonic k for educational visualization
+                const k2 = (2 * Math.PI * (state.freq * 2)) / c;
                 const timePhase = state.time * 0.5; 
                 
                 const angleRad = state.angle * (Math.PI / 180);
@@ -886,111 +1056,119 @@
 
                 ctx.fillStyle = '#09090b'; ctx.fillRect(0,0,w,h);
                 
-                // --- GRID ---
+                // Grid
                 ctx.save(); ctx.beginPath(); ctx.strokeStyle = '#222'; ctx.lineWidth = 1;
-                const startX = Math.floor((-cx) / ppm); const endX = Math.ceil((w - cx) / ppm);
-                const startY = Math.floor((-cy) / ppm); const endY = Math.ceil((h - cy) / ppm);
-                for(let gx=startX; gx<=endX; gx++) { const sx = cx + gx * ppm; ctx.moveTo(sx, 0); ctx.lineTo(sx, h); }
-                for(let gy=startY; gy<=endY; gy++) { const sy = cy + gy * ppm; ctx.moveTo(0, sy); ctx.lineTo(w, sy); }
+                const startX = Math.floor((-cx)/ppm); const endX = Math.ceil((w-cx)/ppm);
+                const startY = Math.floor((-cy)/ppm); const endY = Math.ceil((h-cy)/ppm);
+                for(let gx=startX; gx<=endX; gx++) { const sx = cx + gx*ppm; ctx.moveTo(sx, 0); ctx.lineTo(sx, h); }
+                for(let gy=startY; gy<=endY; gy++) { const sy = cy + gy*ppm; ctx.moveTo(0, sy); ctx.lineTo(w, sy); }
                 ctx.stroke(); ctx.restore();
 
                 let sources = generateSourcesForLogic();
-                // Apply phases
-                if (state.isOptimized && state.customPhases.length === sources.length) {
-                    sources.forEach((s, i) => { s.phase = state.customPhases[i]; });
-                } else if (state.mode === 'endfire') {
-                     sources.forEach((s, i) => { 
-                         const delayMeters = i * state.dist;
-                         s.phase = k * delayMeters;
-                     });
-                }
+                // Apply Delays as Phase Shifts
+                sources.forEach((s, i) => { 
+                    // Phase = -omega * delay. 
+                    // delay is in ms. time = delay/1000. omega = 2*PI*freq.
+                    // phase = -(2*PI*freq) * (delay/1000).
+                    // This is broadband correct phase shift.
+                    // PLUS any "Optimized" phase? 
+                    // We consolidated logic: state.delays holds the electronic delay.
+                    // We calculate phase from it.
+                    s.phase = -(2 * Math.PI * state.freq) * (s.delay / 1000);
+                });
 
-                // Stage Wall Logic
                 const wallYVal = state.stageGap; 
                 const wallPx = cy + wallYVal * ppm;
-                
                 const gain = state.viewGain; 
 
-                const screenSources = [];
-                const virtualSources = [];
-
-                sources.forEach(s => {
+                // Pre-calc source props for shader-like loop
+                const simSources = sources.map(s => {
                     const sx = cx + s.x * ppm;
                     const sy = cy + s.y * ppm;
-                    screenSources.push({ sx, sy, ph: s.phase, inv: s.inv });
-                    
-                    // Reflection: Source at 0 approx. Wall at gap.
-                    // Virtual Source mirrored below wall.
                     const vY_meters = 2 * wallYVal - s.y;
                     const vSy = cy + vY_meters * ppm; 
-                    virtualSources.push({ sx: sx, sy: vSy, ph: s.phase, inv: s.inv });
+                    
+                    const leakage = 0.5; 
+                    let directAmp = 1.0; 
+                    let reflectedAmp = leakage;
+
+                    if (s.dirDown) {
+                        directAmp = leakage;
+                        reflectedAmp = 1.0;
+                    }
+
+                    return {
+                        sx, sy, vSy,
+                        phase: s.phase,
+                        inv: s.inv,
+                        dirDown: s.dirDown,
+                        directAmp,
+                        reflectedAmp,
+                        x: s.x, y: s.y,
+                        delay: s.delay
+                    };
                 });
 
                 const imgData = ctx.getImageData(0, 0, w, h);
                 const data = imgData.data;
 
-                // --- PHYSICS ENGINE ---
+                // Physics Loop
                 for(let y=0; y<h; y++) { 
-                    const rowOff = y * w * 4;
-                    // Mask Stage Floor (Everything below wallPx)
-                    if (y > wallPx) {
+                    if (y > wallPx) { // Mask Stage
                         for(let x=0; x<w; x++) {
-                            const i = rowOff + x*4;
-                            data[i] = 10; data[i+1] = 10; data[i+2] = 12; data[i+3] = 255;
+                            const i = (y*w + x)*4;
+                            data[i]=10; data[i+1]=10; data[i+2]=12; data[i+3]=255;
                         }
                         continue;
                     }
+                    const rowOff = y * w * 4;
 
                     for(let x=0; x<w; x++) {
                         const idx = rowOff + (x * 4);
                         let pSum = 0; 
-                        
-                        // Direct Sound (Strictly Upward)
-                        // dy < 0 means pixel is above source.
-                        for(let i=0; i<screenSources.length; i++) {
-                            const s = screenSources[i];
+
+                        for(let i=0; i<simSources.length; i++) {
+                            const s = simSources[i];
                             const dx = x - s.sx; const dy = y - s.sy;
                             
-                            // ZERO MIRROR: No sound below source
-                            if (dy > 0) continue;
-
                             const dist = Math.sqrt(dx*dx + dy*dy);
                             const distMeters = dist / ppm;
                             const dClamped = Math.max(0.1, distMeters);
                             
-                            const cosTheta = -dy / dist;
-                            let dirFactor = 0;
-                            if (cosTheta >= cosHalfAngle) {
-                                dirFactor = 1.0;
+                            let ampD = 0;
+                            // 1. Direct Path
+                            if (!s.dirDown) {
+                                const cosTheta = -dy / dist;
+                                let beamFactor = 1.0;
+                                if (cosTheta < cosHalfAngle) {
+                                    const diff = cosHalfAngle - cosTheta;
+                                    beamFactor = Math.max(s.reflectedAmp, 1.0 - (diff * 5)); 
+                                }
+                                ampD = (1.0 / dClamped) * beamFactor; 
                             } else {
-                                const diff = cosHalfAngle - cosTheta;
-                                if (diff < 0.1) dirFactor = 1.0 - (diff * 10);
+                                const cosTheta = dy / dist; 
+                                let beamFactor = 1.0;
+                                if (cosTheta < cosHalfAngle) {
+                                    const diff = cosHalfAngle - cosTheta;
+                                    beamFactor = Math.max(s.directAmp, 1.0 - (diff * 5)); 
+                                }
+                                ampD = (1.0 / dClamped) * beamFactor;
                             }
 
-                            if (dirFactor > 0) {
-                                const amp = (1.0 / dClamped) * dirFactor; 
-                                const totalPhase = (k * distMeters) - timePhase - s.ph + (s.inv ? Math.PI : 0);
-                                pSum += amp * Math.sin(totalPhase);
-                            }
-                        }
+                            const phD = (k * distMeters) - timePhase - s.phase + (s.inv ? Math.PI : 0);
+                            pSum += ampD * Math.sin(phD);
 
-                        // Reflected Sound (Leakage 40%)
-                        const leakage = 0.4; 
-                        
-                        for(let i=0; i<virtualSources.length; i++) {
-                            const vs = virtualSources[i];
-                            const dx = x - vs.sx; const dy = y - vs.sy;
+                            // 2. Reflected Path
+                            const vDy = y - s.vSy;
+                            const vDist = Math.sqrt(dx*dx + vDy*vDy);
+                            const vDistM = vDist / ppm;
+                            const vDClamped = Math.max(0.1, vDistM);
                             
-                            // Virtual emits up
-                            if (dy >= 0) continue;
-
-                            const dist = Math.sqrt(dx*dx + dy*dy);
-                            const distMeters = dist / ppm;
-                            const dClamped = Math.max(0.1, distMeters);
+                            const wallAbsorption = 0.6;
+                            let ampR = (1.0 / vDClamped) * ampD * wallAbsorption; 
                             
-                            const amp = (1.0 / dClamped) * leakage; 
-                            const totalPhase = (k * distMeters) - timePhase - vs.ph + (vs.inv ? Math.PI : 0);
-                            pSum += amp * Math.sin(totalPhase);
+                            const phR = (k * vDistM) - timePhase - s.phase + (s.inv ? Math.PI : 0);
+                            pSum += ampR * Math.sin(phR);
                         }
                         
                         const absPressure = Math.abs(pSum) * gain;
@@ -1000,181 +1178,124 @@
                 }
                 ctx.putImageData(imgData, 0, 0);
 
+                // Overlay
                 ctx.save(); ctx.translate(cx, cy); ctx.scale(ppm, ppm);
                 
-                // Draw Stage Wall
-                ctx.strokeStyle = '#52525b'; ctx.lineWidth = 0.05;
-                ctx.fillStyle = '#18181b';
-                // Infinite floor block
+                // Stage
+                ctx.strokeStyle = '#52525b'; ctx.lineWidth = 0.05; ctx.fillStyle = '#18181b';
                 ctx.fillRect(-200, wallYVal, 400, 20); 
                 ctx.beginPath(); ctx.moveTo(-200, wallYVal); ctx.lineTo(200, wallYVal); ctx.stroke();
-                
-                // Label
                 ctx.fillStyle = '#fff'; ctx.font = 'bold 0.5px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
                 ctx.fillText("ESCENARIO", 0, wallYVal + 0.5);
                 
                 // Sources
-                sources.forEach((s, i) => {
+                simSources.forEach((s, i) => {
                     const size = 0.4;
-                    ctx.fillStyle = s.inv ? '#ef4444' : '#e4e4e7'; ctx.strokeStyle = '#000';
-                    ctx.lineWidth = 0.02; 
+                    ctx.fillStyle = s.inv ? '#ef4444' : '#e4e4e7'; 
+                    ctx.strokeStyle = s.dirDown ? '#3b82f6' : '#000';
+                    ctx.lineWidth = 0.04; 
+                    
                     ctx.beginPath(); ctx.arc(s.x, s.y, size/2, 0, Math.PI*2); ctx.fill(); ctx.stroke();
                     
-                    // Draw Beam Indicator
-                    ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.lineWidth = 0.02;
+                    // Arrow
+                    ctx.save(); ctx.translate(s.x, s.y);
+                    if (s.dirDown) ctx.rotate(Math.PI);
+                    ctx.fillStyle = "rgba(0,0,0,0.5)";
+                    ctx.beginPath(); ctx.moveTo(-0.1, 0); ctx.lineTo(0.1, 0); ctx.lineTo(0, -0.25); ctx.fill();
+                    
+                    // Beam lines
+                    ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 0.01;
                     ctx.beginPath();
-                    ctx.moveTo(s.x, s.y);
-                    ctx.lineTo(s.x - Math.sin(halfAngle)*2, s.y - Math.cos(halfAngle)*2);
-                    ctx.moveTo(s.x, s.y);
-                    ctx.lineTo(s.x + Math.sin(halfAngle)*2, s.y - Math.cos(halfAngle)*2);
+                    ctx.moveTo(0, 0); ctx.lineTo(-Math.sin(halfAngle)*2, -Math.cos(halfAngle)*2);
+                    ctx.moveTo(0, 0); ctx.lineTo(Math.sin(halfAngle)*2, -Math.cos(halfAngle)*2);
                     ctx.stroke();
+                    ctx.restore();
 
-                    // Delay Labels (Floating Tags)
-                    if (state.isOptimized && state.sourceDelays[i] !== undefined) {
-                        ctx.save();
-                        ctx.translate(s.x, s.y - 0.6); // Above the speaker
-                        ctx.scale(0.04, 0.04);
-                        ctx.fillStyle = "rgba(0,0,0,0.8)";
-                        ctx.beginPath(); ctx.roundRect(-25, -10, 50, 20, 5); ctx.fill();
-                        ctx.fillStyle = "#3b82f6"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-                        ctx.font = "bold 14px sans-serif";
-                        ctx.fillText(state.sourceDelays[i].toFixed(2) + "ms", 0, 0);
-                        ctx.restore();
-                    }
+                    // Delay Labels
+                    ctx.save(); ctx.translate(s.x, s.y - 0.6); ctx.scale(0.04, 0.04);
+                    ctx.fillStyle = "rgba(0,0,0,0.8)";
+                    ctx.beginPath(); ctx.roundRect(-25, -10, 50, 20, 5); ctx.fill();
+                    ctx.fillStyle = "#3b82f6"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+                    ctx.font = "bold 14px sans-serif";
+                    ctx.fillText(s.delay.toFixed(2) + "ms", 0, 0);
+                    ctx.restore();
                 });
 
-                // Mic Logic
-                let micComplexR = 0; let micComplexI = 0;
-                 sources.forEach(s => {
-                    // Direct
-                    const dx = state.mic.x - s.x; const dy = state.mic.y - s.y;
+                // --- PHASE ANALYZER (Educational) ---
+                const mx = state.mic.x; const my = state.mic.y;
+                let sumR = 0, sumI = 0;
+                let sumR2 = 0, sumI2 = 0;
+                
+                simSources.forEach(s => {
+                    const dx = mx - s.x; const dy = my - s.y;
                     const d = Math.sqrt(dx*dx + dy*dy);
+                    const dClamped = Math.max(0.1, d);
                     
-                    const cosTheta = -dy / d;
-                    let dirFactor = 0;
-                    if (dy < 0 && cosTheta >= cosHalfAngle) dirFactor = 1.0;
-                    else if (dy < 0) {
-                        const diff = cosHalfAngle - cosTheta;
-                        if (diff < 0.1) dirFactor = 1.0 - (diff * 10);
-                    }
-                    
-                    const amp = (1.0/Math.max(0.1, d)) * dirFactor;
+                    const amp = 1.0 / dClamped; 
                     const phi = (k*d) - s.phase + (s.inv?Math.PI:0);
-                    micComplexR += Math.cos(phi)*amp; micComplexI += Math.sin(phi)*amp;
+                    sumR += amp * Math.cos(phi); sumI += amp * Math.sin(phi);
 
-                    // Reflection
-                    const vY_meters = 2 * wallYVal - s.y;
-                    const rdx = state.mic.x - s.x; const rdy = state.mic.y - vY_meters;
-                    const rd = Math.sqrt(rdx*rdx + rdy*rdy);
-                    const rAmp = (1.0/Math.max(0.1, rd)) * 0.4; 
-                    const rPhi = (k*rd) - s.phase + (s.inv?Math.PI:0);
-                    micComplexR += Math.cos(rPhi)*rAmp; micComplexI += Math.sin(rPhi)*rAmp;
+                    // Harmonic
+                    const phi2 = (k2*d) - (s.phase*2) + (s.inv?Math.PI:0); 
+                    const ampH = amp * 0.4; 
+                    sumR2 += ampH * Math.cos(phi2); sumI2 += ampH * Math.sin(phi2);
                 });
                 
-                const micDistances = sources.map((s,i) => {
-                    const d = Math.hypot(state.mic.x - s.x, state.mic.y - s.y);
-                    return { id: i+1, d };
-                });
+                // Mic Viz
+                ctx.translate(mx, my);
+                const mag = Math.sqrt(sumR*sumR + sumI*sumI) * gain;
+                const db = 20 * Math.log10(mag + 1e-6);
+                const micColor = db > -6 ? '#22c55e' : (db < -12 ? '#ef4444' : '#fbbf24');
 
-                const micMag = Math.sqrt(micComplexR*micComplexR + micComplexI*micComplexI) * gain; 
-                const micDB = 20 * Math.log10(micMag + 0.000001);
-                
-                ctx.translate(state.mic.x, state.mic.y);
-                const micColor = micDB > -6 ? '#22c55e' : (micDB < -12 ? '#ef4444' : '#fbbf24');
                 ctx.strokeStyle = micColor; ctx.lineWidth = 0.05; ctx.beginPath();
-                // Bigger Mic
                 ctx.arc(0, 0, 0.8, 0, Math.PI * 2); ctx.stroke();
                 ctx.beginPath(); ctx.moveTo(-0.6, 0); ctx.lineTo(0.6, 0); ctx.stroke();
                 ctx.beginPath(); ctx.moveTo(0, -0.6); ctx.lineTo(0, 0.6); ctx.stroke();
+
+                // Draw Analyzer Box
+                const azW = 3.5; const azH = 2.0;
+                const azX = 1.2; const azY = -1.0;
+                ctx.translate(azX, azY);
                 
-                ctx.restore();
+                ctx.fillStyle = "rgba(10,12,14, 0.9)";
+                ctx.fillRect(0, 0, azW, azH);
+                ctx.lineWidth = 0.01; ctx.strokeStyle = "rgba(255,255,255,0.2)";
+                ctx.beginPath();
+                for(let i=1; i<4; i++) { ctx.moveTo(i*(azW/4), 0); ctx.lineTo(i*(azW/4), azH); }
+                for(let i=1; i<4; i++) { ctx.moveTo(0, i*(azH/4)); ctx.lineTo(azW, i*(azH/4)); }
+                ctx.stroke();
+                ctx.strokeStyle = "rgba(255,255,255,0.4)"; ctx.beginPath(); ctx.moveTo(0, azH/2); ctx.lineTo(azW, azH/2); ctx.stroke();
+                ctx.strokeRect(0, 0, azW, azH);
 
-                const mx = cx + state.mic.x * ppm; const my = cy + state.mic.y * ppm;
-                
-                // --- PHASE ANALYZER (Anchored to Mic) ---
-                if (sources.length > 0) {
-                    const analyzerW = 100; const analyzerH = 60;
-                    const ax = mx + 50; const ay = my - 30; // Offset relative to mic
-                    
-                    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.translate(ax, ay);
-                    ctx.fillStyle = 'rgba(10, 10, 12, 0.85)'; ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-                    ctx.lineWidth = 1; ctx.beginPath(); ctx.roundRect(0, 0, analyzerW, analyzerH, 4); ctx.fill(); ctx.stroke();
-                    
-                    const s1 = sources[0]; const s2 = sources.length > 1 ? sources[1] : null;
-                    const plotW = analyzerW - 6; const plotH = analyzerH - 6;
-                    const plotX = 3; const plotY = 3; const midY = plotY + plotH/2;
-                    
-                    const getMicSignal = (s) => {
-                        const dx = state.mic.x - s.x; const dy = state.mic.y - s.y;
-                        const d = Math.sqrt(dx*dx + dy*dy);
-                        const cosTheta = -dy/d; 
-                        let dir = 0;
-                        if (dy < 0 && cosTheta >= cosHalfAngle) dir = 1.0;
-                        else if (dy < 0) { const diff = cosHalfAngle - cosTheta; if(diff<0.1) dir=1.0-diff*10; }
-                        
-                        const amp = (1.0/Math.max(0.1,d)) * dir;
-                        const ph = (k * d) - s.phase + (s.inv ? Math.PI : 0);
-                        return { amp, ph };
-                    };
-
-                    const d1 = getMicSignal(s1); const d2 = s2 ? getMicSignal(s2) : { amp: 0, ph: 0 };
-                    const maxAmp = Math.max(d1.amp, d2.amp, 0.001) * 2.5; const scaleY = (plotH / 2) / maxAmp;
-                    
-                    ctx.beginPath(); ctx.strokeStyle = '#333'; ctx.moveTo(plotX, midY); ctx.lineTo(plotX + plotW, midY); ctx.stroke();
-                    
-                    ctx.beginPath(); ctx.strokeStyle = '#06b6d4'; ctx.lineWidth = 1.5;
-                    for(let i=0; i<=plotW; i++) { 
-                        const t = (i / plotW) * 2 * Math.PI; 
-                        const y = d1.amp * Math.sin(t - d1.ph - timePhase); 
-                        ctx.lineTo(plotX + i, midY - y * scaleY); 
-                    } 
-                    ctx.stroke();
-
-                    if (s2) {
-                        ctx.beginPath(); ctx.strokeStyle = '#d946ef'; ctx.lineWidth = 1.5;
-                        for(let i=0; i<=plotW; i++) { 
-                            const t = (i / plotW) * 2 * Math.PI; 
-                            const y = d2.amp * Math.sin(t - d2.ph - timePhase); 
-                            ctx.lineTo(plotX + i, midY - y * scaleY); 
-                        } 
-                        ctx.stroke();
-                        
-                        ctx.beginPath(); ctx.strokeStyle = 'rgba(255,255,255,0.8)'; ctx.setLineDash([2, 2]); ctx.lineWidth = 1;
-                        for(let i=0; i<=plotW; i++) { 
-                            const t = (i / plotW) * 2 * Math.PI; 
-                            const y1 = d1.amp * Math.sin(t - d1.ph - timePhase); 
-                            const y2 = d2.amp * Math.sin(t - d2.ph - timePhase); 
-                            ctx.lineTo(plotX + i, midY - (y1 + y2) * scaleY); 
-                        } 
-                        ctx.stroke(); ctx.setLineDash([]);
-                    }
-                    ctx.restore();
+                // Waveform
+                ctx.beginPath(); ctx.lineWidth = 0.04; ctx.strokeStyle = micColor;
+                const midY = azH/2;
+                const pts = 40;
+                for(let i=0; i<=pts; i++) {
+                    const tNorm = i/pts;
+                    const tVal = tNorm * Math.PI * 4; 
+                    const val1 = (sumR*Math.sin(tVal - timePhase) + sumI*Math.cos(tVal - timePhase));
+                    const val2 = (sumR2*Math.sin(2*tVal - timePhase) + sumI2*Math.cos(2*tVal - timePhase));
+                    const val = val1 + val2; 
+                    const yPos = midY - (val * 0.25); 
+                    const xPos = tNorm * azW;
+                    if(i===0) ctx.moveTo(xPos, yPos); else ctx.lineTo(xPos, yPos);
                 }
+                ctx.stroke();
 
-                // --- DISTANCE LABELS ---
-                ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
-                ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-                ctx.shadowColor = "black"; ctx.shadowBlur = 4;
-                
-                let distText = "";
-                if(micDistances.length > 0) distText += `D1:${micDistances[0].d.toFixed(2)}m`;
-                if(micDistances.length > 1) distText += ` D2:${micDistances[1].d.toFixed(2)}m`;
-                
-                ctx.fillStyle = '#fff';
-                ctx.fillText(distText, mx, my + 40); 
-                
+                ctx.restore();
                 ctx.restore();
             }
 
             function animate() {
-                if(state.isPlaying) {
-                    state.time += 0.2;
-                }
+                if(state.isPlaying) state.time += 0.2;
                 draw(); 
                 requestAnimationFrame(animate);
             }
 
-            resetGain(); handleResize(); updateUI();
+            els.canvas.width = els.canvas.parentElement.clientWidth;
+            els.canvas.height = els.canvas.parentElement.clientHeight;
+            updateUI();
             animate(); 
         };
     </script>
