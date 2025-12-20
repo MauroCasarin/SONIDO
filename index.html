@@ -421,10 +421,7 @@
             <a href="https://www.instagram.com/3d_mc_3d/" target="_blank" title="Visitar Instagram de MC" class="brand-link">
                 <img src="https://raw.githubusercontent.com/MauroCasarin/SONIDO/refs/heads/main/MC%2048%20N.png" alt="MC Logo" class="logo-img">
             </a>
-            <h1>
-                SIMULADOR
-                <span>SONIDOS GRAVES</span>
-            </h1>
+            <h1 id="main-title">Simulador Educativo sonidos graves</h1>
         </div>
     </header>
 
@@ -432,47 +429,27 @@
 
     <div id="modal-guide" class="modal-overlay">
         <div class="modal-content">
-            <h3 class="modal-title">Guía Técnica</h3>
+            <h3 class="modal-title">Guía de Interpretación Técnica</h3>
             
-            <div class="guide-item">
-                <span class="guide-icon">🖱️</span>
-                <div>
-                    <strong>Navegación</strong>
-                    <p>Haz <b>doble clic</b> en el micrófono para centrarlo horizontalmente. <br>Arrastra los bafles verticalmente para cambiar la separación y el delay dinámico.</p>
-                </div>
-            </div>
+            <div style="color: #a1a1aa; font-size: 11px; line-height: 1.4;">
+                <p style="margin-bottom: 4px; color: var(--text-main);"><b>1. Configuración Cardioide (Anulación Trasera):</b></p>
+                <ul style="padding-left: 20px; margin-top: 4px; margin-bottom: 12px;">
+                    <li><b>Giro:</b> Coloca el bafle trasero a 180° (mirando al escenario).</li>
+                    <li><b>Polaridad (Ø):</b> Invierte la fase del bafle trasero.</li>
+                    <li><b>Delay:</b> Aplica el retraso calculado al bafle delantero para sincronizar la llegada de ondas al frente y cancelarlas atrás.</li>
+                </ul>
+                <p style="margin-bottom: 12px; color: var(--accent);">
+                    💡 <b>Tip:</b> Usa el botón <b>"CÁLCULO RÁPIDO CARDIOIDE"</b> para aplicar esta configuración automáticamente.
+                </p>
 
-            <div class="guide-item">
-                <span class="guide-icon">❤️</span>
-                <div>
-                    <strong>Auto-Cardioid & Delay Dinámico</strong>
-                    <p>Activa CARDIOID para vincular distancia y delay. <br>Al mover los bafles, el sistema recalcula: <b>Delay = Distancia / 344</b> para cancelar el sonido trasero.</p>
-                </div>
-            </div>
+                <p style="margin-bottom: 4px; color: var(--text-main);"><b>2. Interpretación del Analizador:</b></p>
+                <ul style="padding-left: 20px; margin-top: 4px; margin-bottom: 12px;">
+                    <li><b>Suma Perfecta:</b> Onda senoidal amplia y definida (fase 0°).</li>
+                    <li><b>Cancelación:</b> Línea plana o deformada (contrafase 180°).</li>
+                </ul>
 
-            <div class="guide-item">
-                <span class="guide-icon">📈</span>
-                <div>
-                    <strong>Interpretación de Ondas</strong>
-                    <p>Observa el analizador junto al micrófono:</p>
-                    <div style="margin-top:5px;">
-                        <span style="font-size:9px; color:#22c55e;">Suma Total (Onda Limpia):</span>
-                        <div class="wave-example">
-                             <svg class="wave-svg" viewBox="0 0 100 30" preserveAspectRatio="none">
-                                 <path d="M0 15 Q 12.5 0 25 15 T 50 15 T 75 15 T 100 15" fill="none" stroke="#22c55e" stroke-width="2"/>
-                                 <path d="M0 15 H100" stroke="#333" stroke-width="0.5" stroke-dasharray="2"/>
-                             </svg>
-                        </div>
-                    </div>
-                    <div style="margin-top:5px;">
-                        <span style="font-size:9px; color:#ef4444;">Cancelación/Desfase (Plana/Ruido):</span>
-                        <div class="wave-example">
-                            <svg class="wave-svg" viewBox="0 0 100 30" preserveAspectRatio="none">
-                                <path d="M0 15 L 100 15" fill="none" stroke="#ef4444" stroke-width="2" stroke-dasharray="4"/>
-                            </svg>
-                        </div>
-                    </div>
-                </div>
+                <p style="margin-bottom: 4px; color: var(--text-main);"><b>3. Delay por Distancia:</b></p>
+                <p style="margin-top: 4px;">El simulador calcula automáticamente: <br><i style="color: var(--warning);">Delay (ms) = (Distancia / 344) * 1000</i>.<br> Al mover el bafle físicamente, el tiempo de vuelo se ajusta para ayudarte a alinear el sistema.</p>
             </div>
 
             <button class="modal-close-btn" onclick="app.toggleGuide()">Cerrar</button>
@@ -571,7 +548,7 @@
 
     <footer>
         <a href="https://www.instagram.com/3d_mc_3d/" target="_blank" class="footer-link">
-            <svg class="footer-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+            <svg class="footer-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
             <span>Creado por Mauro Casarin</span>
         </a>
     </footer>
@@ -583,6 +560,7 @@
             setLambdaFraction: () => {}, setupCardioid: () => {}, autoOptimize: () => {}, 
             autoCardioid: () => {}, setDelay: () => {}
         };
+        window.idx = 0; // Estabilidad requerida
 
         window.onload = function() {
             
@@ -664,9 +642,11 @@
             window.app.setDelay = (i, val) => {
                 state.delays[i] = parseFloat(val);
                 state.isOptimized = false; // Manual override disables auto-opt
-                // If Cardioid mode active, maybe disable it or keep it?
-                // For now, let user override.
-                updateUI();
+                // Update specific elements directly to ensure speed without thrashing DOM
+                const label = document.getElementById('val-delay-'+i);
+                if(label) label.innerText = state.delays[i].toFixed(2) + ' ms';
+                // Only run light UI updates
+                updateUI(true); 
             };
             window.app.togglePlay = () => {
                 state.isPlaying = !state.isPlaying;
@@ -863,9 +843,6 @@
                         state.mic.x += dxPix / state.view.scale; state.mic.y += dyPix / state.view.scale;
                     } else if (state.view.dragType === 'baffle') {
                         // Dragging a baffle adjusts separation (dist)
-                        // This assumes symmetrical expansion for Broadside or Endfire depth.
-                        // Simplified: Vertical movement adjusts dist if Endfire, Horizontal if Broadside?
-                        // Let's make Vertical movement adjust dist generally since user asked "Arrastrar bafle verticalmente".
                         const dM = -dyPix / state.view.scale; // Up is -Y
                         // Sensitivity adjustment
                         if (Math.abs(dM) > 0) {
@@ -908,7 +885,7 @@
                 els.canvas.height = els.canvas.parentElement.clientHeight;
             });
 
-            function updateUI() {
+            function updateUI(skipBaffleRebuild = false) {
                 els.displays.freq.innerText = state.freq + ' Hz';
                 els.displays.dist.innerText = state.dist.toFixed(2) + ' m';
                 els.displays.count.innerText = state.count;
@@ -937,36 +914,57 @@
                     els.hud.delayRow.style.display = 'flex'; els.hud.delay.innerText = delay.toFixed(2) + ' ms';
                 } else els.hud.delayRow.style.display = 'none';
                 
-                renderBaffleGrid();
+                renderBaffleGrid(skipBaffleRebuild);
             }
 
-            function renderBaffleGrid() {
-                els.baffleList.innerHTML = '';
+            function renderBaffleGrid(skipRebuild) {
+                const container = els.baffleList;
+                // Performance Check: if count hasn't changed, reuse DOM
+                if (container.children.length !== state.count) {
+                    container.innerHTML = '';
+                    for(let i=0; i<state.count; i++) {
+                        const row = document.createElement('div');
+                        row.className = 'baffle-row';
+                        row.id = 'baffle-row-' + i;
+                        // Initial build
+                        // Using explicit IDs to help with update
+                        row.innerHTML = `
+                            <div class="baffle-info">
+                                <div class="baffle-num">${i+1}</div>
+                            </div>
+                            <div class="baffle-controls">
+                                <button id="btn-pol-${i}" class="baffle-btn" onclick="app.togglePolarity(${i})">Ø</button>
+                                <button id="btn-dir-${i}" class="baffle-btn" onclick="app.toggleDirection(${i})">⟲</button>
+                            </div>
+                            <div class="delay-slider-container">
+                                 <input id="slider-delay-${i}" type="range" min="0" max="50" step="0.01" value="0" oninput="app.setDelay(${i}, this.value)">
+                                 <div id="val-delay-${i}" class="delay-val">0.00 ms</div>
+                            </div>
+                        `;
+                        container.appendChild(row);
+                    }
+                }
+
+                // Update Values
                 for(let i=0; i<state.count; i++) {
-                    const row = document.createElement('div');
-                    row.className = 'baffle-row';
                     const inv = state.polarities[i];
-                    const dirDown = state.directions[i]; // true = down
+                    const dirDown = state.directions[i];
                     const delay = state.delays[i] || 0;
+
+                    const btnPol = document.getElementById(`btn-pol-${i}`);
+                    const btnDir = document.getElementById(`btn-dir-${i}`);
+                    const slider = document.getElementById(`slider-delay-${i}`);
+                    const label = document.getElementById(`val-delay-${i}`);
+
+                    if(btnPol) btnPol.className = `baffle-btn ${inv ? 'active' : ''}`;
+                    if(btnDir) btnDir.className = `baffle-btn ${dirDown ? 'dir-active' : ''}`;
                     
-                    row.innerHTML = `
-                        <div class="baffle-info">
-                            <div class="baffle-num">${i+1}</div>
-                        </div>
-                        <div class="baffle-controls">
-                            <button class="baffle-btn ${inv ? 'active' : ''}" onclick="app.togglePolarity(${i})">
-                                Ø
-                            </button>
-                            <button class="baffle-btn ${dirDown ? 'dir-active' : ''}" onclick="app.toggleDirection(${i})">
-                                ⟲
-                            </button>
-                        </div>
-                        <div class="delay-slider-container">
-                             <input type="range" min="0" max="20" step="0.01" value="${delay.toFixed(2)}" oninput="app.setDelay(${i}, this.value)">
-                             <div class="delay-val">${delay.toFixed(2)} ms</div>
-                        </div>
-                    `;
-                    els.baffleList.appendChild(row);
+                    if(label) label.innerText = delay.toFixed(2) + ' ms';
+                    
+                    // Critical for smooth dragging: Don't set value if element is focused
+                    if (slider && document.activeElement !== slider) {
+                        slider.value = delay.toFixed(2);
+                    }
                 }
             }
 
