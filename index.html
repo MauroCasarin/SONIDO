@@ -564,7 +564,7 @@
 
         window.onload = function() {
             
-            const SPEED_OF_SOUND = 343;
+            const SPEED_OF_SOUND = 344; // Updated to 344 per prompt request
 
             const state = {
                 freq: 80, dist: 1.07, count: 2, angle: 90,
@@ -719,21 +719,31 @@
             }
 
             window.app.autoCardioid = () => {
-                // Cardioid Recipe: Rear Inverted + Front Delayed based on Dist.
+                // Cardioid Logic Replacement
                 state.count = 2; els.inputs.count.value = 2;
                 window.app.setMode('endfire');
-                
-                state.polarities.fill(false);
-                state.directions.fill(false);
-                state.delays.fill(0);
-                
-                state.polarities[0] = true; // Rear Inverted
-                
-                state.isCardioidMode = true; 
-                state.isOptimized = true;
-                
-                updateCardioidDelay();
 
+                // 1. Identificar bafles
+                // EndFire: Index 0 = y:0 (Rear/Stage), Index 1 = y:-dist (Front/Audience)
+                const idxRear = 0; 
+                const idxFront = 1;
+
+                // 2. Ajuste Bafle TRASERO (Limpia escenario)
+                state.directions[idxRear] = true;  // Giro 180 (Down)
+                state.polarities[idxRear] = true;  // Inverted (-1)
+                state.delays[idxRear] = 0;
+
+                // 3. Ajuste Bafle DELANTERO (Publico)
+                const dist = state.dist;
+                const ms = (dist / 344) * 1000; // Formula explicitly requested: 344
+                
+                state.directions[idxFront] = false; // Giro 0 (Up)
+                state.polarities[idxFront] = false; // Normal (1)
+                state.delays[idxFront] = ms;
+
+                // 4. UI
+                state.isCardioidMode = true;
+                state.isOptimized = true;
                 els.optStatus.style.display = 'block';
                 els.optStatus.innerHTML = 'OPTIMIZADO (CARDIOID DINÁMICO)';
                 resetGain(); updateUI();
