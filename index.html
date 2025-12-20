@@ -124,7 +124,7 @@
             font-size: 14px;
         }
 
-        /* CLASE PARA AUTO-OCULTAR (70% TRANSPARENCIA) */
+        /* CLASE PARA AUTO-OCULTAR (30% OPACIDAD) */
         .controls-hidden {
             opacity: 0.3 !important;
         }
@@ -364,7 +364,7 @@
     <div id="main-layout">
         
         <div id="viewport">
-            <canvas id="simCanvas" width="800" height="600" data-tooltip="Visor de Predicción: Colores cálidos = mayor presión sonora. Arrastra el micrófono para medir."></canvas>
+            <canvas id="simCanvas" width="800" height="600" data-tooltip="Visor de Predicción: Colores cálidos = mayor presión sonora. Arrastra el micrófono para medir. Doble clic para centrar mic."></canvas>
             
             <div id="hud-panel" class="hud-panel">
                 <div class="hud-row"><span class="hud-label">Longitud Onda:</span><span class="hud-value" id="hud-lambda">--</span></div>
@@ -434,7 +434,6 @@
             <!-- Stage Control -->
             <div class="control-group">
                 <div class="group-title">ESCENARIO (REFLECTOR -18dB)</div>
-                <!-- Removed Stage Width -->
                 <div class="slider-row" data-tooltip="<strong>GAP</strong><br>Distancia entre bafles y pared trasera.">
                     <div class="slider-label"><span>Distancia Pared</span><span class="slider-val" id="disp-stg-gap" style="color:var(--warning)">--</span></div>
                     <input type="range" id="input-stg-gap" min="0" max="10" step="0.1" value="1.0">
@@ -481,13 +480,9 @@
                 isPlaying: false, 
                 time: 0,
                 // View: Sources at y=0 (Center of Physics World).
-                // Canvas Center is (cx, cy).
-                // Offset y=150 moves the logical (0,0) down by 150px, putting sources at the bottom.
-                // We want sources in MIDDLE of vertical screen.
                 view: { scale: 30, x: 0, y: 0, dragging: false, lastX: 0, lastY: 0, dragType: null, dragIndex: -1 },
-                mic: { x: 0, y: -4 }, // 4 meters UP
+                mic: { x: 0, y: -4 }, // 4 meters UP from center
                 // Physics geometry: Upward propagation (-Y).
-                // Wall is at Bottom (+Y) relative to sources.
                 stage: { w: 10, h: 4, x: 0, y: 4 }
             };
 
@@ -499,13 +494,11 @@
                 inputs: {
                     freq: document.getElementById('input-freq'), dist: document.getElementById('input-dist'),
                     count: document.getElementById('input-count'), angle: document.getElementById('input-angle'),
-                    // stgW: document.getElementById('input-stg-w'),
                     stgGap: document.getElementById('input-stg-gap'), latMargin: document.getElementById('input-lat-margin')
                 },
                 displays: {
                     freq: document.getElementById('disp-freq'), dist: document.getElementById('disp-dist'),
                     count: document.getElementById('disp-count'), angle: document.getElementById('disp-angle'),
-                    // stgW: document.getElementById('disp-stg-w'),
                     stgGap: document.getElementById('disp-stg-gap'), latMargin: document.getElementById('disp-lat-margin')
                 },
                 rows: { dist: document.getElementById('row-dist') },
@@ -580,19 +573,17 @@
                 const k = (2 * Math.PI * state.freq) / c; 
                 const tempSources = generateSourcesForLogic();
                 
-                // Calculate physical distance from each source to mic
+                // Calculate time of flight
                 const dists = tempSources.map(s => Math.hypot(state.mic.x - s.x, state.mic.y - s.y));
-                
-                // Find the source that is furthest away. All others must be delayed to match it.
-                // In standard audio alignment, we delay the closest sources to wait for the furthest one.
                 const maxDist = Math.max(...dists);
                 
+                // Delay closest sources to align with furthest
                 state.sourceDelays = dists.map(d => {
                     const diffMeters = maxDist - d;
                     return (diffMeters / c) * 1000; // ms
                 });
                 
-                // Apply phase shift based on calculated time delay
+                // Convert delay to phase shift
                 state.customPhases = state.sourceDelays.map(ms => {
                     const seconds = ms / 1000;
                     return -k * (seconds * c); // phase shift
@@ -682,22 +673,14 @@
             
 
             // --- INPUT HANDLERS ---
+            // Only set transparent when dragging on canvas, not when using controls.
             function setControlsTransparent() { els.controls.classList.add('controls-hidden'); }
             function removeControlsTransparent() { els.controls.classList.remove('controls-hidden'); }
-
-            const interactiveElements = els.controls.querySelectorAll('input, button');
-            interactiveElements.forEach(el => {
-                el.addEventListener('mousedown', setControlsTransparent);
-                el.addEventListener('touchstart', setControlsTransparent, {passive: true});
-                el.addEventListener('mouseup', removeControlsTransparent);
-                el.addEventListener('touchend', removeControlsTransparent);
-                el.addEventListener('mouseleave', removeControlsTransparent);
-            });
 
             Object.keys(els.inputs).forEach(key => {
                 if(!els.inputs[key]) return;
                 const input = els.inputs[key];
-                input.addEventListener('change', removeControlsTransparent);
+                // input.addEventListener('change', removeControlsTransparent); // Removed transparency logic on inputs
                 input.addEventListener('input', (e) => {
                     const val = parseFloat(e.target.value);
                     if (key === 'stgW') state.stage.w = val;
@@ -713,9 +696,27 @@
                 });
             });
 
+            // Double click to center mic
+            els.canvas.addEventListener('dblclick', (e) => {
+                const pos = getPointerPos(e);
+                const cx = els.canvas.width / 2 + state.view.x;
+                const cy = els.canvas.height / 2 + state.view.y;
+                const ppm = state.view.scale;
+                
+                // Calculate mic distance in pixels to pointer
+                const mx = cx + state.mic.x * ppm;
+                const my = cy + state.mic.y * ppm;
+                const dist = Math.hypot(pos.x - mx, pos.y - my);
+
+                // If close to mic, snap to x=0
+                if(dist < 50) {
+                    state.mic.x = 0;
+                }
+            });
+
             function handleStart(e) {
                 if(e.type === 'touchstart') e.preventDefault();
-                setControlsTransparent(); els.hudPanel.style.opacity = '0.2';
+                
                 forceHideTooltip(); 
                 
                 const pos = getPointerPos(e);
@@ -728,11 +729,13 @@
                 if (Math.hypot(pos.x - ms.x, pos.y - ms.y) < 50) {
                     state.view.dragType = 'mic'; state.view.dragging = true;
                     state.view.lastX = pos.clientX; state.view.lastY = pos.clientY;
+                    setControlsTransparent(); // Only transparent when dragging on canvas
                     return;
                 }
                 
                 state.view.dragType = 'view';
                 state.view.dragging = true; state.view.lastX = pos.clientX; state.view.lastY = pos.clientY;
+                setControlsTransparent(); // Only transparent when dragging on canvas
             }
 
             function handleMove(e) {
@@ -754,7 +757,8 @@
 
             function handleEnd(e) {
                 state.view.dragging = false; state.view.dragType = null;
-                removeControlsTransparent(); els.hudPanel.style.opacity = '1';
+                removeControlsTransparent(); 
+                els.hudPanel.style.opacity = '1';
             }
 
             els.canvas.addEventListener('mousedown', handleStart);
@@ -783,7 +787,6 @@
                 els.displays.dist.innerText = state.dist.toFixed(2) + ' m';
                 els.displays.count.innerText = state.count;
                 els.displays.angle.innerText = state.angle + '°';
-                // els.displays.stgW.innerText = state.stage.w.toFixed(1) + ' m';
                 els.displays.stgGap.innerText = state.stageGap.toFixed(2) + ' m';
                 els.displays.latMargin.innerText = state.lateralMargin.toFixed(1) + ' m';
                 if (state.count === 1) els.rows.dist.classList.add('disabled');
@@ -820,41 +823,28 @@
             }
 
             function generateSourcesForLogic() {
-                // PHYSICS COORDINATE SYSTEM: 
-                // Wall is at Y = state.stage.y (e.g. 4m down from center).
-                // Sound goes UP (-Y).
-                // Sources are in front of wall.
-                // The logical "Wall Y" is determined by stage gap.
-                // Let's assume sources are at y=0 for logic, and Wall is at +gap.
-                // NOTE: Visualization logic centers view at (0,0).
-                
+                // PHYSICS: Wall at Y = +gap (relative to source y=0). Sound goes UP (-Y).
                 const srcY = 0; 
                 
                 const c = SPEED_OF_SOUND;
                 const k = (2 * Math.PI * state.freq) / c;
                 const sources = [];
-                let xOffsets = [state.stage.x];
+                let xOffsets = [0];
                 if (state.lrMode) {
-                    const halfW = state.stage.w / 2;
-                    const offset = halfW + state.lateralMargin;
-                    xOffsets = [state.stage.x - offset, state.stage.x + offset];
+                    // Margin acts as direct offset from center.
+                    const offset = state.lateralMargin;
+                    xOffsets = [-offset, offset];
                 }
                 xOffsets.forEach(xOff => {
                     if (state.mode === 'broadside') {
                         const totalW = (state.count - 1) * state.dist; const startX = xOff - totalW / 2;
-                        const arrLeft = startX + state.dist / 2; 
                         for(let i=0; i<state.count; i++) {
                             sources.push({ x: startX + (i * state.dist), y: srcY, phase: 0, inv: state.polarities[i] });
                         }
                     } else {
-                        // Endfire: Stacked vertically.
-                        // For Upward propagation (-Y), we usually delay the FRONT source (Top, negative Y) 
-                        // to wait for the BACK source (Bottom, positive Y).
-                        // Let's standard: i=0 is Back (lowest).
+                        // Endfire: i=0 is Back (lowest).
                         for(let i=0; i<state.count; i++) {
                             const yPos = srcY - (i * state.dist); // -Y is Up.
-                            // If simple endfire, phase calc is done by dist.
-                            // Here we just position them. 
                             sources.push({ x: xOff, y: yPos, phase: 0, inv: state.polarities[i] });
                         }
                     }
@@ -890,7 +880,6 @@
                 const k = (2 * Math.PI * state.freq) / c;
                 const timePhase = state.time * 0.5; 
                 
-                // Angle logic
                 const angleRad = state.angle * (Math.PI / 180);
                 const halfAngle = angleRad / 2;
                 const cosHalfAngle = Math.cos(halfAngle);
@@ -906,22 +895,17 @@
                 ctx.stroke(); ctx.restore();
 
                 let sources = generateSourcesForLogic();
-                // Apply computed phases for optimization if active
+                // Apply phases
                 if (state.isOptimized && state.customPhases.length === sources.length) {
                     sources.forEach((s, i) => { s.phase = state.customPhases[i]; });
                 } else if (state.mode === 'endfire') {
-                    // Standard Endfire processing if not auto-focused
                      sources.forEach((s, i) => { 
-                         // Delay front sources to match back?
-                         // In standard endfire, we delay the front sources.
-                         // Here sources[0] is bottom (Back).
                          const delayMeters = i * state.dist;
                          s.phase = k * delayMeters;
                      });
                 }
 
                 // Stage Wall Logic
-                // Wall is at Y = gap (below sources)
                 const wallYVal = state.stageGap; 
                 const wallPx = cy + wallYVal * ppm;
                 
@@ -935,9 +919,8 @@
                     const sy = cy + s.y * ppm;
                     screenSources.push({ sx, sy, ph: s.phase, inv: s.inv });
                     
-                    // Reflection
-                    // Wall is at +gap. Source at 0 (approx).
-                    // Virtual Source is mirrored below wall.
+                    // Reflection: Source at 0 approx. Wall at gap.
+                    // Virtual Source mirrored below wall.
                     const vY_meters = 2 * wallYVal - s.y;
                     const vSy = cy + vY_meters * ppm; 
                     virtualSources.push({ sx: sx, sy: vSy, ph: s.phase, inv: s.inv });
@@ -947,10 +930,8 @@
                 const data = imgData.data;
 
                 // --- PHYSICS ENGINE ---
-                // Outer loop Y
                 for(let y=0; y<h; y++) { 
                     const rowOff = y * w * 4;
-                    
                     // Mask Stage Floor (Everything below wallPx)
                     if (y > wallPx) {
                         for(let x=0; x<w; x++) {
@@ -960,10 +941,8 @@
                         continue;
                     }
 
-                    // Physics loop
                     for(let x=0; x<w; x++) {
                         const idx = rowOff + (x * 4);
-
                         let pSum = 0; 
                         
                         // Direct Sound (Strictly Upward)
@@ -979,9 +958,7 @@
                             const distMeters = dist / ppm;
                             const dClamped = Math.max(0.1, distMeters);
                             
-                            // CosTheta = (-dy) / dist
                             const cosTheta = -dy / dist;
-                            
                             let dirFactor = 0;
                             if (cosTheta >= cosHalfAngle) {
                                 dirFactor = 1.0;
@@ -997,14 +974,7 @@
                             }
                         }
 
-                        // Reflected Sound (Virtual Sources)
-                        // Virtual sources emit UP (-Y).
-                        // Realistically, subwoofers are omni at 80Hz. 
-                        // The "Directivity" control visualizes the forward throw, 
-                        // but we simulate leakage/reflection from the "omni" nature hitting the wall.
-                        // Or we can say the reflection follows the same beam width?
-                        // If we strictly follow beam width and box is aiming up, reflection is 0.
-                        // But user wants "Real Reflections". We assume leakage.
+                        // Reflected Sound (Leakage 40%)
                         const leakage = 0.4; 
                         
                         for(let i=0; i<virtualSources.length; i++) {
