@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Simulador Educativo sonidos graves - MC Audio</title>
+    <title>Simulador Educativo sonidos graves</title>
     <style>
         :root {
             --bg-dark: #09090b; /* Zinc 950 */
@@ -16,6 +16,7 @@
             --danger: #ef4444;
             --success: #22c55e;
             --warning: #f59e0b;
+            --gold: #ffd700;
         }
 
         body {
@@ -432,24 +433,19 @@
             <h3 class="modal-title">Guía de Interpretación Técnica</h3>
             
             <div style="color: #a1a1aa; font-size: 11px; line-height: 1.4;">
-                <p style="margin-bottom: 4px; color: var(--text-main);"><b>1. Configuración Cardioide (Anulación Trasera):</b></p>
+                <p style="margin-bottom: 4px; color: var(--text-main);"><b>1. Osciloscopio con Feedback "Golden":</b></p>
                 <ul style="padding-left: 20px; margin-top: 4px; margin-bottom: 12px;">
-                    <li><b>Giro:</b> Coloca el bafle trasero a 180° (mirando al escenario).</li>
-                    <li><b>Polaridad (Ø):</b> Invierte la fase del bafle trasero.</li>
-                    <li><b>Delay:</b> Aplica el retraso calculado al bafle delantero para sincronizar la llegada de ondas al frente y cancelarlas atrás.</li>
-                </ul>
-                <p style="margin-bottom: 12px; color: var(--accent);">
-                    💡 <b>Tip:</b> Usa el botón <b>"CÁLCULO RÁPIDO CARDIOIDE"</b> para aplicar esta configuración automáticamente.
-                </p>
-
-                <p style="margin-bottom: 4px; color: var(--text-main);"><b>2. Interpretación del Analizador:</b></p>
-                <ul style="padding-left: 20px; margin-top: 4px; margin-bottom: 12px;">
-                    <li><b>Suma Perfecta:</b> Onda senoidal amplia y definida (fase 0°).</li>
-                    <li><b>Cancelación:</b> Línea plana o deformada (contrafase 180°).</li>
+                    <li>Muestra la suma vectorial en tiempo real pegado al micrófono.</li>
+                    <li><strong style="color:#ffd700">DORADO:</strong> Indica alineación de fase perfecta (<10° de diferencia).</li>
+                    <li><strong style="color:#ef4444">ROJO:</strong> Cancelación severa (<15%).</li>
+                    <li><strong style="color:#00ff00">VERDE:</strong> Suma normal.</li>
                 </ul>
 
-                <p style="margin-bottom: 4px; color: var(--text-main);"><b>3. Delay por Distancia:</b></p>
-                <p style="margin-top: 4px;">El simulador calcula automáticamente: <br><i style="color: var(--warning);">Delay (ms) = (Distancia / 344) * 1000</i>.<br> Al mover el bafle físicamente, el tiempo de vuelo se ajusta para ayudarte a alinear el sistema.</p>
+                <p style="margin-bottom: 4px; color: var(--text-main);"><b>2. Direccionalidad Real:</b></p>
+                <p style="margin-top: 4px;">Los bafles emiten con patrón cardioide real. Un bafle mirando al público no excita el escenario, evitando rebotes.</p>
+
+                <p style="margin-bottom: 4px; color: var(--text-main);"><b>3. Reflexión del Escenario:</b></p>
+                <p style="margin-top: 4px;">El escenario (rectángulo azul) actúa como una pared sólida. Las ondas rebotan en él con el 60% de energía.</p>
             </div>
 
             <button class="modal-close-btn" onclick="app.toggleGuide()">Cerrar</button>
@@ -486,11 +482,7 @@
                     <div class="slider-label"><span>Bafles (N)</span><span class="slider-val" id="disp-count">2</span></div>
                     <input type="range" id="input-count" min="1" max="8" step="1" value="2">
                 </div>
-                <!-- DISPERSION CONTROL -->
-                <div class="slider-row" data-tooltip="<strong>COBERTURA</strong><br>Ángulo de dispersión (10° a 180°). Controla el haz principal.">
-                    <div class="slider-label"><span>Cobertura</span><span class="slider-val" id="disp-angle">90°</span></div>
-                    <input type="range" id="input-angle" min="10" max="180" value="90">
-                </div>
+                <div style="font-size:9px; color:#555; margin-bottom:4px;">* Patrón Cardioide: (1 + cosθ)/2</div>
 
                 <div class="slider-row" id="row-dist" data-tooltip="<strong>SEPARACIÓN FÍSICA</strong><br>Distancia entre centros acústicos. Arrastra los bafles para cambiar.">
                     <div class="slider-label"><span>Separación</span><span class="slider-val" id="disp-dist">1.07 m</span></div>
@@ -520,18 +512,21 @@
             <div class="control-group">
                 <div class="group-title">MIC & OPTIMIZACIÓN</div>
                 <div style="display:flex; gap:4px;">
-                    <button class="magic" style="flex:1; padding:6px;" onclick="app.autoOptimize()" data-tooltip="<strong>AUTO-FOCUS</strong><br>Alinea tiempos y fases para el micrófono.">✨ FOCUS</button>
-                    <button class="red-magic" style="flex:1; padding:6px;" onclick="app.autoCardioid()" data-tooltip="<strong>CÁLCULO RÁPIDO CARDIOIDE</strong><br>Vínculo Dinámico: Ajusta Delay automáticamente al mover bafles.">❤️ CARDIOID</button>
+                    <button class="magic" style="width:100%; padding:6px;" onclick="app.autoOptimize()" data-tooltip="<strong>AUTO-FOCUS</strong><br>Alinea tiempos y fases para el micrófono.">✨ FOCUS</button>
                 </div>
                 <div id="opt-status" style="display:none; text-align:center; color:#a3e635; font-size:9px; margin-top:2px; font-weight:bold;">OPTIMIZADO</div>
             </div>
 
             <!-- Stage Control -->
             <div class="control-group">
-                <div class="group-title">ESCENARIO (REFLECTOR -18dB)</div>
-                <div class="slider-row" data-tooltip="<strong>DISTANCIA PARED</strong><br>Profundidad del escenario (4m). Distancia entre bafles y pared trasera.">
-                    <div class="slider-label"><span>Dist. Bafles-Escenario</span><span class="slider-val" id="disp-stg-gap" style="color:var(--warning)">--</span></div>
-                    <input type="range" id="input-stg-gap" min="0" max="10" step="0.1" value="1.0">
+                <div class="group-title">ESCENARIO (REFLECTOR -4dB / 60%)</div>
+                <div class="slider-row" data-tooltip="<strong>DISTANCIA ESCENARIO</strong><br>Distancia desde la línea de bafles hasta la pared del escenario.">
+                    <div class="slider-label"><span>Distancia Pared</span><span class="slider-val" id="disp-stg-dist">0.0 m</span></div>
+                    <input type="range" id="input-stg-dist" min="0" max="5.0" step="0.1" value="0.0">
+                </div>
+                <div class="slider-row" data-tooltip="<strong>ANCHO ESCENARIO</strong><br>Ancho visual del escenario (Si es 0, no hay rebotes).">
+                    <div class="slider-label"><span>Ancho Escenario</span><span class="slider-val" id="disp-stg-width">5.0 m</span></div>
+                    <input type="range" id="input-stg-width" min="0" max="10" step="0.1" value="5.0">
                 </div>
             </div>
 
@@ -548,7 +543,7 @@
 
     <footer>
         <a href="https://www.instagram.com/3d_mc_3d/" target="_blank" class="footer-link">
-            <svg class="footer-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+            <svg class="footer-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
             <span>Creado por Mauro Casarin</span>
         </a>
     </footer>
@@ -557,30 +552,29 @@
         window.app = {
             togglePlay: () => {}, toggleGuide: () => {}, setMode: () => {}, 
             toggleLR: () => {}, togglePolarity: () => {}, toggleDirection: () => {},
-            setLambdaFraction: () => {}, setupCardioid: () => {}, autoOptimize: () => {}, 
-            autoCardioid: () => {}, setDelay: () => {}
+            setLambdaFraction: () => {}, autoOptimize: () => {}, setDelay: () => {}
         };
         window.idx = 0; // Estabilidad requerida
 
         window.onload = function() {
             
-            const SPEED_OF_SOUND = 344; // Updated to 344 per prompt request
+            const SPEED_OF_SOUND = 344;
 
             const state = {
                 freq: 80, dist: 1.07, count: 2, angle: 90,
                 mode: 'broadside', lrMode: false,     
-                stageGap: 1.0, lateralMargin: 0.5, 
+                stageGap: 0, lateralMargin: 0.5, stageWidth: 5.0, stageDist: 0.0,
                 polarities: new Array(16).fill(false),
                 directions: new Array(16).fill(false), // false = Up, true = Down
                 delays: new Array(16).fill(0), // ms
                 isOptimized: false, isCardioidMode: false,
                 customPhases: [],   
-                sourceDelays: [], // This is now derived from state.delays for rendering
+                sourceDelays: [], 
                 viewGain: 1.0, isGuideOpen: false, 
                 isPlaying: false, 
                 time: 0,
-                view: { scale: 30, x: 0, y: 0, dragging: false, lastX: 0, lastY: 0, dragType: null, dragIndex: -1 },
-                mic: { x: 0, y: -4 },
+                view: { scale: 30, x: 0, y: 0, dragging: false, lastX: 0, lastY: 0, dragType: null, dragIndex: -1, lastPinchDist: 0 },
+                mic: { x: 0, y: -4 }, // Mic at 4 meters
                 stage: { w: 10, h: 4, x: 0, y: 4 }
             };
 
@@ -592,12 +586,16 @@
                 inputs: {
                     freq: document.getElementById('input-freq'), dist: document.getElementById('input-dist'),
                     count: document.getElementById('input-count'), angle: document.getElementById('input-angle'),
-                    stgGap: document.getElementById('input-stg-gap'), latMargin: document.getElementById('input-lat-margin')
+                    latMargin: document.getElementById('input-lat-margin'),
+                    stgWidth: document.getElementById('input-stg-width'),
+                    stgDist: document.getElementById('input-stg-dist')
                 },
                 displays: {
                     freq: document.getElementById('disp-freq'), dist: document.getElementById('disp-dist'),
                     count: document.getElementById('disp-count'), angle: document.getElementById('disp-angle'),
-                    stgGap: document.getElementById('disp-stg-gap'), latMargin: document.getElementById('disp-lat-margin')
+                    latMargin: document.getElementById('disp-lat-margin'),
+                    stgWidth: document.getElementById('disp-stg-width'),
+                    stgDist: document.getElementById('disp-stg-dist')
                 },
                 rows: { dist: document.getElementById('row-dist') },
                 hud: {
@@ -641,11 +639,9 @@
             };
             window.app.setDelay = (i, val) => {
                 state.delays[i] = parseFloat(val);
-                state.isOptimized = false; // Manual override disables auto-opt
-                // Update specific elements directly to ensure speed without thrashing DOM
+                state.isOptimized = false; 
                 const label = document.getElementById('val-delay-'+i);
                 if(label) label.innerText = state.delays[i].toFixed(2) + ' ms';
-                // Only run light UI updates
                 updateUI(true); 
             };
             window.app.togglePlay = () => {
@@ -662,91 +658,32 @@
                 let optimal = (c / state.freq) * frac;
                 optimal = Math.min(4.0, Math.max(0.2, optimal));
                 state.dist = optimal; els.inputs.dist.value = optimal;
-                if(state.isCardioidMode) updateCardioidDelay();
                 updateUI(); 
             };
-            window.app.setupCardioid = () => {
-                // Manual setup helper (Preset)
-                state.count = 2; els.inputs.count.value = 2;
-                window.app.setMode('endfire'); 
-                state.polarities.fill(false); state.directions.fill(false);
-                state.delays.fill(0);
-                state.polarities[0] = true; // Invert Rear
-                // No auto logic here, just preset
-                window.app.applyPreset(state.freq);
-            };
-            window.app.applyPreset = (hz) => {
-                state.freq = hz; state.isOptimized = false; resetGain();
-                els.optStatus.style.display = 'none'; els.inputs.freq.value = hz;
-                const v = SPEED_OF_SOUND;
-                let optimal = (v / hz) / 4;
-                optimal = Math.min(4.0, Math.max(0.2, optimal));
-                state.dist = optimal; els.inputs.dist.value = optimal;
-                if(state.isCardioidMode) updateCardioidDelay();
-                updateUI(); 
-            };
+
+            // FOCUS (AutoOptimize) - Lógica de Alineación al Micrófono
             window.app.autoOptimize = () => {
                 const c = SPEED_OF_SOUND;
-                let optimalDist = (c / state.freq) / 4;
-                optimalDist = Math.min(4.0, Math.max(0.2, optimalDist));
-                state.dist = optimalDist; els.inputs.dist.value = optimalDist;
                 
-                // Focus Logic
-                const k = (2 * Math.PI * state.freq) / c; 
-                const tempSources = generateSourcesForLogic();
-                const dists = tempSources.map(s => Math.hypot(state.mic.x - s.x, state.mic.y - s.y));
+                // Generar fuentes actuales
+                let sources = generateSourcesForLogic();
+                // Calcular distancia de cada fuente al microfono
+                const dists = sources.map(s => Math.hypot(state.mic.x - s.x, state.mic.y - s.y));
                 const maxDist = Math.max(...dists);
-                
-                const calcDelays = dists.map(d => ((maxDist - d) / c) * 1000);
-                // Apply to sliders
-                for(let i=0; i<state.count; i++) state.delays[i] = calcDelays[i] || 0;
+
+                // Aplicar delay para alinear: delay = (maxDist - dist) / c
+                for(let i=0; i<state.count; i++) {
+                    if (dists[i] !== undefined) {
+                        state.delays[i] = ((maxDist - dists[i]) / c) * 1000;
+                        state.polarities[i] = false; 
+                        state.directions[i] = false; 
+                    }
+                }
 
                 state.isOptimized = true; state.isCardioidMode = false;
                 els.optStatus.style.display = 'block';
                 els.optStatus.innerHTML = 'OPTIMIZADO (FOCUS)';
                 resetGain(); updateUI(); 
-            };
-            
-            function updateCardioidDelay() {
-                const c = SPEED_OF_SOUND;
-                // Rule: Delay = Distance / C.
-                const delaySec = state.dist / c;
-                const delayMs = delaySec * 1000;
-                // Rear (0) is Ref. Front (1) is delayed.
-                state.delays[0] = 0;
-                state.delays[1] = delayMs;
-                // Update others if any (ignore for now, usually count=2)
-            }
-
-            window.app.autoCardioid = () => {
-                // Cardioid Logic Replacement
-                state.count = 2; els.inputs.count.value = 2;
-                window.app.setMode('endfire');
-
-                // 1. Identificar bafles
-                // EndFire: Index 0 = y:0 (Rear/Stage), Index 1 = y:-dist (Front/Audience)
-                const idxRear = 0; 
-                const idxFront = 1;
-
-                // 2. Ajuste Bafle TRASERO (Limpia escenario)
-                state.directions[idxRear] = true;  // Giro 180 (Down)
-                state.polarities[idxRear] = true;  // Inverted (-1)
-                state.delays[idxRear] = 0;
-
-                // 3. Ajuste Bafle DELANTERO (Publico)
-                const dist = state.dist;
-                const ms = (dist / 344) * 1000; // Formula explicitly requested: 344
-                
-                state.directions[idxFront] = false; // Giro 0 (Up)
-                state.polarities[idxFront] = false; // Normal (1)
-                state.delays[idxFront] = ms;
-
-                // 4. UI
-                state.isCardioidMode = true;
-                state.isOptimized = true;
-                els.optStatus.style.display = 'block';
-                els.optStatus.innerHTML = 'OPTIMIZADO (CARDIOID DINÁMICO)';
-                resetGain(); updateUI();
             };
 
             function resetGain() { state.viewGain = 1.0; }
@@ -762,7 +699,6 @@
                 return { x: cx - rect.left, y: cy - rect.top, clientX: cx, clientY: cy };
             }
 
-            // --- SMART TOOLTIPS & INPUTS ---
             function setControlsDimmed() { els.controls.classList.add('controls-dimmed'); }
             function removeControlsDimmed() { els.controls.classList.remove('controls-dimmed'); }
 
@@ -771,16 +707,13 @@
                 const input = els.inputs[key];
                 input.addEventListener('input', (e) => {
                     const val = parseFloat(e.target.value);
-                    if (key === 'stgGap') state.stageGap = val;
-                    else if (key === 'latMargin') state.lateralMargin = val;
+                    if (key === 'latMargin') state.lateralMargin = val;
+                    else if (key === 'stgWidth') state.stageWidth = val;
+                    else if (key === 'stgDist') state.stageDist = val;
                     else state[key] = val;
                     
-                    if(key === 'dist' && state.isCardioidMode) {
-                        updateCardioidDelay();
-                    }
-
-                    if (['freq', 'dist', 'stgGap', 'latMargin', 'count', 'angle'].includes(key)) {
-                         if(state.isOptimized && !state.isCardioidMode) { 
+                    if (['freq', 'dist', 'latMargin', 'count', 'angle'].includes(key)) {
+                         if(state.isOptimized) { 
                              state.isOptimized = false; els.optStatus.style.display = 'none'; resetGain(); 
                          }
                          if(key === 'count') resetGain();
@@ -800,7 +733,25 @@
             });
 
             function handleStart(e) {
-                if(e.type === 'touchstart') e.preventDefault();
+                // Multi-touch check for pinch optimization
+                if(e.touches && e.touches.length === 2) {
+                    e.preventDefault();
+                    const dx = e.touches[0].clientX - e.touches[1].clientX;
+                    const dy = e.touches[0].clientY - e.touches[1].clientY;
+                    state.view.lastPinchDist = Math.hypot(dx, dy);
+                    return;
+                }
+
+                // Prevent Scrolling on mobile when touching canvas
+                if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON' && !els.controls.contains(e.target)) {
+                     e.preventDefault();
+                }
+
+                if(e.type === 'touchstart') {
+                    // Allow default only if not on canvas, but this is canvas handler
+                    // handled above generally
+                }
+                
                 const pos = getPointerPos(e);
                 const cx = els.canvas.width / 2 + state.view.x;
                 const cy = els.canvas.height / 2 + state.view.y;
@@ -808,7 +759,6 @@
                 const mx = cx + state.mic.x * ppm;
                 const my = cy + state.mic.y * ppm;
                 
-                // Mic Hit Test
                 if (Math.hypot(pos.x - mx, pos.y - my) < 50) {
                     state.view.dragType = 'mic'; state.view.dragging = true;
                     setControlsDimmed();
@@ -816,8 +766,6 @@
                     return;
                 }
 
-                // Baffle Hit Test
-                // Just check proximity to generated sources
                 let sources = generateSourcesForLogic();
                 let closest = -1;
                 let minD = 50; 
@@ -831,7 +779,7 @@
                 if (closest !== -1) {
                     state.view.dragType = 'baffle'; 
                     state.view.dragging = true;
-                    state.view.dragIndex = closest; // Note: Dragging one affects global dist usually
+                    state.view.dragIndex = closest;
                     setControlsDimmed();
                 } else {
                     state.view.dragType = 'view'; state.view.dragging = true;
@@ -841,6 +789,21 @@
             }
 
             function handleMove(e) {
+                // Pinch Zoom Logic
+                if(e.touches && e.touches.length === 2) {
+                    e.preventDefault();
+                    const dx = e.touches[0].clientX - e.touches[1].clientX;
+                    const dy = e.touches[0].clientY - e.touches[1].clientY;
+                    const dist = Math.hypot(dx, dy);
+                    if (state.view.lastPinchDist > 0) {
+                        const delta = dist - state.view.lastPinchDist;
+                        const factor = 1 + (delta * 0.005);
+                        state.view.scale = Math.max(5, Math.min(100, state.view.scale * factor));
+                    }
+                    state.view.lastPinchDist = dist;
+                    return;
+                }
+
                 if(state.view.dragging) {
                     e.preventDefault(); 
                     const pos = getPointerPos(e);
@@ -851,20 +814,17 @@
                         state.view.x += dxPix; state.view.y += dyPix; 
                     } else if (state.view.dragType === 'mic') {
                         state.mic.x += dxPix / state.view.scale; state.mic.y += dyPix / state.view.scale;
+                        if (state.isOptimized) {
+                            // Manual re-optimization required currently
+                        }
                     } else if (state.view.dragType === 'baffle') {
-                        // Dragging a baffle adjusts separation (dist)
-                        const dM = -dyPix / state.view.scale; // Up is -Y
-                        // Sensitivity adjustment
+                        const dM = -dyPix / state.view.scale;
                         if (Math.abs(dM) > 0) {
                             let newDist = state.dist + (dM * 0.5); 
                             newDist = Math.max(0.2, Math.min(4.0, newDist));
                             state.dist = newDist;
                             els.inputs.dist.value = newDist;
-                            
-                            if (state.isCardioidMode) {
-                                updateCardioidDelay();
-                            } else if (state.isOptimized) {
-                                // Break optimization if moved manually
+                            if (state.isOptimized) {
                                 state.isOptimized = false; els.optStatus.style.display = 'none';
                             }
                             updateUI();
@@ -876,6 +836,7 @@
 
             function handleEnd(e) {
                 state.view.dragging = false; state.view.dragType = null;
+                state.view.lastPinchDist = 0;
                 removeControlsDimmed(); 
             }
 
@@ -899,9 +860,11 @@
                 els.displays.freq.innerText = state.freq + ' Hz';
                 els.displays.dist.innerText = state.dist.toFixed(2) + ' m';
                 els.displays.count.innerText = state.count;
-                els.displays.angle.innerText = state.angle + '°';
-                els.displays.stgGap.innerText = state.stageGap.toFixed(2) + ' m';
+                // els.displays.angle.innerText = state.angle + '°'; // Disabled
                 els.displays.latMargin.innerText = state.lateralMargin.toFixed(1) + ' m';
+                els.displays.stgWidth.innerText = state.stageWidth.toFixed(1) + ' m';
+                els.displays.stgDist.innerText = state.stageDist.toFixed(1) + ' m';
+                
                 if (state.count === 1) els.rows.dist.classList.add('disabled');
                 else els.rows.dist.classList.remove('disabled');
                 
@@ -929,19 +892,14 @@
 
             function renderBaffleGrid(skipRebuild) {
                 const container = els.baffleList;
-                // Performance Check: if count hasn't changed, reuse DOM
                 if (container.children.length !== state.count) {
                     container.innerHTML = '';
                     for(let i=0; i<state.count; i++) {
                         const row = document.createElement('div');
                         row.className = 'baffle-row';
                         row.id = 'baffle-row-' + i;
-                        // Initial build
-                        // Using explicit IDs to help with update
                         row.innerHTML = `
-                            <div class="baffle-info">
-                                <div class="baffle-num">${i+1}</div>
-                            </div>
+                            <div class="baffle-info"><div class="baffle-num">${i+1}</div></div>
                             <div class="baffle-controls">
                                 <button id="btn-pol-${i}" class="baffle-btn" onclick="app.togglePolarity(${i})">Ø</button>
                                 <button id="btn-dir-${i}" class="baffle-btn" onclick="app.toggleDirection(${i})">⟲</button>
@@ -949,79 +907,40 @@
                             <div class="delay-slider-container">
                                  <input id="slider-delay-${i}" type="range" min="0" max="50" step="0.01" value="0" oninput="app.setDelay(${i}, this.value)">
                                  <div id="val-delay-${i}" class="delay-val">0.00 ms</div>
-                            </div>
-                        `;
+                            </div>`;
                         container.appendChild(row);
                     }
                 }
 
-                // Update Values
                 for(let i=0; i<state.count; i++) {
                     const inv = state.polarities[i];
                     const dirDown = state.directions[i];
                     const delay = state.delays[i] || 0;
-
                     const btnPol = document.getElementById(`btn-pol-${i}`);
                     const btnDir = document.getElementById(`btn-dir-${i}`);
                     const slider = document.getElementById(`slider-delay-${i}`);
                     const label = document.getElementById(`val-delay-${i}`);
-
                     if(btnPol) btnPol.className = `baffle-btn ${inv ? 'active' : ''}`;
                     if(btnDir) btnDir.className = `baffle-btn ${dirDown ? 'dir-active' : ''}`;
-                    
                     if(label) label.innerText = delay.toFixed(2) + ' ms';
-                    
-                    // Critical for smooth dragging: Don't set value if element is focused
-                    if (slider && document.activeElement !== slider) {
-                        slider.value = delay.toFixed(2);
-                    }
+                    if (slider && document.activeElement !== slider) slider.value = delay.toFixed(2);
                 }
             }
 
             function generateSourcesForLogic() {
-                const srcY = 0; 
-                const sources = [];
-                let xOffsets = [0];
-                
-                if (state.lrMode) {
-                    // Left Cluster centered at -margin, Right at +margin
-                    xOffsets = [-state.lateralMargin, state.lateralMargin];
-                }
-
-                xOffsets.forEach((xOff, clusterIdx) => {
-                    const isLeft = (xOff < 0);
-                    const isRight = (xOff > 0);
-                    
+                const srcY = 0; const sources = []; let xOffsets = [0];
+                if (state.lrMode) xOffsets = [-state.lateralMargin, state.lateralMargin];
+                xOffsets.forEach(xOff => {
                     if (state.mode === 'broadside') {
                         for(let i=0; i<state.count; i++) {
-                            let xPos;
-                            if (isLeft) {
-                                xPos = xOff - (i * state.dist);
-                            } else if (isRight) {
-                                xPos = xOff + (i * state.dist);
-                            } else {
-                                const totalW = (state.count - 1) * state.dist;
-                                xPos = xOff - totalW/2 + (i * state.dist);
-                            }
-                            
-                            sources.push({ 
-                                x: xPos, y: srcY, phase: 0, 
-                                inv: state.polarities[i], 
-                                dirDown: state.directions[i],
-                                delay: state.delays[i] || 0
-                            });
+                            const totalW = (state.count - 1) * state.dist;
+                            const xPos = xOff - totalW/2 + (i * state.dist);
+                            sources.push({ x: xPos, y: srcY, inv: state.polarities[i], dirDown: state.directions[i], delay: state.delays[i] || 0 });
                         }
                     } else {
-                        // Endfire: Line along Y (Depth).
-                        // Standard: i=0 is Back (lowest).
                         for(let i=0; i<state.count; i++) {
-                            const yPos = srcY - (i * state.dist); // -Y is Up.
-                            sources.push({ 
-                                x: xOff, y: yPos, phase: 0, 
-                                inv: state.polarities[i], 
-                                dirDown: state.directions[i],
-                                delay: state.delays[i] || 0
-                            });
+                            const yPos = srcY - (i * state.dist);
+                            sources.push({ x: xOff, y: yPos, inv: state.polarities[i], dirDown: state.directions[i], delay: state.delays[i] || 0 });
                         }
                     }
                 });
@@ -1030,41 +949,106 @@
 
             function fillHeatmapColor(db, data, idx) {
                 let r=0, g=0, b=0, a=230;
-                if (db > 0) {
-                     r = 255; g = 255; b = Math.min(255, Math.floor(db * 20)); 
+                // Escala Estándar (Audio Pro): White > Yellow > Orange > Red > Blue > Black
+                if (db > 0) { 
+                    // +0dB: White/Yellow
+                    r = 255; g = 255; b = Math.min(255, Math.floor(db * 40)); 
+                } else if (db > -3) {
+                    // 0 to -3dB: Yellow to Orange
+                    r = 255; g = Math.floor(160 + ((db+3)/3)*95); b = 0;
                 } else if (db > -6) {
-                    const t = (db + 6) / 6; r = 255; g = Math.floor(200 + t * 55); b = 0;
+                    // -3 to -6dB: Orange to Red
+                    r = 255; g = Math.floor(((db+6)/3)*160); b = 0;
                 } else if (db > -12) {
-                    const t = (db + 12) / 6; r = 255; g = Math.floor(t * 200); b = 0;
-                } else if (db > -24) {
-                    const t = (db + 24) / 12; r = Math.floor(t * 255); g = 0; b = Math.floor((1-t) * 255);
-                } else if (db > -60) {
-                    const t = (db + 60) / 36; r = 0; g = 0; b = Math.floor(t * 255); a = Math.floor(t * 230);
-                } else {
-                    r=0; g=0; b=0; a=0;
+                    // -6 to -12dB: Red to Dark Red
+                    r = Math.floor(100 + ((db+12)/6)*155); g = 0; b = 0;
+                } else if (db > -24) { 
+                    // -12 to -24dB: Dark Red to Blue
+                    // This is a transition zone, usually goes black or blue. Let's go Blue.
+                    const t = (db + 24) / 12;
+                    r = Math.floor(t * 100); g = 0; b = Math.floor((1-t) * 200);
+                } else if (db > -60) { 
+                    // Deep Blue fading to black
+                    const t = (db + 60) / 36; 
+                    r = 0; g = 0; b = Math.floor(t * 200); a = Math.floor(t * 230); 
+                } else { 
+                    r=0; g=0; b=0; a=0; 
                 }
                 data[idx] = r; data[idx+1] = g; data[idx+2] = b; data[idx+3] = a;
             }
 
-            function draw() {
-                const w = els.canvas.width; const h = els.canvas.height;
-                if(w === 0 || h === 0) return; 
-
-                const cx = w/2 + state.view.x; const cy = h/2 + state.view.y;
-                const ppm = state.view.scale;
-                const c = SPEED_OF_SOUND; 
-                const k = (2 * Math.PI * state.freq) / c;
-                // Harmonic k for educational visualization
-                const k2 = (2 * Math.PI * (state.freq * 2)) / c;
-                const timePhase = state.time * 0.5; 
+            function drawRulers(w, h, cx, cy, ppm) {
+                const rulerColor = 'rgba(255,255,255,0.4)';
+                const subTickColor = 'rgba(255,255,255,0.2)';
+                const textColor = '#a1a1aa';
                 
-                const angleRad = state.angle * (Math.PI / 180);
-                const halfAngle = angleRad / 2;
-                const cosHalfAngle = Math.cos(halfAngle);
+                ctx.save();
+                ctx.fillStyle = textColor;
+                ctx.font = '9px monospace';
+                ctx.lineWidth = 1;
 
+                // Rango visible en metros
+                const minX_m = Math.floor((-cx) / ppm);
+                const maxX_m = Math.ceil((w - cx) / ppm);
+                const minY_m = Math.floor((-cy) / ppm);
+                const maxY_m = Math.ceil((h - cy) / ppm);
+
+                // Eje X (Abajo)
+                const rulerY = h - 20;
+                ctx.strokeStyle = rulerColor;
+                ctx.beginPath(); ctx.moveTo(0, rulerY); ctx.lineTo(w, rulerY); ctx.stroke();
+
+                for (let m = minX_m; m <= maxX_m; m++) {
+                    const x = cx + m * ppm;
+                    if (x < 0 || x > w) continue;
+                    // Tick Metro
+                    ctx.strokeStyle = rulerColor;
+                    ctx.beginPath(); ctx.moveTo(x, rulerY); ctx.lineTo(x, rulerY + 8); ctx.stroke();
+                    ctx.fillText(m + "m", x + 3, rulerY + 14);
+                    
+                    // Sub-ticks 10cm
+                    ctx.strokeStyle = subTickColor;
+                    for(let sm=1; sm<10; sm++) {
+                        const sx = x + (sm * 0.1 * ppm);
+                        if (sx > w) break;
+                        ctx.beginPath(); ctx.moveTo(sx, rulerY); ctx.lineTo(sx, rulerY + 3); ctx.stroke();
+                    }
+                }
+
+                // Eje Y (Izquierda)
+                const rulerX = 30; // Margen para numeros
+                ctx.strokeStyle = rulerColor;
+                ctx.beginPath(); ctx.moveTo(rulerX, 0); ctx.lineTo(rulerX, h); ctx.stroke();
+
+                for (let m = minY_m; m <= maxY_m; m++) {
+                    const y = cy + m * ppm;
+                    if (y < 0 || y > h) continue;
+                    // Tick Metro
+                    ctx.strokeStyle = rulerColor;
+                    ctx.beginPath(); ctx.moveTo(rulerX - 8, y); ctx.lineTo(rulerX, y); ctx.stroke();
+                    ctx.fillText((-m) + "m", 2, y + 3);
+                    
+                    // Sub-ticks 10cm
+                    ctx.strokeStyle = subTickColor;
+                    for(let sm=1; sm<10; sm++) {
+                        const sy = y + (sm * 0.1 * ppm);
+                        if (sy > h) break;
+                        ctx.beginPath(); ctx.moveTo(rulerX - 3, sy); ctx.lineTo(rulerX, sy); ctx.stroke();
+                    }
+                }
+
+                ctx.restore();
+            }
+
+            function draw() {
+                const w = els.canvas.width; const h = els.canvas.height; if(w === 0 || h === 0) return;
+                const cx = w/2 + state.view.x; const cy = h/2 + state.view.y; const ppm = state.view.scale;
+                const c = SPEED_OF_SOUND; const k = (2 * Math.PI * state.freq) / c; const timePhase = state.time * 0.5;
+                // angle removed for auto-cardioid calculation
+                
                 ctx.fillStyle = '#09090b'; ctx.fillRect(0,0,w,h);
                 
-                // Grid
+                // Grid suave de fondo
                 ctx.save(); ctx.beginPath(); ctx.strokeStyle = '#222'; ctx.lineWidth = 1;
                 const startX = Math.floor((-cx)/ppm); const endX = Math.ceil((w-cx)/ppm);
                 const startY = Math.floor((-cy)/ppm); const endY = Math.ceil((h-cy)/ppm);
@@ -1073,238 +1057,227 @@
                 ctx.stroke(); ctx.restore();
 
                 let sources = generateSourcesForLogic();
-                // Apply Delays as Phase Shifts
-                sources.forEach((s, i) => { 
-                    // Phase = -omega * delay. 
-                    // delay is in ms. time = delay/1000. omega = 2*PI*freq.
-                    // phase = -(2*PI*freq) * (delay/1000).
-                    // This is broadband correct phase shift.
-                    // PLUS any "Optimized" phase? 
-                    // We consolidated logic: state.delays holds the electronic delay.
-                    // We calculate phase from it.
-                    s.phase = -(2 * Math.PI * state.freq) * (s.delay / 1000);
+                sources.forEach(s => { s.phase = -(2 * Math.PI * state.freq) * (s.delay / 1000); });
+                const wallYVal = state.stageDist; // Wall Distance from baffles
+                const wallPx = cy + wallYVal * ppm; 
+                const gain = state.viewGain;
+                const isReflectionActive = state.stageWidth > 0;
+                
+                // Prepare virtual sources (reflections)
+                const simSources = [];
+                sources.forEach(s => {
+                    // Direct
+                    simSources.push({ sx: cx + s.x * ppm, sy: cy + s.y * ppm, phase: s.phase, inv: s.inv, dirDown: s.dirDown, x: s.x, y: s.y, delay: s.delay, isRef: false });
+                    // Reflected (Virtual Source)
+                    if (isReflectionActive) {
+                        const vy = wallYVal + (wallYVal - s.y);
+                        // Reflection has 0.6 amplitude (-4dB approx)
+                        // IMPORTANT: Mirror Orientation. If Real is Up (False), Virtual is Down (True).
+                        const virtualDirDown = !s.dirDown;
+                        simSources.push({ sx: cx + s.x * ppm, sy: cy + vy * ppm, phase: s.phase, inv: s.inv, dirDown: virtualDirDown, x: s.x, y: vy, delay: s.delay, isRef: true });
+                    }
                 });
 
-                const wallYVal = state.stageGap; 
-                const wallPx = cy + wallYVal * ppm;
-                const gain = state.viewGain; 
+                const imgData = ctx.getImageData(0, 0, w, h); const data = imgData.data;
 
-                // Pre-calc source props for shader-like loop
-                const simSources = sources.map(s => {
-                    const sx = cx + s.x * ppm;
-                    const sy = cy + s.y * ppm;
-                    const vY_meters = 2 * wallYVal - s.y;
-                    const vSy = cy + vY_meters * ppm; 
-                    
-                    const leakage = 0.5; 
-                    let directAmp = 1.0; 
-                    let reflectedAmp = leakage;
-
-                    if (s.dirDown) {
-                        directAmp = leakage;
-                        reflectedAmp = 1.0;
-                    }
-
-                    return {
-                        sx, sy, vSy,
-                        phase: s.phase,
-                        inv: s.inv,
-                        dirDown: s.dirDown,
-                        directAmp,
-                        reflectedAmp,
-                        x: s.x, y: s.y,
-                        delay: s.delay
-                    };
-                });
-
-                const imgData = ctx.getImageData(0, 0, w, h);
-                const data = imgData.data;
-
-                // Physics Loop
-                for(let y=0; y<h; y++) { 
-                    if (y > wallPx) { // Mask Stage
-                        for(let x=0; x<w; x++) {
-                            const i = (y*w + x)*4;
-                            data[i]=10; data[i+1]=10; data[i+2]=12; data[i+3]=255;
-                        }
-                        continue;
-                    }
+                for(let y=0; y<h; y++) {
                     const rowOff = y * w * 4;
-
                     for(let x=0; x<w; x++) {
-                        const idx = rowOff + (x * 4);
-                        let pSum = 0; 
-
+                        const idx = rowOff + (x * 4); let pSum = 0;
+                        
                         for(let i=0; i<simSources.length; i++) {
-                            const s = simSources[i];
-                            const dx = x - s.sx; const dy = y - s.sy;
-                            
-                            const dist = Math.sqrt(dx*dx + dy*dy);
-                            const distMeters = dist / ppm;
+                            const s = simSources[i]; 
+                            const dx = x - s.sx; const dy = y - s.sy; 
+                            const dist = Math.sqrt(dx*dx + dy*dy); 
+                            const distMeters = dist / ppm; 
                             const dClamped = Math.max(0.1, distMeters);
                             
-                            let ampD = 0;
-                            // 1. Direct Path
-                            if (!s.dirDown) {
-                                const cosTheta = -dy / dist;
-                                let beamFactor = 1.0;
-                                if (cosTheta < cosHalfAngle) {
-                                    const diff = cosHalfAngle - cosTheta;
-                                    beamFactor = Math.max(s.reflectedAmp, 1.0 - (diff * 5)); 
-                                }
-                                ampD = (1.0 / dClamped) * beamFactor; 
-                            } else {
-                                const cosTheta = dy / dist; 
-                                let beamFactor = 1.0;
-                                if (cosTheta < cosHalfAngle) {
-                                    const diff = cosHalfAngle - cosTheta;
-                                    beamFactor = Math.max(s.directAmp, 1.0 - (diff * 5)); 
-                                }
-                                ampD = (1.0 / dClamped) * beamFactor;
-                            }
-
-                            const phD = (k * distMeters) - timePhase - s.phase + (s.inv ? Math.PI : 0);
-                            pSum += ampD * Math.sin(phD);
-
-                            // 2. Reflected Path
-                            const vDy = y - s.vSy;
-                            const vDist = Math.sqrt(dx*dx + vDy*vDy);
-                            const vDistM = vDist / ppm;
-                            const vDClamped = Math.max(0.1, vDistM);
+                            let ampD = (1.0 / dClamped);
                             
-                            const wallAbsorption = 0.6;
-                            let ampR = (1.0 / vDClamped) * ampD * wallAbsorption; 
+                            // REAL DIRECTIONALITY P(theta) = P0 * (1 + cos(theta)) / 2
+                            // Theta is angle relative to front.
+                            // Front is Vector(0, -1) if dirDown is false (pointing up/audience)
+                            // Front is Vector(0, 1) if dirDown is true
+                            // cosTheta is DotProduct(PointVector, FrontVector)
                             
-                            const phR = (k * vDistM) - timePhase - s.phase + (s.inv ? Math.PI : 0);
-                            pSum += ampR * Math.sin(phR);
+                            // Point Vector (normalized): (dx/dist, dy/dist)
+                            // If pointing UP (0, -1): Dot = -dy/dist
+                            // If pointing DOWN (0, 1): Dot = dy/dist
+                            const cosTheta = s.dirDown ? (dy / dist) : (-dy / dist);
+                            const directivity = (1.0 + cosTheta) / 2.0;
+                            
+                            if (s.isRef) ampD *= 0.6; // Reflection loss
+
+                            pSum += ampD * directivity * Math.sin((k * distMeters) - timePhase - s.phase + (s.inv ? Math.PI : 0));
                         }
-                        
-                        const absPressure = Math.abs(pSum) * gain;
-                        const db = 20 * Math.log10(absPressure + 0.0000001);
+                        const db = 20 * Math.log10(Math.abs(pSum) * gain + 1e-7);
                         fillHeatmapColor(db, data, idx);
                     }
                 }
                 ctx.putImageData(imgData, 0, 0);
 
-                // Overlay
+                // Dibujar Reglas Dinámicas con Precisión
+                drawRulers(w, h, cx, cy, ppm);
+
                 ctx.save(); ctx.translate(cx, cy); ctx.scale(ppm, ppm);
                 
-                // Stage
-                ctx.strokeStyle = '#52525b'; ctx.lineWidth = 0.05; ctx.fillStyle = '#18181b';
-                ctx.fillRect(-200, wallYVal, 400, 20); 
-                ctx.beginPath(); ctx.moveTo(-200, wallYVal); ctx.lineTo(200, wallYVal); ctx.stroke();
-                ctx.fillStyle = '#fff'; ctx.font = 'bold 0.5px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-                ctx.fillText("ESCENARIO", 0, wallYVal + 0.5);
-                
-                // Sources
-                simSources.forEach((s, i) => {
-                    const size = 0.4;
-                    ctx.fillStyle = s.inv ? '#ef4444' : '#e4e4e7'; 
-                    ctx.strokeStyle = s.dirDown ? '#3b82f6' : '#000';
-                    ctx.lineWidth = 0.04; 
+                // ESCENARIO DINÁMICO (VISUAL)
+                if (state.stageWidth > 0) {
+                    const stageDrawWidth = state.stageWidth;
+                    const stageY = state.stageDist;
+                    const stageDepth = 10.0; 
                     
+                    ctx.fillStyle = 'rgba(40, 40, 80, 0.6)'; 
+                    ctx.fillRect(-stageDrawWidth / 2, stageY, stageDrawWidth, stageDepth);
+                    
+                    // Border line for the wall
+                    ctx.strokeStyle = '#88f'; ctx.lineWidth = 0.05;
+                    ctx.beginPath(); ctx.moveTo(-stageDrawWidth/2, stageY); ctx.lineTo(stageDrawWidth/2, stageY); ctx.stroke();
+                    
+                    ctx.fillStyle = '#fff'; ctx.font = 'bold 0.5px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+                    ctx.fillText("ESCENARIO", 0, stageY + 0.8);
+                }
+
+                // Dibujar Bafles (SOLO REALES, 'sources')
+                sources.forEach(s => {
+                    const size = 0.4; ctx.fillStyle = s.inv ? '#ef4444' : '#e4e4e7'; ctx.strokeStyle = s.dirDown ? '#3b82f6' : '#000'; ctx.lineWidth = 0.04;
                     ctx.beginPath(); ctx.arc(s.x, s.y, size/2, 0, Math.PI*2); ctx.fill(); ctx.stroke();
-                    
-                    // Arrow
-                    ctx.save(); ctx.translate(s.x, s.y);
-                    if (s.dirDown) ctx.rotate(Math.PI);
-                    ctx.fillStyle = "rgba(0,0,0,0.5)";
-                    ctx.beginPath(); ctx.moveTo(-0.1, 0); ctx.lineTo(0.1, 0); ctx.lineTo(0, -0.25); ctx.fill();
-                    
-                    // Beam lines
-                    ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 0.01;
-                    ctx.beginPath();
-                    ctx.moveTo(0, 0); ctx.lineTo(-Math.sin(halfAngle)*2, -Math.cos(halfAngle)*2);
-                    ctx.moveTo(0, 0); ctx.lineTo(Math.sin(halfAngle)*2, -Math.cos(halfAngle)*2);
-                    ctx.stroke();
+                    ctx.save(); ctx.translate(s.x, s.y); if (s.dirDown) ctx.rotate(Math.PI);
+                    ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.beginPath(); ctx.moveTo(-0.1, 0); ctx.lineTo(0.1, 0); ctx.lineTo(0, -0.25); ctx.fill();
                     ctx.restore();
-
-                    // Delay Labels
                     ctx.save(); ctx.translate(s.x, s.y - 0.6); ctx.scale(0.04, 0.04);
-                    ctx.fillStyle = "rgba(0,0,0,0.8)";
-                    ctx.beginPath(); ctx.roundRect(-25, -10, 50, 20, 5); ctx.fill();
-                    ctx.fillStyle = "#3b82f6"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-                    ctx.font = "bold 14px sans-serif";
-                    ctx.fillText(s.delay.toFixed(2) + "ms", 0, 0);
-                    ctx.restore();
+                    ctx.fillStyle = "rgba(0,0,0,0.8)"; ctx.beginPath(); ctx.roundRect(-25, -10, 50, 20, 5); ctx.fill();
+                    ctx.fillStyle = "#3b82f6"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.font = "bold 14px sans-serif";
+                    ctx.fillText(s.delay.toFixed(2) + "ms", 0, 0); ctx.restore();
                 });
 
-                // --- PHASE ANALYZER (Educational) ---
-                const mx = state.mic.x; const my = state.mic.y;
-                let sumR = 0, sumI = 0;
-                let sumR2 = 0, sumI2 = 0;
-                
-                simSources.forEach(s => {
-                    const dx = mx - s.x; const dy = my - s.y;
-                    const d = Math.sqrt(dx*dx + dy*dy);
-                    const dClamped = Math.max(0.1, d);
-                    
-                    const amp = 1.0 / dClamped; 
-                    const phi = (k*d) - s.phase + (s.inv?Math.PI:0);
-                    sumR += amp * Math.cos(phi); sumI += amp * Math.sin(phi);
-
-                    // Harmonic
-                    const phi2 = (k2*d) - (s.phase*2) + (s.inv?Math.PI:0); 
-                    const ampH = amp * 0.4; 
-                    sumR2 += ampH * Math.cos(phi2); sumI2 += ampH * Math.sin(phi2);
+                // Calculo Micrófono
+                const mx = state.mic.x; const my = state.mic.y; 
+                let closestDist = 999;
+                sources.forEach(s => {
+                    const d = Math.sqrt(Math.pow(mx - s.x, 2) + Math.pow(my - s.y, 2));
+                    if(d < closestDist) closestDist = d;
                 });
-                
-                // Mic Viz
+
+                // Micrófono en Mundo
                 ctx.translate(mx, my);
-                const mag = Math.sqrt(sumR*sumR + sumI*sumI) * gain;
-                const db = 20 * Math.log10(mag + 1e-6);
-                const micColor = db > -6 ? '#22c55e' : (db < -12 ? '#ef4444' : '#fbbf24');
-
-                ctx.strokeStyle = micColor; ctx.lineWidth = 0.05; ctx.beginPath();
-                ctx.arc(0, 0, 0.8, 0, Math.PI * 2); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(-0.6, 0); ctx.lineTo(0.6, 0); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(0, -0.6); ctx.lineTo(0, 0.6); ctx.stroke();
-
-                // Draw Analyzer Box
-                const azW = 3.5; const azH = 2.0;
-                const azX = 1.2; const azY = -1.0;
-                ctx.translate(azX, azY);
                 
-                ctx.fillStyle = "rgba(10,12,14, 0.9)";
-                ctx.fillRect(0, 0, azW, azH);
-                ctx.lineWidth = 0.01; ctx.strokeStyle = "rgba(255,255,255,0.2)";
-                ctx.beginPath();
-                for(let i=1; i<4; i++) { ctx.moveTo(i*(azW/4), 0); ctx.lineTo(i*(azW/4), azH); }
-                for(let i=1; i<4; i++) { ctx.moveTo(0, i*(azH/4)); ctx.lineTo(azW, i*(azH/4)); }
-                ctx.stroke();
-                ctx.strokeStyle = "rgba(255,255,255,0.4)"; ctx.beginPath(); ctx.moveTo(0, azH/2); ctx.lineTo(azW, azH/2); ctx.stroke();
-                ctx.strokeRect(0, 0, azW, azH);
+                // Draw Mic
+                ctx.strokeStyle = '#22c55e'; ctx.lineWidth = 0.05; ctx.beginPath(); ctx.arc(0, 0, 0.8, 0, Math.PI * 2); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(-0.6, 0); ctx.lineTo(0.6, 0); ctx.stroke(); ctx.beginPath(); ctx.moveTo(0, -0.6); ctx.lineTo(0, 0.6); ctx.stroke();
+                
+                // Floating Label Distancia
+                ctx.save();
+                ctx.fillStyle = "#fff"; ctx.font = 'bold 0.4px monospace'; ctx.textAlign = 'left';
+                ctx.shadowColor="black"; ctx.shadowBlur=4;
+                ctx.fillText(`Dist: ${closestDist.toFixed(2)}m`, 0.8, -0.5);
+                ctx.restore();
 
-                // Waveform
-                ctx.beginPath(); ctx.lineWidth = 0.04; ctx.strokeStyle = micColor;
-                const midY = azH/2;
-                const pts = 40;
-                for(let i=0; i<=pts; i++) {
-                    const tNorm = i/pts;
-                    const tVal = tNorm * Math.PI * 4; 
-                    const val1 = (sumR*Math.sin(tVal - timePhase) + sumI*Math.cos(tVal - timePhase));
-                    const val2 = (sumR2*Math.sin(2*tVal - timePhase) + sumI2*Math.cos(2*tVal - timePhase));
-                    const val = val1 + val2; 
-                    const yPos = midY - (val * 0.25); 
-                    const xPos = tNorm * azW;
-                    if(i===0) ctx.moveTo(xPos, yPos); else ctx.lineTo(xPos, yPos);
+                ctx.restore(); // Salir de coordenadas del mundo
+
+                // OSCILOSCOPIO MÓVIL (Pegado al Mic)
+                const micScreenX = cx + mx * ppm;
+                const micScreenY = cy + my * ppm;
+                const boxW = 120;
+                const boxH = 60;
+                const boxX = micScreenX - 140; // Izquierda del mic
+                const boxY = micScreenY - 30; // Centrado vertical
+
+                // Calcular Alineación de Fase (Focus Gold)
+                let complexSumR = 0, complexSumI = 0;
+                let magSum = 0;
+                let maxSingleMag = 0; // Referencia de un solo bafle
+                
+                // Re-calculate complex sum for checking coherence using real physics
+                simSources.forEach(s => {
+                    const d = Math.sqrt(Math.pow(mx - s.x, 2) + Math.pow(my - s.y, 2));
+                    const phase = (k*d) - s.phase + (s.inv ? Math.PI : 0);
+                    
+                    const vSMx = mx - s.x; const vSMy = my - s.y;
+                    const distSM = Math.sqrt(vSMx*vSMx + vSMy*vSMy);
+                    const cosTheta = s.dirDown ? (vSMy / distSM) : (-vSMy / distSM);
+                    const direct = (1.0 + cosTheta)/2.0;
+
+                    let amp = (1.0 / Math.max(0.1, d)) * direct;
+                    if(s.isRef) amp *= 0.6;
+                    
+                    complexSumR += amp * Math.cos(phase);
+                    complexSumI += amp * Math.sin(phase);
+                    magSum += amp;
+                    
+                    if (!s.isRef && amp > maxSingleMag) maxSingleMag = amp;
+                });
+                
+                const vectorSumMag = Math.sqrt(complexSumR*complexSumR + complexSumI*complexSumI);
+                const coherence = magSum > 0 ? (vectorSumMag / magSum) : 0;
+                
+                // Determinar Estado del Osciloscopio
+                let oscColor = "#00ff00"; // Normal: Verde Neón
+                let oscText = "";
+                let shadowColor = "transparent";
+                let shadowBlur = 0;
+
+                // Prioridad 1: Cancelación Severa (< 15% de un bafle)
+                if (maxSingleMag > 0 && vectorSumMag < maxSingleMag * 0.15) {
+                    oscColor = "#ef4444"; // Rojo
+                    oscText = "CANCELACIÓN";
+                    shadowColor = "#ef4444";
+                    shadowBlur = 10;
+                } 
+                // Prioridad 2: Suma Perfecta (Fase < 10 deg => Coherence > ~0.985)
+                else if (coherence > 0.985) {
+                    oscColor = "#ffd700"; // Dorado
+                    oscText = "FASE 0° - SUMA MÁXIMA";
+                    shadowColor = "#ffd700";
+                    shadowBlur = 15;
+                }
+
+                ctx.save();
+                // Fondo Negro Sólido
+                ctx.fillStyle = "rgba(0,0,0,0.9)"; 
+                ctx.fillRect(boxX, boxY, boxW, boxH);
+                
+                // Borde con Color Dinámico
+                ctx.strokeStyle = oscColor;
+                ctx.lineWidth = 2;
+                ctx.shadowColor = shadowColor; 
+                ctx.shadowBlur = shadowBlur;
+                ctx.strokeRect(boxX, boxY, boxW, boxH);
+                
+                // Center Line
+                ctx.shadowBlur = 0;
+                ctx.strokeStyle = "rgba(255,255,255,0.2)"; ctx.lineWidth=1;
+                ctx.beginPath(); ctx.moveTo(boxX, boxY + boxH/2); ctx.lineTo(boxX+boxW, boxY + boxH/2); ctx.stroke();
+
+                // WAVEFORM (Suma Total)
+                ctx.beginPath();
+                ctx.strokeStyle = oscColor; 
+                ctx.lineWidth = 2;
+                for(let i=0; i<boxW; i++) {
+                    const tOffset = i * 0.2;
+                    const totalPhase = Math.atan2(complexSumI, complexSumR);
+                    const val = vectorSumMag * Math.sin(timePhase + tOffset - totalPhase);
+                    
+                    const y = boxY + boxH/2 - (val * 15 * gain);
+                    if(i===0) ctx.moveTo(boxX+i, y); else ctx.lineTo(boxX+i, y);
                 }
                 ctx.stroke();
+                
+                // TEXTO DE FEEDBACK
+                if (oscText) {
+                    ctx.fillStyle = oscColor; 
+                    ctx.font = "bold 9px sans-serif";
+                    ctx.textAlign = "center";
+                    ctx.shadowColor = "black"; ctx.shadowBlur = 2;
+                    ctx.fillText(oscText, boxX + boxW/2, boxY + 12);
+                }
 
-                ctx.restore();
                 ctx.restore();
             }
 
-            function animate() {
-                if(state.isPlaying) state.time += 0.2;
-                draw(); 
-                requestAnimationFrame(animate);
-            }
-
-            els.canvas.width = els.canvas.parentElement.clientWidth;
-            els.canvas.height = els.canvas.parentElement.clientHeight;
-            updateUI();
-            animate(); 
+            function animate() { if(state.isPlaying) state.time += 0.2; draw(); requestAnimationFrame(animate); }
+            els.canvas.width = els.canvas.parentElement.clientWidth; els.canvas.height = els.canvas.parentElement.clientHeight;
+            updateUI(); animate(); 
         };
     </script>
 <script type="module" src="/index.tsx"></script>
