@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Simulador Educativo sonidos graves</title>
+    <title>Simulador Educativo sonidos graves sin escenario</title>
     <style>
         :root {
             --bg-dark: #09090b; /* Zinc 950 */
@@ -422,7 +422,7 @@
             <a href="https://www.instagram.com/3d_mc_3d/" target="_blank" title="Visitar Instagram de MC" class="brand-link">
                 <img src="https://raw.githubusercontent.com/MauroCasarin/SONIDO/refs/heads/main/MC%2048%20N.png" alt="MC Logo" class="logo-img">
             </a>
-            <h1 id="main-title">Simulador Educativo sonidos graves</h1>
+            <h1 id="main-title">Simulador de Arreglos de Subgraves</h1>
         </div>
     </header>
 
@@ -442,10 +442,7 @@
                 </ul>
 
                 <p style="margin-bottom: 4px; color: var(--text-main);"><b>2. Direccionalidad Real:</b></p>
-                <p style="margin-top: 4px;">Los bafles emiten con patrón cardioide real. Un bafle mirando al público no excita el escenario, evitando rebotes.</p>
-
-                <p style="margin-bottom: 4px; color: var(--text-main);"><b>3. Reflexión del Escenario:</b></p>
-                <p style="margin-top: 4px;">El escenario (rectángulo azul) actúa como una pared sólida. Las ondas rebotan en él con el 60% de energía.</p>
+                <p style="margin-top: 4px;">Los bafles emiten con patrón cardioide real. Un bafle mirando al público (flecha hacia arriba) no excita la zona trasera, similar a un entorno de campo libre sin reflexiones.</p>
             </div>
 
             <button class="modal-close-btn" onclick="app.toggleGuide()">Cerrar</button>
@@ -517,19 +514,6 @@
                 <div id="opt-status" style="display:none; text-align:center; color:#a3e635; font-size:9px; margin-top:2px; font-weight:bold;">OPTIMIZADO</div>
             </div>
 
-            <!-- Stage Control -->
-            <div class="control-group">
-                <div class="group-title">ESCENARIO (REFLECTOR -4dB / 60%)</div>
-                <div class="slider-row" data-tooltip="<strong>DISTANCIA ESCENARIO</strong><br>Distancia desde la línea de bafles hasta la pared del escenario.">
-                    <div class="slider-label"><span>Distancia Pared</span><span class="slider-val" id="disp-stg-dist">0.0 m</span></div>
-                    <input type="range" id="input-stg-dist" min="0" max="5.0" step="0.1" value="0.0">
-                </div>
-                <div class="slider-row" data-tooltip="<strong>ANCHO ESCENARIO</strong><br>Ancho visual del escenario (Si es 0, no hay rebotes).">
-                    <div class="slider-label"><span>Ancho Escenario</span><span class="slider-val" id="disp-stg-width">5.0 m</span></div>
-                    <input type="range" id="input-stg-width" min="0" max="10" step="0.1" value="5.0">
-                </div>
-            </div>
-
             <!-- Baffle Control (Polarity & Direction) -->
             <div class="control-group">
                 <div class="group-title">CONTROLES POR BAFLE (DELAY BIDIRECCIONAL)</div>
@@ -563,7 +547,7 @@
             const state = {
                 freq: 80, dist: 1.07, count: 2, angle: 90,
                 mode: 'broadside', lrMode: false,     
-                stageGap: 0, lateralMargin: 0.5, stageWidth: 5.0, stageDist: 0.0,
+                lateralMargin: 0.5,
                 polarities: new Array(16).fill(false),
                 directions: new Array(16).fill(false), // false = Up, true = Down
                 delays: new Array(16).fill(0), // ms
@@ -575,7 +559,6 @@
                 time: 0,
                 view: { scale: 30, x: 0, y: 0, dragging: false, lastX: 0, lastY: 0, dragType: null, dragIndex: -1, lastPinchDist: 0 },
                 mic: { x: 0, y: -4 }, // Mic at 4 meters
-                stage: { w: 10, h: 4, x: 0, y: 4 }
             };
 
             const els = {
@@ -587,15 +570,11 @@
                     freq: document.getElementById('input-freq'), dist: document.getElementById('input-dist'),
                     count: document.getElementById('input-count'), angle: document.getElementById('input-angle'),
                     latMargin: document.getElementById('input-lat-margin'),
-                    stgWidth: document.getElementById('input-stg-width'),
-                    stgDist: document.getElementById('input-stg-dist')
                 },
                 displays: {
                     freq: document.getElementById('disp-freq'), dist: document.getElementById('disp-dist'),
                     count: document.getElementById('disp-count'), angle: document.getElementById('disp-angle'),
                     latMargin: document.getElementById('disp-lat-margin'),
-                    stgWidth: document.getElementById('disp-stg-width'),
-                    stgDist: document.getElementById('disp-stg-dist')
                 },
                 rows: { dist: document.getElementById('row-dist') },
                 hud: {
@@ -708,8 +687,6 @@
                 input.addEventListener('input', (e) => {
                     const val = parseFloat(e.target.value);
                     if (key === 'latMargin') state.lateralMargin = val;
-                    else if (key === 'stgWidth') state.stageWidth = val;
-                    else if (key === 'stgDist') state.stageDist = val;
                     else state[key] = val;
                     
                     if (['freq', 'dist', 'latMargin', 'count', 'angle'].includes(key)) {
@@ -862,8 +839,6 @@
                 els.displays.count.innerText = state.count;
                 // els.displays.angle.innerText = state.angle + '°'; // Disabled
                 els.displays.latMargin.innerText = state.lateralMargin.toFixed(1) + ' m';
-                els.displays.stgWidth.innerText = state.stageWidth.toFixed(1) + ' m';
-                els.displays.stgDist.innerText = state.stageDist.toFixed(1) + ' m';
                 
                 if (state.count === 1) els.rows.dist.classList.add('disabled');
                 else els.rows.dist.classList.remove('disabled');
@@ -1044,7 +1019,6 @@
                 const w = els.canvas.width; const h = els.canvas.height; if(w === 0 || h === 0) return;
                 const cx = w/2 + state.view.x; const cy = h/2 + state.view.y; const ppm = state.view.scale;
                 const c = SPEED_OF_SOUND; const k = (2 * Math.PI * state.freq) / c; const timePhase = state.time * 0.5;
-                // angle removed for auto-cardioid calculation
                 
                 ctx.fillStyle = '#09090b'; ctx.fillRect(0,0,w,h);
                 
@@ -1058,62 +1032,80 @@
 
                 let sources = generateSourcesForLogic();
                 sources.forEach(s => { s.phase = -(2 * Math.PI * state.freq) * (s.delay / 1000); });
-                const wallYVal = state.stageDist; // Wall Distance from baffles
-                const wallPx = cy + wallYVal * ppm; 
-                const gain = state.viewGain;
-                const isReflectionActive = state.stageWidth > 0;
                 
-                // Prepare virtual sources (reflections)
-                const simSources = [];
-                sources.forEach(s => {
-                    // Direct
-                    simSources.push({ sx: cx + s.x * ppm, sy: cy + s.y * ppm, phase: s.phase, inv: s.inv, dirDown: s.dirDown, x: s.x, y: s.y, delay: s.delay, isRef: false });
-                    // Reflected (Virtual Source)
-                    if (isReflectionActive) {
-                        const vy = wallYVal + (wallYVal - s.y);
-                        // Reflection has 0.6 amplitude (-4dB approx)
-                        // IMPORTANT: Mirror Orientation. If Real is Up (False), Virtual is Down (True).
-                        const virtualDirDown = !s.dirDown;
-                        simSources.push({ sx: cx + s.x * ppm, sy: cy + vy * ppm, phase: s.phase, inv: s.inv, dirDown: virtualDirDown, x: s.x, y: vy, delay: s.delay, isRef: true });
-                    }
-                });
+                const gain = state.viewGain;
+                
+                // Prepare virtual sources (no reflections)
+                const simSources = sources.map(s => ({
+                    sx: cx + s.x * ppm, sy: cy + s.y * ppm, phase: s.phase,
+                    inv: s.inv, dirDown: s.dirDown, x: s.x, y: s.y, delay: s.delay, isRef: false
+                }));
 
                 const imgData = ctx.getImageData(0, 0, w, h); const data = imgData.data;
 
-                for(let y=0; y<h; y++) {
-                    const rowOff = y * w * 4;
-                    for(let x=0; x<w; x++) {
-                        const idx = rowOff + (x * 4); let pSum = 0;
-                        
-                        for(let i=0; i<simSources.length; i++) {
-                            const s = simSources[i]; 
-                            const dx = x - s.sx; const dy = y - s.sy; 
-                            const dist = Math.sqrt(dx*dx + dy*dy); 
-                            const distMeters = dist / ppm; 
-                            const dClamped = Math.max(0.1, distMeters);
+                if (state.isPlaying) {
+                    // MODO ANIMADO (ONDA VIAJERA)
+                    for(let y=0; y<h; y++) {
+                        const rowOff = y * w * 4;
+                        for(let x=0; x<w; x++) {
+                            const idx = rowOff + (x * 4); let pSum = 0;
                             
-                            let ampD = (1.0 / dClamped);
-                            
-                            // REAL DIRECTIONALITY P(theta) = P0 * (1 + cos(theta)) / 2
-                            // Theta is angle relative to front.
-                            // Front is Vector(0, -1) if dirDown is false (pointing up/audience)
-                            // Front is Vector(0, 1) if dirDown is true
-                            // cosTheta is DotProduct(PointVector, FrontVector)
-                            
-                            // Point Vector (normalized): (dx/dist, dy/dist)
-                            // If pointing UP (0, -1): Dot = -dy/dist
-                            // If pointing DOWN (0, 1): Dot = dy/dist
-                            const cosTheta = s.dirDown ? (dy / dist) : (-dy / dist);
-                            const directivity = (1.0 + cosTheta) / 2.0;
-                            
-                            if (s.isRef) ampD *= 0.6; // Reflection loss
+                            for(let i=0; i<simSources.length; i++) {
+                                const s = simSources[i]; 
+                                const dx = x - s.sx; const dy = y - s.sy; 
+                                const dist = Math.sqrt(dx*dx + dy*dy); 
+                                const distMeters = dist / ppm; 
+                                const dClamped = Math.max(0.1, distMeters);
+                                
+                                let ampD = (1.0 / dClamped);
+                                
+                                const cosTheta = dist > 0 ? (s.dirDown ? (dy / dist) : (-dy / dist)) : 1.0;
+                                const directivity = (1.0 + cosTheta) / 2.0;
+                                
+                                if (s.isRef) ampD *= 0.6; // Should not happen now
 
-                            pSum += ampD * directivity * Math.sin((k * distMeters) - timePhase - s.phase + (s.inv ? Math.PI : 0));
+                                pSum += ampD * directivity * Math.sin((k * distMeters) - timePhase - s.phase + (s.inv ? Math.PI : 0));
+                            }
+                            const db = 20 * Math.log10(Math.abs(pSum) * gain + 1e-7);
+                            fillHeatmapColor(db, data, idx);
                         }
-                        const db = 20 * Math.log10(Math.abs(pSum) * gain + 1e-7);
-                        fillHeatmapColor(db, data, idx);
+                    }
+                } else {
+                    // MODO PREDICCIÓN ESTÁTICA (SPL)
+                    for(let y=0; y<h; y++) {
+                        const rowOff = y * w * 4;
+                        for(let x=0; x<w; x++) {
+                            const idx = rowOff + (x * 4); 
+                            let pSumReal = 0;
+                            let pSumImag = 0;
+                            
+                            for(let i=0; i<simSources.length; i++) {
+                                const s = simSources[i]; 
+                                const dx = x - s.sx; const dy = y - s.sy; 
+                                const dist = Math.sqrt(dx*dx + dy*dy);
+                                const distMeters = dist / ppm; 
+                                const dClamped = Math.max(0.1, distMeters);
+                                
+                                let ampD = (1.0 / dClamped);
+                                
+                                const cosTheta = dist > 0 ? (s.dirDown ? (dy / dist) : (-dy / dist)) : 1.0;
+                                const directivity = (1.0 + cosTheta) / 2.0;
+
+                                if (s.isRef) ampD *= 0.6;
+
+                                const phase = (k * distMeters) - s.phase + (s.inv ? Math.PI : 0);
+                                const amp = ampD * directivity;
+
+                                pSumReal += amp * Math.cos(phase);
+                                pSumImag += amp * Math.sin(phase);
+                            }
+                            const magnitude = Math.sqrt(pSumReal * pSumReal + pSumImag * pSumImag);
+                            const db = 20 * Math.log10(magnitude * gain + 1e-7);
+                            fillHeatmapColor(db, data, idx);
+                        }
                     }
                 }
+
                 ctx.putImageData(imgData, 0, 0);
 
                 // Dibujar Reglas Dinámicas con Precisión
@@ -1121,23 +1113,6 @@
 
                 ctx.save(); ctx.translate(cx, cy); ctx.scale(ppm, ppm);
                 
-                // ESCENARIO DINÁMICO (VISUAL)
-                if (state.stageWidth > 0) {
-                    const stageDrawWidth = state.stageWidth;
-                    const stageY = state.stageDist;
-                    const stageDepth = 10.0; 
-                    
-                    ctx.fillStyle = 'rgba(40, 40, 80, 0.6)'; 
-                    ctx.fillRect(-stageDrawWidth / 2, stageY, stageDrawWidth, stageDepth);
-                    
-                    // Border line for the wall
-                    ctx.strokeStyle = '#88f'; ctx.lineWidth = 0.05;
-                    ctx.beginPath(); ctx.moveTo(-stageDrawWidth/2, stageY); ctx.lineTo(stageDrawWidth/2, stageY); ctx.stroke();
-                    
-                    ctx.fillStyle = '#fff'; ctx.font = 'bold 0.5px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-                    ctx.fillText("ESCENARIO", 0, stageY + 0.8);
-                }
-
                 // Dibujar Bafles (SOLO REALES, 'sources')
                 sources.forEach(s => {
                     const size = 0.4; ctx.fillStyle = s.inv ? '#ef4444' : '#e4e4e7'; ctx.strokeStyle = s.dirDown ? '#3b82f6' : '#000'; ctx.lineWidth = 0.04;
@@ -1195,7 +1170,7 @@
                     
                     const vSMx = mx - s.x; const vSMy = my - s.y;
                     const distSM = Math.sqrt(vSMx*vSMx + vSMy*vSMy);
-                    const cosTheta = s.dirDown ? (vSMy / distSM) : (-vSMy / distSM);
+                    const cosTheta = distSM > 0 ? (s.dirDown ? (vSMy / distSM) : (-vSMy / distSM)) : 1.0;
                     const direct = (1.0 + cosTheta)/2.0;
 
                     let amp = (1.0 / Math.max(0.1, d)) * direct;
