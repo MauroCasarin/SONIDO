@@ -1,5 +1,5 @@
 {
-  "name": "Simulador Educativo sonidos graves",
-  "description": "Un simulador acústico profesional para visualizar patrones de arreglos de subgraves, alineación de fase y configuraciones cardioides en tiempo real (Vanilla JS).",
+  "name": "Simulador Educativo de Sonidos Graves",
+  "description": "Un simulador acústico profesional interactivo para visualizar patrones de arreglos de subgraves, alineación de fase y configuraciones cardioides en tiempo real (Vanilla JS). Potenciales mejoras: modularización con React y Web Workers para rendimiento.",
   "requestFramePermissions": []
 }
