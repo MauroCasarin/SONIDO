@@ -436,8 +436,8 @@
                 <p style="margin-bottom: 4px; color: var(--text-main);"><b>1. Osciloscopio con Feedback "Golden":</b></p>
                 <ul style="padding-left: 20px; margin-top: 4px; margin-bottom: 12px;">
                     <li>Muestra la suma vectorial en tiempo real pegado al micrófono.</li>
-                    <li><strong style="color:#ffd700">DORADO:</strong> Indica alineación de fase perfecta (<10° de diferencia).</li>
-                    <li><strong style="color:#ef4444">ROJO:</strong> Cancelación severa (<15%).</li>
+                    <li><strong style="color:#ffd700">DORADO:</strong> Indica alineación de fase perfecta (&lt;10° de diferencia).</li>
+                    <li><strong style="color:#ef4444">ROJO:</strong> Cancelación severa (&lt;15%).</li>
                     <li><strong style="color:#00ff00">VERDE:</strong> Suma normal.</li>
                 </ul>
 
@@ -845,7 +845,6 @@
                 
                 const c = SPEED_OF_SOUND;
                 const lambda = c / state.freq;
-                const delay = (state.dist / c) * 1000;
                 els.hud.lambda.innerText = lambda.toFixed(2) + ' m';
                 
                 const limit = (2/3) * lambda; const optimal = lambda / 4; 
@@ -859,6 +858,7 @@
                 }
                 
                 if (state.mode === 'endfire' && state.count > 1) {
+                    const delay = (state.dist / c) * 1000;
                     els.hud.delayRow.style.display = 'flex'; els.hud.delay.innerText = delay.toFixed(2) + ' ms';
                 } else els.hud.delayRow.style.display = 'none';
                 
@@ -867,7 +867,7 @@
 
             function renderBaffleGrid(skipRebuild) {
                 const container = els.baffleList;
-                if (container.children.length !== state.count) {
+                if (container.children.length !== state.count || !skipRebuild) { // rebuild if count changes or not skipping
                     container.innerHTML = '';
                     for(let i=0; i<state.count; i++) {
                         const row = document.createElement('div');
@@ -1121,7 +1121,15 @@
                     ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.beginPath(); ctx.moveTo(-0.1, 0); ctx.lineTo(0.1, 0); ctx.lineTo(0, -0.25); ctx.fill();
                     ctx.restore();
                     ctx.save(); ctx.translate(s.x, s.y - 0.6); ctx.scale(0.04, 0.04);
-                    ctx.fillStyle = "rgba(0,0,0,0.8)"; ctx.beginPath(); ctx.roundRect(-25, -10, 50, 20, 5); ctx.fill();
+                    ctx.fillStyle = "rgba(0,0,0,0.8)"; 
+                    // Use roundRect if available, fallback to fillRect
+                    if (ctx.roundRect) {
+                        ctx.beginPath(); 
+                        ctx.roundRect(-25, -10, 50, 20, 5); 
+                        ctx.fill();
+                    } else {
+                        ctx.fillRect(-25,-10,50,20);
+                    }
                     ctx.fillStyle = "#3b82f6"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.font = "bold 14px sans-serif";
                     ctx.fillText(s.delay.toFixed(2) + "ms", 0, 0); ctx.restore();
                 });

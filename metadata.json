@@ -1,5 +1,5 @@
 {
-  "name": "Copy of Copy of Simulador Educativo sonidos graves ondas",
-  "description": "Herramienta profesional de diseño de arreglos de subgraves: Broadside, End-Fire y Cardioides.",
+  "name": "Simulador Educativo sonidos graves",
+  "description": "Un simulador acústico profesional para visualizar patrones de arreglos de subgraves, alineación de fase y configuraciones cardioides en tiempo real (Vanilla JS).",
   "requestFramePermissions": []
 }
