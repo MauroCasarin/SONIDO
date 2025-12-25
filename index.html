@@ -49,8 +49,10 @@
 
         .brand-area {
             display: flex;
-            align-items: center;
-            gap: 8px;
+            flex-direction: column; /* Changed to column to stack title and author */
+            align-items: flex-start; /* Align items to the start for stacking */
+            gap: 2px; /* Smaller gap */
+            margin-left: 8px; /* Added left margin for consistency */
         }
 
         .brand-link {
@@ -64,6 +66,9 @@
             width: auto;
             transition: transform 0.2s;
             cursor: pointer;
+            position: absolute; /* Position absolute to move it out of flex flow */
+            left: 10px; /* Align to the left edge of the header */
+            top: 6px; /* Center vertically in the header */
         }
         
         h1 {
@@ -72,9 +77,8 @@
             letter-spacing: 0.5px;
             margin: 0;
             color: #fff;
-            display: flex;
-            flex-direction: column;
             line-height: 1;
+            margin-left: 40px; /* Offset to make space for the logo */
         }
 
         h1 span {
@@ -83,11 +87,35 @@
             letter-spacing: 1px;
         }
 
+        /* New styles for author link in header */
+        .author-link {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            color: #52525b; /* Same as old footer color */
+            text-decoration: none;
+            font-size: 9px; /* Same as old footer font size */
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            margin-left: 40px; /* Offset to align with title */
+            transition: color 0.2s;
+        }
+        .author-link:hover {
+            color: var(--accent);
+        }
+        .author-icon {
+            width: 10px;
+            height: 10px;
+            fill: currentColor;
+        }
+
+
         /* LAYOUT */
         #main-layout {
             display: flex;
             flex: 1;
-            height: calc(100vh - 40px - 25px); 
+            height: calc(100vh - 40px); /* Adjusted height, no footer now */
             overflow: hidden;
             position: relative;
         }
@@ -417,22 +445,14 @@
             margin-top: 5px; font-size: 10px; text-transform: uppercase;
         }
 
-        /* FOOTER */
-        footer {
-            height: 25px; background: #000; border-top: 1px solid var(--border);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 9px; color: #52525b; font-weight: 500; letter-spacing: 0.5px;
-            flex-shrink: 0; z-index: 60; padding: 0;
-        }
-        .footer-link { display: flex; align-items: center; justify-content: center; gap: 6px; color: #52525b; text-decoration: none; width: 100%; height: 100%; }
-        .footer-link:hover { color: var(--accent); }
-        .footer-icon { width: 10px; height: 10px; fill: currentColor; }
-
         /* MOBILE RESPONSIVE */
         @media (max-width: 768px) {
-            header { height: 40px; padding: 0 8px; }
-            h1 { font-size: 11px; }
-            #main-layout { display: block; position: relative; height: calc(100vh - 40px - 25px); }
+            header { height: 60px; /* Increased height to accommodate new author link */ padding: 0 8px; }
+            h1 { font-size: 11px; margin-left: 40px; }
+            .author-link { margin-left: 40px; }
+            .logo-img { top: 16px; /* Adjust position for new header height */ }
+
+            #main-layout { display: block; position: relative; height: calc(100vh - 60px); /* Adjusted height, no footer */ }
             #viewport { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
             #controles {
                 position: absolute; bottom: 0; left: 0; width: 100%; 
@@ -441,6 +461,7 @@
                 overflow-y: auto; /* Enable scrolling for controls if content exceeds max-height */
                 box-sizing: border-box; border-right: none; border-top: 1px solid var(--border);
                 z-index: 20; background: rgba(8, 8, 10, 0.95); padding-bottom: 20px;
+                transition: none;
             }
             .hud-panel { top: 5px; left: 5px; width: 110px; padding: 6px; }
         }
@@ -455,6 +476,11 @@
                 <img src="https://raw.githubusercontent.com/MauroCasarin/SONIDO/refs/heads/main/MC%2048%20N.png" alt="MC Logo" class="logo-img">
             </a>
             <h1 id="main-title">Simulador Educativo de Sonidos Graves</h1>
+            <!-- Relocated footer content -->
+            <a href="https://www.instagram.com/3d_mc_3d/" target="_blank" class="author-link">
+                <svg class="author-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2-6.782-2.618-6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zM12 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zM12 16c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                <span>Creado por Mauro Casarin</span>
+            </a>
         </div>
     </header>
 
@@ -479,7 +505,7 @@
                 </ul>
 
                 <p style="margin-bottom: 4px; color: var(--text-main);"><b>2. Direccionalidad de Bafles (Cardioide):</b></p>
-                <p style="margin-top: 4px; margin-bottom: 12px;">
+                <p style="margin-top: 4:px; margin-bottom: 12px;">
                     Los bafles simulan un patrón cardioide: emiten hacia el frente y minimizan la energía hacia atrás, reduciendo el sonido no deseado en el escenario.
                 </p>
 
@@ -576,24 +602,18 @@
             <div class="control-group">
                 <div class="group-title">ACCIONES</div>
                 <button id="btn-reset" class="red-magic" style="width:100%; padding:8px;">RESETEAR TODO</button>
+                <button id="btn-fullscreen" class="magic" style="width:100%; padding:8px; margin-top: 4px;">FULLSCREEN</button>
             </div>
         </div>
 
     </div>
-
-    <footer>
-        <a href="https://www.instagram.com/3d_mc_3d/" target="_blank" class="footer-link">
-            <svg class="footer-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zM12 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zM12 16c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
-            <span>Creado por Mauro Casarin</span>
-        </a>
-    </footer>
 
     <script>
         window.app = {
             togglePlay: () => {}, toggleGuide: () => {}, setMode: () => {}, 
             toggleLR: () => {}, togglePolarity: () => {}, toggleDirection: () => {},
             setLambdaFraction: () => {}, autoOptimize: () => {}, setDelay: () => {},
-            resetSimulator: () => {}
+            resetSimulator: () => {}, toggleFullscreen: () => {}
         };
         window.idx = 0; // Estabilidad requerida
 
@@ -617,6 +637,9 @@
                 view: { scale: 45, x: 0, y: -50, dragging: false, lastX: 0, lastY: 0, dragType: null, dragIndex: -1, lastPinchDist: 0 }, // Increased zoom, shifted up
                 mic: { x: 0, y: -3 }, // Mic at 3 meters
                 hasTooltipBeenShown: false, // New state property for global one-time tooltip
+                doubleTapTimeout: null, // For mobile double-tap detection
+                lastTapTime: 0,
+                lastTapLocation: { clientX: 0, clientY: 0 }, // Store clientX/Y for robustness
             };
 
             const els = {
@@ -648,6 +671,7 @@
                 modalGuide: document.getElementById('modal-guide'),
                 freqGroupTitle: document.getElementById('freq-group-title'), // New element reference for dynamic title
                 reset: document.getElementById('btn-reset'), // Reference to the new reset button
+                fullscreen: document.getElementById('btn-fullscreen'), // Reference to the new fullscreen button
             };
 
             const ctx = els.canvas.getContext('2d', { alpha: false });
@@ -857,17 +881,37 @@
                 updateUI(); 
             };
 
+            // Fullscreen toggle
+            window.app.toggleFullscreen = () => {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().catch(err => {
+                        console.error(`Error attempting to enable fullscreen: ${err.message} (${err.name})`);
+                    });
+                } else {
+                    document.exitFullscreen();
+                }
+            };
+
+
             function resetGain() { state.viewGain = 1.0; }
+
+            // No longer checking isMobile() to hide controls, they stay visible.
+            // The isMobile() function is still useful for other mobile-specific logic (e.g., double-tap thresholds).
+            function isMobile() {
+                return window.innerWidth <= 768; // Matches CSS media query breakpoint
+            }
 
             function getPointerPos(e) {
                 const rect = els.canvas.getBoundingClientRect();
-                let cx, cy;
+                let clientX, clientY;
                 if (e.changedTouches && e.changedTouches.length > 0) {
-                    cx = e.changedTouches[0].clientX; cy = e.changedTouches[0].clientY;
+                    clientX = e.changedTouches[0].clientX; 
+                    clientY = e.changedTouches[0].clientY;
                 } else {
-                    cx = e.clientX; cy = e.clientY;
+                    clientX = e.clientX; 
+                    clientY = e.clientY;
                 }
-                return { x: cx - rect.left, y: cy - rect.top, clientX: cx, clientY: cy };
+                return { x: clientX - rect.left, y: clientY - rect.top, clientX: clientX, clientY: clientY };
             }
 
             function setControlsDimmed() { els.controls.classList.add('controls-dimmed'); }
@@ -907,14 +951,53 @@
                 });
             });
 
+            // Helper function to calculate the horizontal center of the baffle array in world coordinates
+            function calculateBaffleCenterWorldX() {
+                let baffleCenterWorldX = 0; 
+                const sources = generateSourcesForLogic(); // Get the current baffle positions
+
+                if (sources.length > 0) {
+                    if (state.lrMode) {
+                        // In L/R stereo mode, the overall array center is at x=0 (midpoint between -lateralMargin and +lateralMargin)
+                        baffleCenterWorldX = 0; 
+                    } else if (state.mode === 'broadside') {
+                        // For broadside, find the center of the first (and only) cluster
+                        const firstBaffleX = sources[0].x;
+                        const lastBaffleX = sources[state.count - 1].x; // Assuming sources array is ordered by x
+                        baffleCenterWorldX = (firstBaffleX + lastBaffleX) / 2;
+                    } else if (state.mode === 'endfire') {
+                        // For endfire, all baffles in a single cluster have the same X-coordinate
+                        baffleCenterWorldX = sources[0].x;
+                    }
+                }
+                return baffleCenterWorldX;
+            }
+
+            // Handler for double-click/double-tap on microphone to center it between baffles
+            const handleMicCenterBetweenBaffles = () => {
+                const baffleCenterWorldX = calculateBaffleCenterWorldX();
+                
+                state.mic.x = baffleCenterWorldX; // ONLY move microphone horizontally to baffle array center
+                // state.view.x = -state.mic.x * ppm; // REMOVED: Do not change camera view
+                // state.view.y = -state.mic.y * ppm; // REMOVED: Do not change camera view
+
+                updateUI(); // Redraw with new mic position
+            };
+
+
+            // Double-click handler for desktop
             els.canvas.addEventListener('dblclick', (e) => {
                 const pos = getPointerPos(e);
                 const cx = els.canvas.width / 2 + state.view.x;
                 const cy = els.canvas.height / 2 + state.view.y;
                 const ppm = state.view.scale;
-                const mx = cx + state.mic.x * ppm;
-                const my = cy + state.mic.y * ppm;
-                if(Math.hypot(pos.x - mx, pos.y - my) < 50) state.mic.x = 0;
+                const mx_screen = cx + state.mic.x * ppm;
+                const my_screen = cy + state.mic.y * ppm;
+                
+                // Check if the double-click was approximately on the microphone icon
+                if (Math.hypot(pos.x - mx_screen, pos.y - my_screen) < 50) { 
+                    handleMicCenterBetweenBaffles();
+                }
             });
 
             function handleStart(e) {
@@ -927,6 +1010,8 @@
                     return;
                 }
 
+                // Removed mobile controls visibility toggling here. Controls now remain visible.
+
                 // Prevent Scrolling on mobile when touching canvas
                 // Only prevent default if the touch/click is NOT on an input/button and NOT within the controls sidebar
                 if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON' && !els.controls.contains(e.target)) {
@@ -937,10 +1022,10 @@
                 const cx = els.canvas.width / 2 + state.view.x;
                 const cy = els.canvas.height / 2 + state.view.y;
                 const ppm = state.view.scale;
-                const mx = cx + state.mic.x * ppm;
-                const my = cy + state.mic.y * ppm;
+                const mx_screen = cx + state.mic.x * ppm;
+                const my_screen = cy + state.mic.y * ppm;
                 
-                if (Math.hypot(pos.x - mx, pos.y - my) < 50) {
+                if (Math.hypot(pos.x - mx_screen, pos.y - my_screen) < 50) {
                     state.view.dragType = 'mic'; state.view.dragging = true;
                     setControlsDimmed();
                     state.view.lastX = pos.clientX; state.view.lastY = pos.clientY;
@@ -1016,18 +1101,54 @@
                 }
             }
 
+            // Global touchend handler for resetting drag state
             function handleEnd(e) {
-                state.view.dragging = false; state.view.dragType = null;
+                state.view.dragging = false; 
+                state.view.dragType = null;
                 state.view.lastPinchDist = 0;
                 removeControlsDimmed(); 
             }
 
+            const DOUBLE_TAP_DELAY = 300; // milliseconds
+            const DOUBLE_TAP_RADIUS = 20; // pixels
+
+            // Custom touchend listener for double-tap on canvas, particularly for mic centering
+            els.canvas.addEventListener('touchend', (e) => {
+                const now = Date.now();
+                const lastTap = state.lastTapTime;
+                const currentTapPos = getPointerPos(e); 
+
+                // Check for double-tap
+                if (now - lastTap < DOUBLE_TAP_DELAY) {
+                    const dist = Math.hypot(currentTapPos.clientX - state.lastTapLocation.clientX, currentTapPos.clientY - state.lastTapLocation.clientY);
+                    if (dist < DOUBLE_TAP_RADIUS) {
+                        // It's a double-tap
+                        const cx = els.canvas.width / 2 + state.view.x;
+                        const cy = els.canvas.height / 2 + state.view.y;
+                        const ppm = state.view.scale;
+                        const mx_screen = cx + state.mic.x * ppm;
+                        const my_screen = cy + state.mic.y * ppm;
+
+                        if (Math.hypot(currentTapPos.x - mx_screen, currentTapPos.y - my_screen) < 50) { // Check if double-tapped on mic
+                            handleMicCenterBetweenBaffles();
+                        }
+                        state.lastTapTime = 0; // Reset double-tap detection
+                        state.lastTapLocation = { clientX: 0, clientY: 0 };
+                        return; // Consume event if double-tap was processed
+                    }
+                }
+                state.lastTapTime = now;
+                state.lastTapLocation = { clientX: currentTapPos.clientX, clientY: currentTapPos.clientY };
+            }, {passive: false});
+
+
             els.canvas.addEventListener('mousedown', handleStart);
             window.addEventListener('mousemove', handleMove);
-            window.addEventListener('mouseup', handleEnd);
+            window.addEventListener('mouseup', handleEnd); // This handles global mouseup to stop drags
             els.canvas.addEventListener('touchstart', handleStart, {passive: false});
             window.addEventListener('touchmove', handleMove, {passive: false});
-            window.addEventListener('touchend', handleEnd);
+            window.addEventListener('touchend', handleEnd); // This also calls handleEnd for touchend on canvas to stop drags
+
             els.canvas.addEventListener('wheel', e => {
                 e.preventDefault();
                 const factor = e.deltaY > 0 ? 0.9 : 1.1;
@@ -1036,6 +1157,7 @@
             window.addEventListener('resize', () => {
                 els.canvas.width = els.canvas.parentElement.clientWidth;
                 els.canvas.height = els.canvas.parentElement.clientHeight;
+                // No need to explicitly manage controls visibility on resize, as they are always visible on mobile now.
             });
 
             function updateUI(skipBaffleRebuild = false) {
@@ -1516,10 +1638,12 @@
 
             function animate() { if(state.isPlaying) state.time += 0.2; draw(); requestAnimationFrame(animate); }
             els.canvas.width = els.canvas.parentElement.clientWidth; els.canvas.height = els.canvas.parentElement.clientHeight;
+            
             updateUI(); animate(); 
             
             // Attach event listener for the reset button after all elements are loaded
             els.reset.addEventListener('click', window.app.resetSimulator);
+            els.fullscreen.addEventListener('click', window.app.toggleFullscreen);
         };
     </script>
 <script type="module" src="/index.tsx"></script>
