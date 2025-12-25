@@ -472,12 +472,12 @@
 
     <header>
         <div class="brand-area">
-            <a href="https://www.instagram.com/3d_mc_3d/" target="_blank" title="Visitar Instagram de MC" class="brand-link">
+            <a href="https://www.instagram.com/3d_mc_3d/" target="_blank" title="Visitar Instagram de MC" class="brand-link" id="header-logo-link">
                 <img src="https://raw.githubusercontent.com/MauroCasarin/SONIDO/refs/heads/main/MC%2048%20N.png" alt="MC Logo" class="logo-img">
             </a>
             <h1 id="main-title">Simulador Educativo de Sonidos Graves</h1>
             <!-- Relocated footer content -->
-            <a href="https://www.instagram.com/3d_mc_3d/" target="_blank" class="author-link">
+            <a href="https://www.instagram.com/3d_mc_3d/" target="_blank" class="author-link" id="header-author-link">
                 <svg class="author-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2-6.782-2.618-6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zM12 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zM12 16c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
                 <span>Creado por Mauro Casarin</span>
             </a>
@@ -608,6 +608,84 @@
 
     </div>
 
+    <!-- Firebase SDKs - Load as modules -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+        import { getAnalytics, logEvent } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-analytics.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
+        // === TU CONFIGURACIÓN DE FIREBASE ===
+        // ¡REEMPLAZA ESTOS VALORES CON LOS DE TU PROYECTO FIREBASE!
+        const firebaseConfig = {
+          apiKey: "AIzaSyBYn9CW7meuCbJ-rpki4bW--R85DifOJWY",
+          authDomain: "sonido-da281.firebaseapp.com",
+          projectId: "sonido-da281",
+          storageBucket: "sonido-da281.firebasestorage.app",
+          messagingSenderId: "1063488139046",
+          appId: "1:1063488139046:web:1d97fc6fd6f05913091be7",
+          measurementId: "G-QN306197FK"
+        };
+
+        // Inicializa Firebase
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        const db = getFirestore(app);
+
+        // Exponer para uso global
+        window.logAnalyticsEvent = (eventName, params) => {
+            logEvent(analytics, eventName, params);
+        };
+        window.db = db; // Exponer Firestore para uso global
+
+        // Función para obtener/generar un ID de usuario anónimo
+        function getAnonymousUserId() {
+            let userId = localStorage.getItem('anonymousUserId');
+            if (!userId) {
+                userId = 'anon-' + Date.now() + Math.random().toString(36).substring(2, 9);
+                localStorage.setItem('anonymousUserId', userId);
+            }
+            return userId;
+        }
+
+        // Registrar visita anónima en Firestore
+        async function recordAnonymousVisit() {
+            const userId = getAnonymousUserId();
+            const userRef = doc(db, 'app_visits', userId);
+
+            window.logAnalyticsEvent('user_id', { user_id: userId }); // Log user_id to analytics
+
+            try {
+                const docSnap = await getDoc(userRef);
+                if (docSnap.exists()) {
+                    // Si el usuario ya existe, actualiza la última visita y el contador
+                    await updateDoc(userRef, {
+                        lastVisit: serverTimestamp(),
+                        visitsCount: docSnap.data().visitsCount + 1
+                    });
+                } else {
+                    // Si es un nuevo usuario, crea un nuevo documento
+                    await setDoc(userRef, {
+                        firstVisit: serverTimestamp(),
+                        lastVisit: serverTimestamp(),
+                        visitsCount: 1,
+                        userAgent: navigator.userAgent,
+                        // Añadimos un campo 'name' por si el usuario te lo proporciona en el futuro.
+                        // Por ahora, será genérico ya que no podemos obtenerlo automáticamente.
+                        name: 'Anonymous User'
+                    });
+                }
+            } catch (error) {
+                console.error("Error al registrar la visita anónima:", error);
+            }
+        }
+
+        // Llamar al registro de visita al cargar la app
+        window.addEventListener('load', () => {
+            window.logAnalyticsEvent('app_loaded'); // Evento de Analytics
+            recordAnonymousVisit(); // Evento de Firestore
+        });
+
+    </script>
     <script>
         window.app = {
             togglePlay: () => {}, toggleGuide: () => {}, setMode: () => {}, 
@@ -672,6 +750,8 @@
                 freqGroupTitle: document.getElementById('freq-group-title'), // New element reference for dynamic title
                 reset: document.getElementById('btn-reset'), // Reference to the new reset button
                 fullscreen: document.getElementById('btn-fullscreen'), // Reference to the new fullscreen button
+                headerAuthorLink: document.getElementById('header-author-link'), // Reference to the new author link in header
+                headerLogoLink: document.getElementById('header-logo-link'), // Reference to the logo link in header
             };
 
             const ctx = els.canvas.getContext('2d', { alpha: false });
@@ -760,6 +840,7 @@
                 els.btns.broad.className = m === 'broadside' ? 'active' : '';
                 els.btns.end.className = m === 'endfire' ? 'active' : '';
                 updateUI(); 
+                window.logAnalyticsEvent('mode_changed', { new_mode: m });
             };
             window.app.toggleLR = () => {
                 state.lrMode = !state.lrMode; state.isOptimized = false; state.isCardioidMode = false; resetGain();
@@ -767,14 +848,17 @@
                 els.btns.lr.innerText = state.lrMode ? "MODO: STEREO L/R" : "MODO: MONO CENTRAL";
                 els.btns.lr.className = state.lrMode ? 'active' : '';
                 updateUI(); 
+                window.logAnalyticsEvent('lr_mode_toggled', { is_lr_mode_active: state.lrMode });
             };
             window.app.togglePolarity = (i) => {
                 state.polarities[i] = !state.polarities[i];
                 renderBaffleGrid(); 
+                window.logAnalyticsEvent('baffle_polarity_toggled', { baffle_index: i, new_polarity: state.polarities[i] });
             };
             window.app.toggleDirection = (i) => {
                 state.directions[i] = !state.directions[i];
                 renderBaffleGrid();
+                window.logAnalyticsEvent('baffle_direction_toggled', { baffle_index: i, new_direction: state.directions[i] });
             };
             window.app.setDelay = (i, val) => {
                 state.delays[i] = parseFloat(val);
@@ -784,15 +868,18 @@
                 if(label) label.innerText = state.delays[i].toFixed(2) + ' ms';
                 animateValueEnlarge(labelId); // Animate delay value
                 updateUI(true); 
+                window.logAnalyticsEvent('baffle_delay_changed', { baffle_index: i, new_delay_ms: state.delays[i] });
             };
             window.app.togglePlay = () => {
                 state.isPlaying = !state.isPlaying;
                 els.btns.play.innerHTML = state.isPlaying ? '❚❚' : '▶';
                 els.btns.play.className = state.isPlaying ? 'vp-btn' : 'vp-btn paused';
+                window.logAnalyticsEvent('play_pause_toggled', { is_playing: state.isPlaying });
             };
             window.app.toggleGuide = () => {
                 state.isGuideOpen = !state.isGuideOpen;
                 els.modalGuide.classList.toggle('open', state.isGuideOpen);
+                window.logAnalyticsEvent('guide_modal_toggled', { is_guide_open: state.isGuideOpen });
             };
             window.app.setLambdaFraction = (frac) => {
                 const c = SPEED_OF_SOUND;
@@ -801,6 +888,7 @@
                 state.dist = optimal; els.inputs.dist.value = optimal;
                 animateValueEnlarge('disp-dist'); // Animate distance value
                 updateUI(); 
+                window.logAnalyticsEvent('lambda_preset_applied', { preset_type: frac === 0.25 ? 'lambda_quarter' : 'lambda_half', new_distance_m: optimal });
             };
 
             // FOCUS (AutoOptimize) - Lógica de Alineación al Micrófono
@@ -826,6 +914,7 @@
                 els.optStatus.style.display = 'block';
                 els.optStatus.innerHTML = 'OPTIMIZADO (FOCUS)';
                 resetGain(); updateUI(); 
+                window.logAnalyticsEvent('focus_clicked');
             };
 
             window.app.resetSimulator = () => {
@@ -879,6 +968,7 @@
 
                 // Call updateUI to refresh all display values and baffle grid
                 updateUI(); 
+                window.logAnalyticsEvent('reset_all_clicked');
             };
 
             // Fullscreen toggle
@@ -886,9 +976,12 @@
                 if (!document.fullscreenElement) {
                     document.documentElement.requestFullscreen().catch(err => {
                         console.error(`Error attempting to enable fullscreen: ${err.message} (${err.name})`);
+                        window.logAnalyticsEvent('fullscreen_error', { error_name: err.name, error_message: err.message });
                     });
+                    window.logAnalyticsEvent('fullscreen_toggled', { is_fullscreen: true });
                 } else {
                     document.exitFullscreen();
+                    window.logAnalyticsEvent('fullscreen_toggled', { is_fullscreen: false });
                 }
             };
 
@@ -922,8 +1015,25 @@
                 const input = els.inputs[key];
                 input.addEventListener('input', (e) => {
                     const val = parseFloat(e.target.value);
-                    if (key === 'latMargin') state.lateralMargin = val;
-                    else state[key] = val;
+                    if (key === 'latMargin') {
+                        state.lateralMargin = val;
+                        window.logAnalyticsEvent('lateral_margin_changed', { new_margin_m: val });
+                    }
+                    else if (key === 'freq') {
+                        state.freq = val;
+                        window.logAnalyticsEvent('frequency_changed', { new_frequency_hz: val });
+                    }
+                    else if (key === 'count') {
+                        state.count = val;
+                        window.logAnalyticsEvent('baffle_count_changed', { new_baffle_count: val });
+                    }
+                    else if (key === 'dist') {
+                        state.dist = val;
+                        window.logAnalyticsEvent('separation_distance_changed', { new_distance_m: val });
+                    }
+                    else {
+                         state[key] = val; // Fallback for other potential sliders
+                    }
                     
                     if (['freq', 'dist', 'latMargin', 'count', 'angle'].includes(key)) {
                          if(state.isOptimized) { 
@@ -982,6 +1092,7 @@
                 // state.view.y = -state.mic.y * ppm; // REMOVED: Do not change camera view
 
                 updateUI(); // Redraw with new mic position
+                window.logAnalyticsEvent('mic_centered_baffles', { mic_x: state.mic.x, mic_y: state.mic.y });
             };
 
 
@@ -1083,6 +1194,8 @@
                         if (state.isOptimized) {
                             // Manual re-optimization required currently
                         }
+                        // Analytics event for dragging mic (optional, can be noisy)
+                        // window.logAnalyticsEvent('mic_dragged', { mic_x: state.mic.x, mic_y: state.mic.y });
                     } else if (state.view.dragType === 'baffle') {
                         const dM = -dyPix / state.view.scale;
                         if (Math.abs(dM) > 0) {
@@ -1095,6 +1208,8 @@
                             }
                             updateUI();
                             animateValueEnlarge('disp-dist'); // Animate distance value during drag
+                            // Analytics event for baffle separation change (optional, can be noisy)
+                            // window.logAnalyticsEvent('separation_distance_dragged', { new_distance_m: state.dist });
                         }
                     }
                     state.view.lastX = pos.clientX; state.view.lastY = pos.clientY;
@@ -1153,12 +1268,27 @@
                 e.preventDefault();
                 const factor = e.deltaY > 0 ? 0.9 : 1.1;
                 state.view.scale = Math.max(5, Math.min(100, state.view.scale * factor));
+                // Analytics event for zoom (optional, can be noisy)
+                // window.logAnalyticsEvent('zoom_changed', { new_scale: state.view.scale });
             });
             window.addEventListener('resize', () => {
                 els.canvas.width = els.canvas.parentElement.clientWidth;
                 els.canvas.height = els.canvas.parentElement.clientHeight;
                 // No need to explicitly manage controls visibility on resize, as they are always visible on mobile now.
             });
+
+            // Analytics for author link click
+            if (els.headerAuthorLink) {
+                els.headerAuthorLink.addEventListener('click', () => {
+                    window.logAnalyticsEvent('author_link_clicked', { link_name: 'Mauro Casarin Instagram' });
+                });
+            }
+            if (els.headerLogoLink) {
+                els.headerLogoLink.addEventListener('click', () => {
+                    window.logAnalyticsEvent('logo_link_clicked', { link_name: 'MC Logo Instagram' });
+                });
+            }
+
 
             function updateUI(skipBaffleRebuild = false) {
                 els.displays.freq.innerText = state.freq + ' Hz';
