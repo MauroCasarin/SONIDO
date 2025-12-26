@@ -427,33 +427,73 @@
         .modal-overlay.open { opacity: 1; pointer-events: auto; }
         .modal-content {
             background: #18181b; border: 1px solid #3f3f46; border-radius: 8px;
-            padding: 20px; width: 85%; max-width: 320px; /* Adjust max-width if more content is desired */
-            max-height: 80vh; /* Max height to fit screen */
+            padding: 20px; width: 85%; max-width: 380px; /* Adjust max-width if more content is desired */
+            max-height: 85vh; /* Max height to fit screen */
             overflow-y: auto; /* Enable scrolling if content overflows */
             box-shadow: 0 20px 50px rgba(0,0,0,0.8); transform: translateY(15px); transition: transform 0.3s ease;
+            color: var(--text-dim); /* Default text color for modal content */
         }
         .modal-overlay.open .modal-content { transform: translateY(0); }
         .modal-title {
-            color: #fff; font-size: 13px; margin: 0 0 15px 0; padding-bottom: 8px;
+            color: #fff; font-size: 14px; margin: 0 0 15px 0; padding-bottom: 8px;
             border-bottom: 1px solid #27272a; text-align: center; text-transform: uppercase;
         }
-        .guide-item { display: flex; gap: 10px; margin-bottom: 12px; color: #e4e4e7; }
-        .guide-icon { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
-        .guide-item strong { color: var(--accent); display: block; margin-bottom: 2px; font-size: 11px; }
-        .guide-item p { margin: 0; font-size: 10px; color: #a1a1aa; line-height: 1.3; }
-        
-        /* Visual Wave Examples */
-        .wave-example {
-            height: 35px; width: 100%; background: #000; border: 1px solid #333;
-            margin-top: 4px; border-radius: 4px; position: relative; overflow: hidden;
-            display: flex; align-items: center; justify-content: center;
+        /* New styles for guide sections */
+        .guide-section {
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px dashed rgba(255,255,255,0.05);
         }
-        .wave-svg { width: 100%; height: 100%; display: block; }
-        
+        .guide-section:last-of-type {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        .guide-section h3 {
+            color: var(--accent); /* Accent color for main section titles */
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin: 15px 0 10px 0;
+            padding-bottom: 5px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .guide-section p {
+            margin: 0 0 8px 0;
+            font-size: 10px; /* Slightly smaller for body text */
+            line-height: 1.5;
+            color: var(--text-dim);
+        }
+        .guide-section strong {
+            color: var(--text-main); /* White for strong labels */
+            font-size: 10.5px; /* Slightly larger for strong labels */
+        }
+        .guide-section ul {
+            padding-left: 15px;
+            margin: 5px 0 10px 0;
+            list-style: disc;
+        }
+        .guide-section li {
+            font-size: 10px;
+            margin-bottom: 4px;
+            line-height: 1.4;
+            color: var(--text-dim);
+        }
+        .guide-section li strong {
+            color: var(--text-main); /* White for strong labels in lists */
+        }
+        /* Specific colors for guide text */
+        .color-gold { color: var(--gold); }
+        .color-red { color: var(--danger); }
+        .color-green { color: var(--success); }
+        .color-grey { color: #52525b; } /* Same as GRIS from text */
+        .color-accent { color: var(--accent); }
+
         .modal-close-btn {
             width: 100%; padding: 8px; background: var(--accent); color: white;
             border: none; border-radius: 4px; font-weight: bold; cursor: pointer;
-            margin-top: 5px; font-size: 10px; text-transform: uppercase;
+            margin-top: 15px; /* Increased margin */
+            font-size: 10px; text-transform: uppercase;
         }
 
         /* NEW NAME INPUT MODAL STYLES */
@@ -544,6 +584,9 @@
                 transition: none;
             }
             .hud-panel { top: 5px; left: 5px; /* width: 110px; */ padding: 4px 8px; } /* Removed fixed width, adjusted padding for mobile */
+            .modal-content {
+                max-width: 95%; /* Make guide modal a bit wider on small screens */
+            }
         }
     </style>
 <link rel="stylesheet" href="/index.css">
@@ -569,36 +612,84 @@
 
     <div id="modal-guide" class="modal-overlay">
         <div class="modal-content">
-            <h3 class="modal-title">Guía de Interpretación Técnica</h3>
+            <h3 class="modal-title">Guía Completa del Simulador de Sonido Grave</h3>
             
-            <div style="color: #a1a1aa; font-size: 11px; line-height: 1.4;">
-                <p style="margin-bottom: 8px; color: var(--text-main);">
-                    Esta guía esencial te ofrece una visión clara de cómo interpretar y optimizar el sonido grave en nuestro simulador.
-                </p>
+            <p style="margin-bottom: 15px; font-size: 11px; color: var(--text-main); line-height: 1.5;">
+                Esta guía te ofrece una comprensión profunda para dominar el simulador y la acústica de sistemas de sonido grave. Explora los controles, interpreta las visualizaciones y optimiza tus arreglos.
+            </p>
 
-                <p style="margin-bottom: 4px; color: var(--text-main);"><b>1. Osciloscopio (Feedback Dinámico):</b></p>
-                <ul style="padding-left: 20px; margin-top: 4px; margin-bottom: 12px;">
-                    <li><strong style="color:#ffd700">DORADO:</strong> Alineación de fase óptima (&lt;10°), máxima suma de energía. Sonido potente y claro.</li>
-                    <li><strong style="color:#ef4444">ROJO (CANCELACIÓN):</strong> Fases desalineadas, reducción drástica del sonido. Genera "agujeros" o falta de impacto.</li>
-                    <li><strong style="color:#00ff00">VERDE (SUMA NORMAL):</strong> Combinación constructiva/destructiva moderada, sonido perceptible y coherente.</li>
-                    <li><strong style="color:#52525b">GRIS (NO SONIDO):</strong> Baja emisión o cancelación casi total.</li>
-                    <li>"Coh" (Coherencia): % de alineación de fases entre fuentes. Un valor alto es clave para la calidad.</li>
+            <div class="guide-section">
+                <h3>1. Conceptos Clave del Simulador</h3>
+                <p><strong>A. Frecuencia y Longitud de Onda (λ)</strong></p>
+                <p>La frecuencia (Hz) determina el tamaño de la onda (metros). Es fundamental para la fase y la direccionalidad. La longitud de onda se muestra en el HUD (<span class="color-gold">Longitud Onda</span>).</p>
+                <p><strong>B. Separación entre Bafles (<span class="color-accent">Separación (m)</span>)</strong></p>
+                <p>La distancia física entre los centros acústicos de los bafles. Es crítica para la interacción de ondas.</p>
+                <ul>
+                    <li><strong class="color-gold">PRESET λ/4 (Máx. Suma Frontal):</strong> Distancia óptima para máxima suma de energía hacia adelante.</li>
+                    <li><strong class="color-accent">PRESET λ/2 (Máx. Cancelación Lateral):</strong> Distancia para lograr mayor direccionalidad lateral.</li>
                 </ul>
+                <p><strong>C. Cantidad de Bafles (<span class="color-accent">Bafles (N)</span>)</strong></p>
+                <p>El número de bafles en tu arreglo. Afecta la cobertura y el nivel general.</p>
+            </div>
 
-                <p style="margin-bottom: 4px; color: var(--text-main);"><b>2. Direccionalidad de Bafles (Cardioide):</b></p>
-                <p style="margin-top: 4:px; margin-bottom: 12px;">
-                    Los bafles simulan un patrón cardioide: emiten hacia el frente y minimizan la energía hacia atrás, reduciendo el sonido no deseado en el escenario.
-                </p>
+            <div class="guide-section">
+                <h3>2. Controles de Configuración del Arreglo</h3>
+                <p><strong>A. Modo BROADSIDE</strong></p>
+                <p>Los bafles se colocan en una línea horizontal. Ofrece una cobertura más ancha (aproximadamente 180° frontales).</p>
+                <p><strong>B. Modo END-FIRE</strong></p>
+                <p>Los bafles se colocan en línea en profundidad. Logra un rechazo significativo hacia atrás y mayor direccionalidad hacia adelante. Depende del uso de <span class="color-accent">Delay</span>.</p>
+                <p><strong>C. Modo MONO CENTRAL / STEREO L/R</strong></p>
+                <ul>
+                    <li><strong>MONO CENTRAL:</strong> Un único arreglo de bafles centrado.</li>
+                    <li><strong>STEREO L/R:</strong> Divide el arreglo en dos clusters (Izquierda/Derecha) espejados.</li>
+                </ul>
+                <p><strong>D. Margen L/R (<span class="color-accent">Separación L/R</span>)</strong></p>
+                <p>Ajusta la distancia de los clusters L/R desde el centro, impactando la separación estéreo.</p>
+            </div>
 
-                <p style="margin-bottom: 4px; color: var(--text-main);"><b>3. Mapa de Calor (SPL Relativo):</b></p>
-                <p style="margin-top: 4px; margin-bottom: 12px;">
-                    Visualiza niveles de presión sonora (SPL) de forma *relativa*. Colores cálidos = mayor presión; fríos = menor presión/cancelación. Ayuda a identificar patrones de cobertura (los dB son de referencia visual).
-                </p>
+            <div class="guide-section">
+                <h3>3. Controles Individuales por Bafle</h3>
+                <p><strong>A. Polaridad (Ø)</strong></p>
+                <p>Invierte la fase (180°) de un bafle. Es una herramienta crucial para corregir cancelaciones o crear patrones direccionales.</p>
+                <p><strong>B. Dirección (⟲)</strong></p>
+                <p>Invierte la orientación física del patrón cardioide de un bafle (hacia adelante o hacia atrás). Afecta el rechazo trasero del bafle individual.</p>
+                <p><strong>C. Delay (<span class="color-warning">ms</span>)</strong></p>
+                <p>Retraso aplicado al sonido de un bafle. Es esencial para la alineación de fase y para "dirigir" el sonido en el espacio (ej. en arreglos End-Fire). Se muestra en milisegundos.</p>
+            </div>
 
-                <p style="margin-bottom: 4px; color: var(--text-main);"><b>4. Rangos de Frecuencias Graves:</b></p>
-                <ul style="padding-left: 20px; margin-top: 4px; margin-bottom: 12px;">
-                    <li><strong style="color:var(--gold)">SUB GRAVES (20 – 60 Hz):</strong> Frecuencias sentidas (físicas) más que oídas. Generan potencia y "presión en el pecho". Cruciales para el impacto. Muy largas longitudes de onda, complejas de controlar.</li>
-                    <li><strong style="color:var(--accent)">GRAVES (61 – 250 Hz):</strong> Base rítmica (bombo, bajo), aportan "calor", "grosor" y "punch". Vital su control para evitar el "barro" y mantener la claridad.</li>
+            <div class="guide-section">
+                <h3>4. Interpretación Visual</h3>
+                <p><strong>A. Mapa de Calor (SPL Relativo)</strong></p>
+                <p>Representa la Presión Sonora (SPL) de forma <span style="font-style: italic;">relativa</span>. Los colores cálidos (rojo, amarillo) indican mayor presión/suma de energía, mientras que los colores fríos (azul, negro) señalan menor presión o zonas de cancelación. ¡Los dB son una referencia visual!</p>
+                <p><strong>B. Osciloscopio (Feedback Dinámico)</strong></p>
+                <p>Muestra la suma de las ondas en la posición del micrófono en tiempo real.</p>
+                <ul>
+                    <li><strong class="color-gold">DORADO (FASE 0° - SUMA MÁXIMA):</strong> Alineación de fase óptima (&lt;10°), con la mayor suma de energía posible. Sonido potente y claro.</li>
+                    <li><strong class="color-red">ROJO (CANCELACIÓN):</strong> Fases seriamente desalineadas, resultando en una reducción drástica del sonido. Provoca "agujeros" en la cobertura y falta de impacto.</li>
+                    <li><strong class="color-green">VERDE (SUMA NORMAL):</strong> Combinación constructiva/destructiva moderada, generando un sonido perceptible y coherente.</li>
+                    <li><strong class="color-grey">GRIS (NO SONIDO):</strong> Muy baja emisión o cancelación casi total del sonido en el micrófono.</li>
+                    <li><strong class="color-accent">"Coh" (Coherencia):</strong> Indica el porcentaje de alineación de fases entre las diferentes fuentes. Un valor alto (cercano al 100%) es fundamental para la calidad y el impacto del sonido.</li>
+                </ul>
+                <p><strong>C. Micrófono y Optimización (<span class="color-gold">✨ FOCUS</span>)</strong></p>
+                <p>El micrófono es tu punto de medición. Arrástralo por el visor para evaluar el sonido en diferentes posiciones. El botón <span class="color-gold">✨ FOCUS</span> aplica automáticamente delays y polaridades para lograr la máxima suma de energía en la posición actual del micrófono. ¡Úsalo para alinear tu arreglo!</p>
+            </div>
+
+            <div class="guide-section">
+                <h3>5. Rangos de Frecuencias Graves</h3>
+                <ul>
+                    <li><strong class="color-gold">SUB GRAVES (20 – 60 Hz):</strong> Frecuencias que se sienten (físicas) más que se oyen. Generan potencia y la "presión en el pecho". Son cruciales para el impacto, pero sus largas longitudes de onda las hacen complejas de controlar.</li>
+                    <li><strong class="color-accent">GRAVES (61 – 250 Hz):</strong> Constituyen la base rítmica (bombo, bajo) y aportan "calor", "grosor" y "punch" al sonido. Es vital controlarlas para evitar el "barro" y mantener la claridad general del sistema.</li>
+                </ul>
+            </div>
+
+            <div class="guide-section">
+                <h3>6. Interacción con el Visor (Canvas)</h3>
+                <ul>
+                    <li><strong>Arrastrar Bafles:</strong> Clic/toca y arrastra un bafle para ajustar la <span class="color-accent">Separación</span> de todo el arreglo.</li>
+                    <li><strong>Arrastrar Micrófono:</strong> Clic/toca y arrastra el icono del micrófono para mover el punto de escucha.</li>
+                    <li><strong>Zoom:</strong> Usa la rueda del ratón (escritorio) o el gesto de "pellizcar" con dos dedos (móvil).</li>
+                    <li><strong>Pan:</strong> Clic/toca y arrastra el fondo del visor para mover la vista del "mundo".</li>
+                    <li><strong>Centrar Micrófono:</strong> Doble clic o doble toque sobre el icono del micrófono para centrarlo horizontalmente entre tus arreglos de bafles.</li>
                 </ul>
             </div>
 
@@ -856,7 +947,7 @@
                 fullscreen: document.getElementById('btn-fullscreen'), // Reference to the new fullscreen button
                 whatsappShare: document.getElementById('btn-whatsapp-share'), // Reference to the new WhatsApp share button
                 headerAuthorLink: document.getElementById('header-author-link'), // Reference to the new author link in header
-                headerLogoLink: document.getElementById('header-logo-link'), // Reference to the logo link in header
+                headerLogoLink: document.getElementById('header-logo-link'),
                 
                 // New name modal elements
                 nameModalOverlay: document.getElementById('name-modal-overlay'),
