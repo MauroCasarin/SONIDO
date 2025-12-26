@@ -98,7 +98,7 @@
             font-size: 9px; /* Same as old footer font size */
             font-weight: 500;
             letter-spacing: 0.5px;
-            margin-left: 40px; /* Offset to align with title */
+            /* No margin-left here, rely on flexbox for alignment or specific positioning */
             transition: color 0.2s;
         }
         .author-link:hover {
@@ -108,6 +108,13 @@
             width: 10px;
             height: 10px;
             fill: currentColor;
+        }
+
+        /* Version text in header */
+        .app-version {
+            font-size: 9px;
+            color: var(--text-dim);
+            margin-right: 8px; /* Added right margin for consistency */
         }
 
 
@@ -380,7 +387,7 @@
             margin: 2px 0;
         }
         .delay-val {
-            font-size: 8px; /* Base size for delay values */
+            font-size: 7px; /* Changed from 8px to 7px */
             color: var(--warning); /* Keep warning color for delay, will override with original color if needed */
             text-align: right;
             font-family: monospace;
@@ -399,10 +406,14 @@
         .hud-panel {
             position: absolute; top: 10px; left: 10px;
             background: rgba(0, 0, 0, 0.6); border: 1px solid rgba(255,255,255,0.1);
-            backdrop-filter: blur(3px); padding: 8px; border-radius: 44px;
-            width: 140px; pointer-events: none; z-index: 15; transition: opacity 0.3s;
+            backdrop-filter: blur(3px); padding: 4px 8px; border-radius: 44px; /* Adjusted padding, removed fixed width */
+            /* width: 140px; */ /* Removed fixed width */
+            pointer-events: none; z-index: 15; transition: opacity 0.3s;
+            display: inline-block; /* Allow it to shrink-wrap content */
+            white-space: nowrap; /* Prevent text from wrapping inside the panel */
         }
-        .hud-row { display: flex; justify-content: space-between; font-size: 9px; margin-bottom: 3px; font-family: monospace; }
+        .hud-row { display: flex; justify-content: space-between; font-size: 9px; margin-bottom: 0px; font-family: monospace; } /* Adjusted margin-bottom to 0 */
+        .hud-row:last-child { margin-bottom: 0; } /* Remove margin from last row */
         .hud-label { color: #a1a1aa; }
         .hud-value { color: #fff; font-weight: bold; }
         
@@ -445,6 +456,75 @@
             margin-top: 5px; font-size: 10px; text-transform: uppercase;
         }
 
+        /* NEW NAME INPUT MODAL STYLES */
+        #name-modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); /* Slightly less blur than guide */
+            z-index: 250; /* Higher than guide modal */
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+        }
+        #name-modal-overlay.open { opacity: 1; pointer-events: auto; }
+        #name-modal-content {
+            background: #18181b; border: 1px solid #3f3f46; border-radius: 8px;
+            padding: 20px; width: 85%; max-width: 280px; /* Slightly smaller for name input */
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+            transform: translateY(15px); transition: transform 0.3s ease;
+            display: flex; /* Flexbox for internal layout */
+            flex-direction: column;
+            gap: 15px; /* Spacing between elements */
+        }
+        #name-modal-overlay.open #name-modal-content { transform: translateY(0); }
+        #name-modal-content h3 {
+            color: #fff; font-size: 12px; margin: 0;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            padding-bottom: 5px; border-bottom: 1px solid #27272a;
+        }
+        #name-input {
+            width: calc(100% - 20px); /* Adjust for padding */
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+            background-color: #09090b;
+            color: var(--text-main);
+            font-size: 14px;
+            text-align: center;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        #name-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px var(--accent-glow);
+        }
+        #name-input.invalid {
+            border-color: var(--danger);
+            box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.3);
+            animation: shake 0.3s;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px); }
+            40%, 80% { transform: translateX(5px); }
+        }
+        #name-submit-btn {
+            width: 100%;
+            padding: 10px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 11px;
+            text-transform: uppercase;
+            transition: background 0.2s, box-shadow 0.2s;
+        }
+        #name-submit-btn:hover {
+            background: #3673d4;
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
+
         /* MOBILE RESPONSIVE */
         @media (max-width: 768px) {
             header { height: 60px; /* Increased height to accommodate new author link */ padding: 0 8px; }
@@ -463,7 +543,7 @@
                 z-index: 20; background: rgba(8, 8, 10, 0.95); padding-bottom: 20px;
                 transition: none;
             }
-            .hud-panel { top: 5px; left: 5px; width: 110px; padding: 6px; }
+            .hud-panel { top: 5px; left: 5px; /* width: 110px; */ padding: 4px 8px; } /* Removed fixed width, adjusted padding for mobile */
         }
     </style>
 <link rel="stylesheet" href="/index.css">
@@ -482,6 +562,7 @@
                 <span>Creado por Mauro Casarin</span>
             </a>
         </div>
+        <span class="app-version">( V2.0 )</span>
     </header>
 
     <div id="tooltip" class="custom-tooltip"></div>
@@ -522,6 +603,15 @@
             </div>
 
             <button class="modal-close-btn" onclick="app.toggleGuide()">Cerrar</button>
+        </div>
+    </div>
+
+    <!-- NEW NAME INPUT MODAL -->
+    <div id="name-modal-overlay">
+        <div id="name-modal-content">
+            <h3>Escribí tu nombre para continuar:</h3>
+            <input type="text" id="name-input" placeholder="Tu nombre o apodo">
+            <button id="name-submit-btn">Aceptar</button>
         </div>
     </div>
 
@@ -603,7 +693,15 @@
                 <div class="group-title">ACCIONES</div>
                 <button id="btn-reset" class="red-magic" style="width:100%; padding:8px;">RESETEAR TODO</button>
                 <button id="btn-fullscreen" class="magic" style="width:100%; padding:8px; margin-top: 4px;">FULLSCREEN</button>
+                <button id="btn-whatsapp-share" class="magic" style="width:100%; padding:8px; margin-top: 4px; background: #25D366; border-color: #25D366;">COMPARTIR POR WHATSAPP</button>
             </div>
+
+            <!-- Spacer and Author Link -->
+            <div style="height: 16px;"></div> <!-- Double the space -->
+            <a href="https://www.instagram.com/3d_mc_3d/" target="_blank" class="author-link" id="footer-author-link" style="justify-content: flex-start; margin-left: 8px;">
+                <svg class="author-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2-6.782-2.618-6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zM12 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zM12 16c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                <span>Creado por Mauro Casarin</span>
+            </a>
         </div>
 
     </div>
@@ -654,13 +752,16 @@
 
             window.logAnalyticsEvent('user_id', { user_id: userId }); // Log user_id to analytics
 
+            const userName = localStorage.getItem('userName') || 'Anonymous User'; // Get name from localStorage if available
+
             try {
                 const docSnap = await getDoc(userRef);
                 if (docSnap.exists()) {
-                    // Si el usuario ya existe, actualiza la última visita y el contador
+                    // Si el usuario ya existe, actualiza la última visita, el contador y el nombre si cambió
                     await updateDoc(userRef, {
                         lastVisit: serverTimestamp(),
-                        visitsCount: docSnap.data().visitsCount + 1
+                        visitsCount: docSnap.data().visitsCount + 1,
+                        name: userName // Update name just in case
                     });
                 } else {
                     // Si es un nuevo usuario, crea un nuevo documento
@@ -669,9 +770,7 @@
                         lastVisit: serverTimestamp(),
                         visitsCount: 1,
                         userAgent: navigator.userAgent,
-                        // Añadimos un campo 'name' por si el usuario te lo proporciona en el futuro.
-                        // Por ahora, será genérico ya que no podemos obtenerlo automáticamente.
-                        name: 'Anonymous User'
+                        name: userName
                     });
                 }
             } catch (error) {
@@ -691,13 +790,17 @@
             togglePlay: () => {}, toggleGuide: () => {}, setMode: () => {}, 
             toggleLR: () => {}, togglePolarity: () => {}, toggleDirection: () => {},
             setLambdaFraction: () => {}, autoOptimize: () => {}, setDelay: () => {},
-            resetSimulator: () => {}, toggleFullscreen: () => {}
+            resetSimulator: () => {}, toggleFullscreen: () => {},
+            shareOnWhatsApp: () => {},
+            showNameModal: () => {}, // Expose for potential debug or future use
+            submitName: () => {} // Expose for potential debug or future use
         };
         window.idx = 0; // Estabilidad requerida
 
         window.onload = function() {
             
             const SPEED_OF_SOUND = 344;
+            const NAME_MODAL_DELAY_MS = 30 * 1000; // 30 seconds
 
             const state = {
                 freq: 80, dist: 1.07, count: 2, angle: 90,
@@ -718,6 +821,7 @@
                 doubleTapTimeout: null, // For mobile double-tap detection
                 lastTapTime: 0,
                 lastTapLocation: { clientX: 0, clientY: 0 }, // Store clientX/Y for robustness
+                nameModalShownThisSession: sessionStorage.getItem('nameModalShown') === 'true', // Track if shown in this session
             };
 
             const els = {
@@ -750,8 +854,14 @@
                 freqGroupTitle: document.getElementById('freq-group-title'), // New element reference for dynamic title
                 reset: document.getElementById('btn-reset'), // Reference to the new reset button
                 fullscreen: document.getElementById('btn-fullscreen'), // Reference to the new fullscreen button
+                whatsappShare: document.getElementById('btn-whatsapp-share'), // Reference to the new WhatsApp share button
                 headerAuthorLink: document.getElementById('header-author-link'), // Reference to the new author link in header
                 headerLogoLink: document.getElementById('header-logo-link'), // Reference to the logo link in header
+                
+                // New name modal elements
+                nameModalOverlay: document.getElementById('name-modal-overlay'),
+                nameInput: document.getElementById('name-input'),
+                nameSubmitBtn: document.getElementById('name-submit-btn'),
             };
 
             const ctx = els.canvas.getContext('2d', { alpha: false });
@@ -982,6 +1092,55 @@
                 } else {
                     document.exitFullscreen();
                     window.logAnalyticsEvent('fullscreen_toggled', { is_fullscreen: false });
+                }
+            };
+
+            // WhatsApp Share Function
+            window.app.shareOnWhatsApp = () => {
+                const appUrl = "https://maurocasarin.github.io/SONIDO/";
+                const message = "Simulador Educativo de Sonidos Graves";
+                const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message + " " + appUrl)}`;
+                window.open(whatsappUrl, '_blank');
+                window.logAnalyticsEvent('whatsapp_share_clicked');
+            };
+
+            // Name Modal Functions
+            window.app.showNameModal = () => {
+                if (!state.nameModalShownThisSession && !localStorage.getItem('userName')) {
+                    els.nameModalOverlay.classList.add('open');
+                    els.nameInput.value = ''; // Clear input on show
+                    els.nameInput.focus();
+                    state.nameModalShownThisSession = true;
+                    sessionStorage.setItem('nameModalShown', 'true'); // Mark as shown for this session
+                    window.logAnalyticsEvent('name_modal_shown');
+                }
+            };
+
+            window.app.submitName = () => {
+                const name = els.nameInput.value.trim();
+                if (name) {
+                    localStorage.setItem('userName', name); // Store name persistently
+                    window.logAnalyticsEvent('user_provided_name', { name: name });
+
+                    // Hide modal
+                    els.nameModalOverlay.classList.remove('open');
+                    els.nameInput.classList.remove('invalid'); // Remove invalid state if present
+
+                    // Optionally update Firestore user entry with the new name
+                    // This assumes `db` and `getAnonymousUserId` are available from Firebase script
+                    if (window.db && window.getAnonymousUserId) {
+                        const userId = window.getAnonymousUserId();
+                        const userRef = doc(window.db, 'app_visits', userId);
+                        updateDoc(userRef, { name: name }).catch(error => {
+                            console.error("Error updating user name in Firestore:", error);
+                        });
+                    }
+
+                } else {
+                    els.nameInput.classList.add('invalid');
+                    setTimeout(() => {
+                        els.nameInput.classList.remove('invalid');
+                    }, 500); // Remove invalid class after animation
                 }
             };
 
@@ -1481,11 +1640,75 @@
                 ctx.restore();
             }
 
+            // Helper to calculate complex sum for a subset of sources at mic position
+            function calculateComplexSumAtMic(sourcesSubset, micX, micY, k) {
+                let complexSumR = 0;
+                let complexSumI = 0;
+                let magSum = 0;
+
+                sourcesSubset.forEach(s => {
+                    const d = Math.hypot(micX - s.x, micY - s.y);
+                    const phaseShift = (k * d) - s.phase + (s.inv ? Math.PI : 0);
+                    
+                    const vSMx = micX - s.x;
+                    const vSMy = micY - s.y;
+                    const distSM = Math.hypot(vSMx, vSMy);
+                    const cosTheta = distSM > 0 ? (s.dirDown ? (vSMy / distSM) : (-vSMy / distSM)) : 1.0;
+                    const directivityFactor = (1.0 + cosTheta) / 2.0;
+                    const amplitudeFactor = (1.0 / Math.max(0.1, d)) * directivityFactor;
+
+                    complexSumR += amplitudeFactor * Math.cos(phaseShift);
+                    complexSumI += amplitudeFactor * Math.sin(phaseShift);
+                    magSum += amplitudeFactor;
+                });
+
+                const magnitude = Math.sqrt(complexSumR * complexSumR + complexSumI * complexSumI);
+                const phase = Math.atan2(complexSumI, complexSumR); 
+
+                return { magnitude, phase, complexSumR, complexSumI, magSum };
+            }
+
+            function getSourcesForWave(waveType, allSimSources, micX) {
+                if (waveType === 'mic_reference') {
+                    return []; // Reference wave is pure sine, no sources
+                }
+
+                const sources = [];
+                if (state.lrMode) {
+                    // Stereo mode: groups based on x-offset (relative to micX for robust separation)
+                    if (waveType === 'baffle_L') {
+                        return allSimSources.filter(s => s.x < micX);
+                    } else if (waveType === 'baffle_R') {
+                        return allSimSources.filter(s => s.x >= micX);
+                    }
+                } else {
+                    // Mono central mode
+                    if (state.count === 1) {
+                        if (waveType === 'baffle_L') {
+                            return allSimSources; // The single source
+                        } else if (waveType === 'baffle_R') {
+                            return []; // No distinct right baffle in single mono
+                        }
+                    } else {
+                        // For mono array, divide sources into left and right halves conceptually
+                        // Sort by X-coordinate to ensure "left" and "right" are consistent
+                        const sortedSources = [...allSimSources].sort((a, b) => a.x - b.x);
+                        const midIndex = Math.ceil(state.count / 2);
+
+                        if (waveType === 'baffle_L') {
+                            return sortedSources.slice(0, midIndex);
+                        } else if (waveType === 'baffle_R') {
+                            return sortedSources.slice(midIndex, state.count);
+                        }
+                    }
+                }
+                return [];
+            }
 
             function draw() {
                 const w = els.canvas.width; const h = els.canvas.height; if(w === 0 || h === 0) return;
                 const cx = w/2 + state.view.x; const cy = h/2 + state.view.y; const ppm = state.view.scale;
-                const c = SPEED_OF_SOUND; const k = (2 * Math.PI * state.freq) / c; const timePhase = state.time * 0.5;
+                const c = SPEED_OF_SOUND; const k = (2 * Math.PI * state.freq) / c; const timePhase = state.isPlaying ? state.time * 0.5 : 0; // Animation only if playing
                 
                 ctx.fillStyle = '#09090b'; ctx.fillRect(0,0,w,h);
                 
@@ -1494,7 +1717,7 @@
                 const startX = Math.floor((-cx)/ppm); const endX = Math.ceil((w-cx)/ppm);
                 const startY = Math.floor((-cy)/ppm); const endY = Math.ceil((h-cy)/ppm);
                 for(let gx=startX; gx<=endX; gx++) { const sx = cx + gx*ppm; ctx.moveTo(sx, 0); ctx.lineTo(sx, h); }
-                for(let gy=startY; gy<=endY; gy++) { const sy = cy + gy*ppm; ctx.moveTo(0, sy); ctx.lineTo(0, sy); }
+                for(let gy=startY; gy<=endY; gy++) { const sy = cy + gy*ppm; ctx.moveTo(0, sy); ctx.lineTo(w, sy); } /* Fixed typo here */
                 ctx.stroke(); ctx.restore();
 
                 let sources = generateSourcesForLogic();
@@ -1592,12 +1815,12 @@
                     // Use roundRect if available, fallback to fillRect
                     if (ctx.roundRect) {
                         ctx.beginPath(); 
-                        ctx.roundRect(-25, -10, 50, 20, 5); 
+                        ctx.roundRect(-16, -6, 32, 12, 2); /* Adjusted dimensions to be smaller */
                         ctx.fill();
                     } else {
-                        ctx.fillRect(-25,-10,50,20);
+                        ctx.fillRect(-16,-6,32,12); /* Adjusted dimensions to be smaller */
                     }
-                    ctx.fillStyle = "#3b82f6"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.font = "bold 14px sans-serif";
+                    ctx.fillStyle = "#3b82f6"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.font = "bold 7px sans-serif"; /* Font size remains 7px */
                     ctx.fillText(s.delay.toFixed(2) + "ms", 0, 0); ctx.restore();
                 });
 
@@ -1633,31 +1856,22 @@
                 const boxX = micScreenX - 140; // Izquierda del mic
                 const boxY = micScreenY - 30; // Centrado vertical
 
-                // Calcular Alineación de Fase (Focus Gold)
-                let complexSumR = 0, complexSumI = 0;
-                let magSum = 0;
-                let maxSingleMag = 0; // Referencia de un solo bafle
-                
-                // Re-calculate complex sum for checking coherence using real physics
-                simSources.forEach(s => {
-                    const d = Math.sqrt(Math.pow(mx - s.x, 2) + Math.pow(my - s.y, 2));
-                    const phase = (k*d) - s.phase + (s.inv ? Math.PI : 0);
-                    
-                    const vSMx = mx - s.x; const vSMy = my - s.y;
-                    const distSM = Math.sqrt(vSMx*vSMx + vSMy*vSMy);
-                    const cosTheta = distSM > 0 ? (s.dirDown ? (vSMy / distSM) : (-vSMy / distSM)) : 1.0;
-                    const direct = (1.0 / Math.max(0.1, d)) * ((1.0 + cosTheta)/2.0); // Apply 1/r and directivity
+                // Calculate total sum for overall status
+                const {
+                    magnitude: vectorSumMag,
+                    phase: totalPhase,
+                    magSum,
+                } = calculateComplexSumAtMic(simSources, mx, my, k);
 
-                    let amp = direct; // Use direct for coherence calc, before 1/r for phase
-                    
-                    complexSumR += amp * Math.cos(phase);
-                    complexSumI += amp * Math.sin(phase);
-                    magSum += amp;
-                    
-                    if (!s.isRef && amp > maxSingleMag) maxSingleMag = amp;
-                });
+                // Calculate max single magnitude (for cancellation threshold)
+                let maxSingleMag = 0;
+                if (simSources.length > 0) {
+                    simSources.forEach(s => {
+                        const { magnitude } = calculateComplexSumAtMic([s], mx, my, k);
+                        if (magnitude > maxSingleMag) maxSingleMag = magnitude;
+                    });
+                }
                 
-                const vectorSumMag = Math.sqrt(complexSumR*complexSumR + complexSumI*complexSumI);
                 const coherence = magSum > 0 ? (vectorSumMag / magSum) : 0;
                 
                 // Determinar Estado del Osciloscopio
@@ -1712,27 +1926,129 @@
                 ctx.shadowBlur = shadowBlur;
                 ctx.strokeRect(boxX, boxY, boxW, boxH);
                 
-                // Center Line
+                // Add oscilloscope grid
                 ctx.shadowBlur = 0;
+                ctx.strokeStyle = "rgba(255,255,255,0.1)"; // Lighter grid for background
+                ctx.lineWidth = 0.5;
+                // Horizontal lines
+                const numHorizLines = 4; // 5 lines including center, 4 segments
+                for (let i = 0; i <= numHorizLines; i++) {
+                    const yLine = boxY + (i / numHorizLines) * boxH;
+                    ctx.beginPath(); ctx.moveTo(boxX, yLine); ctx.lineTo(boxX + boxW, yLine); ctx.stroke();
+                }
+                // Vertical lines
+                const numVertLines = 6; // 7 lines including start/end, 6 segments
+                for (let i = 0; i <= numVertLines; i++) {
+                    const xLine = boxX + (i / numVertLines) * boxW;
+                    ctx.beginPath(); ctx.moveTo(xLine, boxY); ctx.lineTo(xLine, boxY + boxH); ctx.stroke();
+                }
+
+                // Center Line (thicker)
                 ctx.strokeStyle = "rgba(255,255,255,0.2)"; ctx.lineWidth=1;
                 ctx.beginPath(); ctx.moveTo(boxX, boxY + boxH/2); ctx.lineTo(boxX+boxW, boxY + boxH/2); ctx.stroke();
 
-                // WAVEFORM (Suma Total)
-                ctx.beginPath();
-                ctx.strokeStyle = oscColor; 
-                ctx.lineWidth = 2;
-                for(let i=0; i<boxW; i++) {
-                    const tOffset = i * 0.2;
-                    const totalPhase = Math.atan2(complexSumI, complexSumR);
-                    // The amplitude for the waveform should reflect the magnitude, and it should be scaled for visual clarity.
-                    // This uses a fixed visual scale `15` and the `viewGain`.
-                    const val = vectorSumMag * Math.sin(timePhase + tOffset - totalPhase);
-                    
-                    const y = boxY + boxH/2 - (val * 15 * gain);
-                    if(i===0) ctx.moveTo(boxX+i, y); else ctx.lineTo(boxX+i, y);
+
+                // --- DRAWING MULTIPLE WAVES ---
+                const wavesToDraw = [];
+
+                // 1. MIC Reference Wave
+                const refAmplitude = maxSingleMag > 0.01 ? maxSingleMag * 1.5 : 0.5; // Scale reference to max individual baffle
+                const refPhase = 0; // Pure sine wave, no path delay
+                wavesToDraw.push({
+                    type: 'mic_reference',
+                    color: '#a1a1aa', // Dim text color
+                    dash: [2, 3],     // Dotted line
+                    lineWidth: 1,
+                    amplitude: refAmplitude,
+                    phase: refPhase,
+                    gain: 1.0 // Use internal gain for waves
+                });
+
+                // 2. Baffle L Wave
+                const sourcesL = getSourcesForWave('baffle_L', simSources, mx);
+                if (sourcesL.length > 0) {
+                    const { magnitude: magnitudeL, phase: phaseL } = calculateComplexSumAtMic(sourcesL, mx, my, k);
+                    wavesToDraw.push({
+                        type: 'baffle_L',
+                        color: '#3b82f6', // Accent blue
+                        dash: [],         // Solid line
+                        lineWidth: 2,
+                        amplitude: magnitudeL,
+                        phase: phaseL,
+                        gain: 1.0
+                    });
                 }
-                ctx.stroke();
-                
+
+                // 3. Baffle R Wave
+                const sourcesR = getSourcesForWave('baffle_R', simSources, mx);
+                if (sourcesR.length > 0 && state.count > 1) { // Only draw Baffle R if there's more than one baffle
+                    const { magnitude: magnitudeR, phase: phaseR } = calculateComplexSumAtMic(sourcesR, mx, my, k);
+                    wavesToDraw.push({
+                        type: 'baffle_R',
+                        color: '#ef4444', // Danger red
+                        dash: [],         // Solid line
+                        lineWidth: 2,
+                        amplitude: magnitudeR,
+                        phase: phaseR,
+                        gain: 1.0
+                    });
+                }
+
+                // 4. Total Sum Wave (Existing Osciloscope Wave)
+                wavesToDraw.push({
+                    type: 'total_sum',
+                    color: oscColor, // Dynamic color based on phase alignment
+                    dash: [],
+                    lineWidth: 3, // Slightly thicker to stand out
+                    amplitude: vectorSumMag,
+                    phase: totalPhase,
+                    gain: 1.0
+                });
+
+                // Normalize amplitudes for drawing
+                let maxOverallWaveAmp = 0;
+                // Find the max amplitude among actual baffle waves (L, R, and Total Sum)
+                wavesToDraw.forEach(wave => {
+                    if (wave.type !== 'mic_reference' && wave.amplitude > maxOverallWaveAmp) {
+                        maxOverallWaveAmp = wave.amplitude;
+                    }
+                });
+                maxOverallWaveAmp = Math.max(maxOverallWaveAmp, refAmplitude * 0.7, 0.1); // Ensure minimum for scaling to avoid division by zero and provide a visible reference even if baffles are off. Scale ref a bit for visual prominence if others are small.
+
+                // Draw each wave
+                wavesToDraw.forEach(wave => {
+                    // Only draw if amplitude is significant, or if it's the reference wave
+                    if (wave.amplitude < 0.001 && wave.type !== 'mic_reference') return;
+
+                    ctx.beginPath();
+                    ctx.strokeStyle = wave.color;
+                    ctx.lineWidth = wave.lineWidth;
+                    ctx.setLineDash(wave.dash);
+
+                    const waveVisualScale = (boxH / 2) * 0.8; // Use 80% of half box height for amplitude
+                    const normalizedAmp = wave.amplitude / maxOverallWaveAmp;
+
+                    for (let i = 0; i < boxW; i++) {
+                        // Display approximately 2 full cycles across the oscilloscope width
+                        const tOffset = i * (4 * Math.PI / boxW); 
+                        let currentWavePhase = wave.phase;
+                        if (wave.type === 'mic_reference') {
+                            currentWavePhase = refPhase; // Reference wave has no acoustic path phase
+                        }
+
+                        let val;
+                        // Animation is controlled by timePhase outside the loop now
+                        val = normalizedAmp * Math.sin(timePhase + tOffset - currentWavePhase);
+
+                        const y = boxY + boxH / 2 - (val * waveVisualScale * wave.gain);
+                        if (i === 0) ctx.moveTo(boxX + i, y);
+                        else ctx.lineTo(boxX + i, y);
+                    }
+                    ctx.stroke();
+                });
+                ctx.setLineDash([]); // Reset line dash
+
+
                 // TEXTO DE FEEDBACK (Main Status)
                 if (oscText) {
                     ctx.fillStyle = oscColor; 
@@ -1766,7 +2082,13 @@
                 ctx.restore();
             }
 
-            function animate() { if(state.isPlaying) state.time += 0.2; draw(); requestAnimationFrame(animate); }
+            function animate() { 
+                if(state.isPlaying) {
+                    state.time += 0.3; // Increment state.time by a larger amount for faster scrolling
+                }
+                draw(); 
+                requestAnimationFrame(animate); 
+            }
             els.canvas.width = els.canvas.parentElement.clientWidth; els.canvas.height = els.canvas.parentElement.clientHeight;
             
             updateUI(); animate(); 
@@ -1774,6 +2096,32 @@
             // Attach event listener for the reset button after all elements are loaded
             els.reset.addEventListener('click', window.app.resetSimulator);
             els.fullscreen.addEventListener('click', window.app.toggleFullscreen);
+            els.whatsappShare.addEventListener('click', window.app.shareOnWhatsApp); // Attach event listener for WhatsApp share
+            
+            // Attach event listeners for name modal
+            els.nameSubmitBtn.addEventListener('click', window.app.submitName);
+            els.nameInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    window.app.submitName();
+                }
+            });
+
+
+            // Attach event listener for the new footer author link
+            const footerAuthorLink = document.getElementById('footer-author-link');
+            if (footerAuthorLink) {
+                footerAuthorLink.addEventListener('click', () => {
+                    window.logAnalyticsEvent('author_link_clicked', { link_name: 'Mauro Casarin Instagram - Footer' });
+                });
+            }
+
+            // --- Name Modal Trigger Logic ---
+            if (!state.nameModalShownThisSession && !localStorage.getItem('userName')) {
+                setTimeout(() => {
+                    window.app.showNameModal();
+                }, NAME_MODAL_DELAY_MS);
+            }
+            // --- End Name Modal Trigger Logic ---
         };
     </script>
 <script type="module" src="/index.tsx"></script>

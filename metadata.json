@@ -1,7 +1,5 @@
 {
-  "name": "Simulador Educativo de Sonidos Graves (Firebase Analytics)",
+  "name": "Animación ondas 26-12 Simulador Educativo de Sonidos Graves ",
   "description": "Un simulador acústico profesional interactivo para visualizar patrones de arreglos de subgraves, alineación de fase y configuraciones cardioides en tiempo real (Vanilla JS). Integrado con Firebase Analytics y Firestore para rastrear visitas anónimas y eventos de interacción.",
-  "requestFramePermissions": [
-    "fullscreen"
-  ]
+  "requestFramePermissions": []
 }
