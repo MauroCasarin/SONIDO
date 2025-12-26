@@ -638,7 +638,7 @@
                 <p>Los bafles se colocan en una línea horizontal. Ofrece una cobertura más ancha (aproximadamente 180° frontales).</p>
                 <p><strong>B. Modo END-FIRE</strong></p>
                 <p>Los bafles se colocan en línea en profundidad. Logra un rechazo significativo hacia atrás y mayor direccionalidad hacia adelante. Depende del uso de <span class="color-accent">Delay</span>.</p>
-                <p><strong>C. Modo MONO CENTRAL / STEREO L/R</strong></p>
+                <p><strong>C. Modo MONO CENTRAL / STEREO L/R</p>
                 <ul>
                     <li><strong>MONO CENTRAL:</strong> Un único arreglo de bafles centrado.</li>
                     <li><strong>STEREO L/R:</strong> Divide el arreglo en dos clusters (Izquierda/Derecha) espejados.</li>
@@ -1463,7 +1463,7 @@
                             // window.logAnalyticsEvent('separation_distance_dragged', { new_distance_m: state.dist });
                         }
                     }
-                    state.view.lastX = pos.clientX; state.view.lastY = pos.clientY;
+                    state.view.lastX = pos.clientX; state.view.lastY = pos.clientY; 
                 }
             }
 
@@ -1513,7 +1513,7 @@
             window.addEventListener('mouseup', handleEnd); // This handles global mouseup to stop drags
             els.canvas.addEventListener('touchstart', handleStart, {passive: false});
             window.addEventListener('touchmove', handleMove, {passive: false});
-            window.addEventListener('touchend', handleEnd); // This also calls handleEnd for touchend on canvas to stop drags
+            els.canvas.addEventListener('touchend', handleEnd); // This also calls handleEnd for touchend on canvas to stop drags
 
             els.canvas.addEventListener('wheel', e => {
                 e.preventDefault();
@@ -1639,7 +1639,8 @@
                 return sources;
             }
 
-            function fillHeatmapColor(db, data, idx) {
+            // Refactored function to return RGBA values
+            function getHeatmapColor(db) {
                 let r=0, g=0, b=0, a=230;
                 // Escala Estándar (Audio Pro): White > Yellow > Orange > Red > Blue > Black
                 if (db > 0) { 
@@ -1666,7 +1667,7 @@
                 } else { 
                     r=0; g=0; b=0; a=0; 
                 }
-                data[idx] = r; data[idx+1] = g; data[idx+2] = b; data[idx+3] = a;
+                return [r, g, b, a];
             }
 
             function drawRulers(w, h, cx, cy, ppm) {
@@ -1745,6 +1746,7 @@
                     const vSMx = micX - s.x;
                     const vSMy = micY - s.y;
                     const distSM = Math.hypot(vSMx, vSMy);
+                    // Corrected typo here: `dist` -> `distSM`
                     const cosTheta = distSM > 0 ? (s.dirDown ? (vSMy / distSM) : (-vSMy / distSM)) : 1.0;
                     const directivityFactor = (1.0 + cosTheta) / 2.0;
                     const amplitudeFactor = (1.0 / Math.max(0.1, d)) * directivityFactor;
@@ -1810,7 +1812,7 @@
                 const startX = Math.floor((-cx)/ppm); const endX = Math.ceil((w-cx)/ppm);
                 const startY = Math.floor((-cy)/ppm); const endY = Math.ceil((h-cy)/ppm);
                 for(let gx=startX; gx<=endX; gx++) { const sx = cx + gx*ppm; ctx.moveTo(sx, 0); ctx.lineTo(sx, h); }
-                for(let gy=startY; gy<=endY; gy++) { const sy = cy + gy*ppm; ctx.moveTo(0, sy); ctx.lineTo(w, sy); }
+                for(let gy=startY; gy<=endY; gy++) { const sy = cy + gy*ppm; ctx.moveTo(0, sy); ctx.lineTo(0, sy); ctx.lineTo(w, sy); }
                 ctx.stroke(); ctx.restore();
 
                 let sources = generateSourcesForLogic();
@@ -1826,24 +1828,35 @@
 
                 const imgData = ctx.getImageData(0, 0, w, h); const data = imgData.data;
 
+                // Heatmap Optimization: pixel skip for mobile
+                const heatmapPixelSkip = isMobile() ? 2 : 1; 
+
                 // Always use the static prediction (SPL) mode for the heatmap
-                for(let y=0; y<h; y++) {
-                    const rowOff = y * w * 4;
-                    for(let x=0; x<w; x++) {
-                        const idx = rowOff + (x * 4); 
+                for(let y_calc=0; y_calc<h; y_calc += heatmapPixelSkip) {
+                    for(let x_calc=0; x_calc<w; x_calc += heatmapPixelSkip) {
                         let pSumReal = 0;
                         let pSumImag = 0;
                         
+                        // Calculate for the top-left corner of the block
+                        const x = x_calc;
+                        const y = y_calc;
+
                         for(let i=0; i<simSources.length; i++) {
                             const s = simSources[i]; 
-                            const dx = x - s.sx; const dy = y - s.sy; 
-                            const dist = Math.sqrt(dx*dx + dy*dy);
-                            const distMeters = dist / ppm; 
+                            // Calculate world coordinates for the current pixel
+                            const currentPixelWorldX = (x_calc - cx) / ppm;
+                            const currentPixelWorldY = (y_calc - cy) / ppm;
+
+                            // Calculate distances in world coordinates
+                            const dx_world = currentPixelWorldX - s.x;
+                            const dy_world = currentPixelWorldY - s.y;
+                            const distMeters = Math.hypot(dx_world, dy_world);
                             const dClamped = Math.max(0.1, distMeters);
                             
                             let ampD = (1.0 / dClamped);
                             
-                            const cosTheta = dist > 0 ? (s.dirDown ? (dy / dist) : (-dy / dist)) : 1.0;
+                            // Corrected directivity calculation using world coordinates
+                            const cosTheta = distMeters > 0 ? (s.dirDown ? (dy_world / distMeters) : (-dy_world / distMeters)) : 1.0;
                             const directivity = (1.0 + cosTheta) / 2.0;
 
                             if (s.isRef) ampD *= 0.6;
@@ -1857,7 +1870,21 @@
                         }
                         const magnitude = Math.sqrt(pSumReal * pSumReal + pSumImag * pSumImag);
                         const db = 20 * Math.log10(magnitude * gain + 1e-7);
-                        fillHeatmapColor(db, data, idx);
+                        
+                        // Get the color for this calculated block
+                        const [r, g, b, a] = getHeatmapColor(db);
+
+                        // Fill the entire block with this color
+                        for (let dy_fill = 0; dy_fill < heatmapPixelSkip; dy_fill++) {
+                            for (let dx_fill = 0; dx_fill < heatmapPixelSkip; dx_fill++) {
+                                const actualX = x_calc + dx_fill;
+                                const actualY = y_calc + dy_fill;
+                                if (actualX < w && actualY < h) {
+                                    const idx = (actualY * w + actualX) * 4;
+                                    data[idx] = r; data[idx+1] = g; data[idx+2] = b; data[idx+3] = a;
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -1875,7 +1902,8 @@
                     ctx.scale(ppm, ppm);   // Escalar a metros por píxel
 
                     const lambda = c / state.freq; // Longitud de onda en metros
-                    const maxDrawRadiusMeters = 10; // Radio máximo para dibujar las ondas en metros (cambiado de 15 a 10)
+                    // Optimized maxDrawRadiusMeters for mobile
+                    const maxDrawRadiusMeters = isMobile() ? 7 : 10; // Reduced for mobile
 
                     simSources.forEach(s => {
                         const originX = s.x;
