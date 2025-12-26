@@ -1717,7 +1717,7 @@
                 const startX = Math.floor((-cx)/ppm); const endX = Math.ceil((w-cx)/ppm);
                 const startY = Math.floor((-cy)/ppm); const endY = Math.ceil((h-cy)/ppm);
                 for(let gx=startX; gx<=endX; gx++) { const sx = cx + gx*ppm; ctx.moveTo(sx, 0); ctx.lineTo(sx, h); }
-                for(let gy=startY; gy<=endY; gy++) { const sy = cy + gy*ppm; ctx.moveTo(0, sy); ctx.lineTo(w, sy); } /* Fixed typo here */
+                for(let gy=startY; gy<=endY; gy++) { const sy = cy + gy*ppm; ctx.moveTo(0, sy); ctx.lineTo(w, sy); }
                 ctx.stroke(); ctx.restore();
 
                 let sources = generateSourcesForLogic();
@@ -1733,66 +1733,38 @@
 
                 const imgData = ctx.getImageData(0, 0, w, h); const data = imgData.data;
 
-                if (state.isPlaying) {
-                    // MODO ANIMADO (ONDA VIAJERA)
-                    for(let y=0; y<h; y++) {
-                        const rowOff = y * w * 4;
-                        for(let x=0; x<w; x++) {
-                            const idx = rowOff + (x * 4); let pSum = 0;
+                // Always use the static prediction (SPL) mode for the heatmap
+                for(let y=0; y<h; y++) {
+                    const rowOff = y * w * 4;
+                    for(let x=0; x<w; x++) {
+                        const idx = rowOff + (x * 4); 
+                        let pSumReal = 0;
+                        let pSumImag = 0;
+                        
+                        for(let i=0; i<simSources.length; i++) {
+                            const s = simSources[i]; 
+                            const dx = x - s.sx; const dy = y - s.sy; 
+                            const dist = Math.sqrt(dx*dx + dy*dy);
+                            const distMeters = dist / ppm; 
+                            const dClamped = Math.max(0.1, distMeters);
                             
-                            for(let i=0; i<simSources.length; i++) {
-                                const s = simSources[i]; 
-                                const dx = x - s.sx; const dy = y - s.sy; 
-                                const dist = Math.sqrt(dx*dx + dy*dy); 
-                                const distMeters = dist / ppm; 
-                                const dClamped = Math.max(0.1, distMeters);
-                                
-                                let ampD = (1.0 / dClamped);
-                                
-                                const cosTheta = dist > 0 ? (s.dirDown ? (dy / dist) : (-dy / dist)) : 1.0;
-                                const directivity = (1.0 + cosTheta) / 2.0;
-                                
-                                if (s.isRef) ampD *= 0.6; // Should not happen now
-
-                                pSum += ampD * directivity * Math.sin((k * distMeters) - timePhase - s.phase + (s.inv ? Math.PI : 0));
-                            }
-                            const db = 20 * Math.log10(Math.abs(pSum) * gain + 1e-7);
-                            fillHeatmapColor(db, data, idx);
-                        }
-                    }
-                } else {
-                    // MODO PREDICCIÓN ESTÁTICA (SPL)
-                    for(let y=0; y<h; y++) {
-                        const rowOff = y * w * 4;
-                        for(let x=0; x<w; x++) {
-                            const idx = rowOff + (x * 4); 
-                            let pSumReal = 0;
-                            let pSumImag = 0;
+                            let ampD = (1.0 / dClamped);
                             
-                            for(let i=0; i<simSources.length; i++) {
-                                const s = simSources[i]; 
-                                const dx = x - s.sx; const dy = y - s.sy; 
-                                const dist = Math.sqrt(dx*dx + dy*dy);
-                                const distMeters = dist / ppm; 
-                                const dClamped = Math.max(0.1, distMeters);
-                                
-                                let ampD = (1.0 / dClamped);
-                                
-                                const cosTheta = dist > 0 ? (s.dirDown ? (dy / dist) : (-dy / dist)) : 1.0;
-                                const directivity = (1.0 + cosTheta) / 2.0;
+                            const cosTheta = dist > 0 ? (s.dirDown ? (dy / dist) : (-dy / dist)) : 1.0;
+                            const directivity = (1.0 + cosTheta) / 2.0;
 
-                                if (s.isRef) ampD *= 0.6;
+                            if (s.isRef) ampD *= 0.6;
 
-                                const phase = (k * distMeters) - s.phase + (s.inv ? Math.PI : 0);
-                                const amp = ampD * directivity;
+                            // timePhase is NOT included here, ensuring a static SPL heatmap
+                            const phase = (k * distMeters) - s.phase + (s.inv ? Math.PI : 0);
+                            const amp = ampD * directivity;
 
-                                pSumReal += amp * Math.cos(phase);
-                                pSumImag += amp * Math.sin(phase);
-                            }
-                            const magnitude = Math.sqrt(pSumReal * pSumReal + pSumImag * pSumImag);
-                            const db = 20 * Math.log10(magnitude * gain + 1e-7);
-                            fillHeatmapColor(db, data, idx);
+                            pSumReal += amp * Math.cos(phase);
+                            pSumImag += amp * Math.sin(phase);
                         }
+                        const magnitude = Math.sqrt(pSumReal * pSumReal + pSumImag * pSumImag);
+                        const db = 20 * Math.log10(magnitude * gain + 1e-7);
+                        fillHeatmapColor(db, data, idx);
                     }
                 }
 
@@ -1800,6 +1772,61 @@
 
                 // Dibujar Reglas Dinámicas con Precisión
                 drawRulers(w, h, cx, cy, ppm);
+
+                // =========================================================
+                // INICIO: ANIMACIÓN DE ONDAS CONCÉNTRICAS (si está en Play)
+                // =========================================================
+                if (state.isPlaying) {
+                    ctx.save();
+                    ctx.translate(cx, cy); // Trasladar al centro del mundo
+                    ctx.scale(ppm, ppm);   // Escalar a metros por píxel
+
+                    const lambda = c / state.freq; // Longitud de onda en metros
+                    const maxDrawRadiusMeters = 10; // Radio máximo para dibujar las ondas en metros (cambiado de 15 a 10)
+
+                    simSources.forEach(s => {
+                        const originX = s.x;
+                        const originY = s.y;
+                        const startTimeOffset = s.delay / 1000; // Delay de la fuente en segundos
+
+                        // Tiempo efectivo de propagación desde que la fuente *debería* haber empezado a emitir
+                        const effectiveTime = state.time - startTimeOffset; 
+                        
+                        if (effectiveTime < 0) { // Si la fuente aún no ha "empezado a emitir" debido a un delay
+                            return; // No dibujar ondas para esta fuente todavía
+                        }
+
+                        // Calcular el "radio inicial" para el ciclo actual de ondas
+                        let initialWaveRadius = (effectiveTime * c) % lambda;
+                        if (initialWaveRadius < 0) initialWaveRadius += lambda; // Asegurar un valor positivo para el módulo
+
+                        // Iterar para dibujar múltiples círculos concéntricos
+                        for (let radiusMeters = initialWaveRadius; radiusMeters <= maxDrawRadiusMeters; radiusMeters += lambda) {
+                            if (radiusMeters < 0.1) continue; // Saltar círculos muy pequeños cerca del origen
+
+                            // Calcular la opacidad y el grosor basándose en la distancia (fade out)
+                            let normalizedDistance = radiusMeters / maxDrawRadiusMeters;
+                            let alpha = 1.0 - normalizedDistance;
+                            alpha = Math.pow(alpha, 0.7); // Less aggressive fade-out curve
+                            alpha = Math.max(0.3, alpha); // Ensure a higher minimum opacity
+
+                            if (alpha <= 0.05) continue; // Saltar círculos casi transparentes
+
+                            ctx.beginPath();
+                            ctx.strokeStyle = `rgba(59, 130, 246, ${alpha})`; // Color azul (accent) desvaneciéndose
+                            ctx.lineWidth = 0.02 + (alpha * 0.03); // Mayor grosor de línea y escala con la nueva alfa
+                            
+                            ctx.arc(originX, originY, radiusMeters, 0, Math.PI * 2);
+                            ctx.stroke();
+                        }
+                    });
+
+                    ctx.restore();
+                }
+                // =========================================================
+                // FIN: ANIMACIÓN DE ONDAS CONCÉNTRICAS
+                // =========================================================
+
 
                 ctx.save(); ctx.translate(cx, cy); ctx.scale(ppm, ppm);
                 
@@ -2084,7 +2111,7 @@
 
             function animate() { 
                 if(state.isPlaying) {
-                    state.time += 0.3; // Increment state.time by a larger amount for faster scrolling
+                    state.time += 0.0001; // Decreased from 0.0005 to 0.0001 for much slower animation
                 }
                 draw(); 
                 requestAnimationFrame(animate); 
